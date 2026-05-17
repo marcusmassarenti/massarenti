@@ -37,18 +37,23 @@
     }
   }
 
-  // Salva local sempre. Se Supabase disponível, sincroniza (com debounce)
+  // Salva local SEMPRE imediato. Sincroniza com nuvem com debounce curto.
   let _syncTimer = null;
+  let _hasPendingSync = false;
   function saveData() {
     localStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem(storageKey + '_updated', new Date().toISOString());
     if (supabaseClient && !viewMode) {
+      _hasPendingSync = true;
+      setCloudStatus('syncing', 'Aguardando sync...');
       clearTimeout(_syncTimer);
-      _syncTimer = setTimeout(syncToCloud, 600);
+      _syncTimer = setTimeout(syncToCloud, 300);
     }
   }
 
-  async function syncToCloud() {
+  async function syncToCloud(immediate) {
     if (!supabaseClient || viewMode) return;
+    if (!_hasPendingSync && !immediate) return;
     setCloudStatus('syncing', 'Salvando na nuvem...');
     try {
       const { error } = await supabaseClient
@@ -63,13 +68,33 @@
         console.warn('Sync error:', error);
         setCloudStatus('error', 'Erro ao salvar: ' + error.message);
       } else {
-        setCloudStatus('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('pt-BR'));
+        _hasPendingSync = false;
+        setCloudStatus('ok', 'Salvo na nuvem · ' + new Date().toLocaleTimeString('pt-BR'));
       }
     } catch (e) {
       console.warn('Sync failed:', e);
       setCloudStatus('error', 'Erro: ' + (e.message || 'desconhecido'));
     }
   }
+
+  // Força sincronizar quando o app perde foco / o usuário fecha
+  function forceSyncOnExit() {
+    if (_syncTimer) { clearTimeout(_syncTimer); _syncTimer = null; }
+    if (_hasPendingSync) syncToCloud(true);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') forceSyncOnExit();
+  });
+  window.addEventListener('pagehide', forceSyncOnExit);
+  window.addEventListener('beforeunload', forceSyncOnExit);
+
+  // Aviso visual se tem mudanças pendentes sem sync (impede perda)
+  window.addEventListener('beforeunload', (e) => {
+    if (_hasPendingSync) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 
   async function loadFromCloud() {
     if (!supabaseClient) return false;
@@ -81,13 +106,32 @@
         .maybeSingle();
       if (error) { console.warn(error); setCloudStatus('error', 'Erro: ' + error.message); return false; }
       if (data) {
-        state.counts = data.counts || {};
-        state.scores = data.scores || {};
-        localStorage.setItem(storageKey, JSON.stringify(state));
-        setCloudStatus('ok', 'Sincronizado');
+        // Verifica timestamps: usa o mais recente (local vs nuvem)
+        const cloudTime = data.updated_at ? new Date(data.updated_at).getTime() : 0;
+        const localTimeRaw = localStorage.getItem(storageKey + '_updated');
+        const localTime = localTimeRaw ? new Date(localTimeRaw).getTime() : 0;
+        const cloudOwned = Object.values(data.counts || {}).filter(v => v > 0).length;
+        const localOwned = Object.values(state.counts || {}).filter(v => v > 0).length;
+
+        if (cloudTime > localTime || (cloudOwned > localOwned && localTime === 0)) {
+          // Nuvem é mais nova → usa
+          state.counts = data.counts || {};
+          state.scores = data.scores || {};
+          localStorage.setItem(storageKey, JSON.stringify(state));
+          localStorage.setItem(storageKey + '_updated', data.updated_at || new Date().toISOString());
+          setCloudStatus('ok', 'Carregado da nuvem');
+          return true;
+        } else if (localTime > cloudTime && _hasPendingSync !== false) {
+          // Local é mais novo → empurra pra nuvem
+          _hasPendingSync = true;
+          syncToCloud(true);
+          setCloudStatus('syncing', 'Enviando local pra nuvem...');
+          return false;
+        }
+        setCloudStatus('ok', 'Já sincronizado');
         return true;
       }
-      setCloudStatus('ok', 'Conectado');
+      setCloudStatus('ok', 'Conectado (sem dados ainda)');
     } catch (e) {
       console.warn(e);
       setCloudStatus('error', 'Sem conexão: ' + (e.message || 'erro'));
@@ -1352,7 +1396,7 @@
         </div>
       ` : ''}
     `;
-    // Bloco fixo da família SEMPRE no final (carrega async)
+    // Bloco fixo da família SEMPRE no TOPO (carrega async)
     const familyBlock = `
       <div class="dashboard-section" id="familySection">
         <h3>👨‍👩‍👧 Família <button id="refreshFamily" class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-left:8px">🔄 Atualizar</button></h3>
@@ -1361,7 +1405,7 @@
         </div>
       </div>
     `;
-    $('#dashboardContent').innerHTML = html + familyBlock;
+    $('#dashboardContent').innerHTML = familyBlock + html;
     $$('#dashboardContent .country-missing-row').forEach(r => {
       r.addEventListener('click', () => openCountryModal(r.dataset.code));
     });
