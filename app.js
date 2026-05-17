@@ -2331,18 +2331,29 @@
     });
   }
 
-  // Painel admin (só aparece pra Cauã)
-  const ADMIN_PROFILES = ['Cauã', 'Caua', 'caua', 'cauã'];
-  if (ADMIN_PROFILES.includes(profileName) && $('#adminGroup')) {
+  // Painel admin (só aparece pra Cauã - case insensitive, sem/com acento)
+  const isAdmin = profileName && profileName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === 'caua';
+  console.log('[admin] profileName:', profileName, '| isAdmin:', isAdmin);
+  if (isAdmin && $('#adminGroup')) {
     $('#adminGroup').hidden = false;
-    $('#viewAllProfilesBtn').addEventListener('click', openAllProfilesModal);
+    const btn = $('#viewAllProfilesBtn');
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('[admin] abrindo painel...');
+        openAllProfilesModal();
+      });
+    }
   }
   if ($('#closeAllProfiles')) {
     $('#closeAllProfiles').addEventListener('click', () => $('#allProfilesModal').hidden = true);
   }
 
   async function openAllProfilesModal() {
-    $('#allProfilesModal').hidden = false;
+    const modal = $('#allProfilesModal');
+    if (!modal) { console.error('Modal não encontrado'); return; }
+    modal.hidden = false;
+    modal.style.display = ''; // garante exibição
     $('#allProfilesList').innerHTML = 'Carregando perfis...';
     $('#allProfilesStats').innerHTML = '';
     if (!supabaseClient) {
