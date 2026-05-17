@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a2463">
+  <title>Álbum do Cauã - Copa 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-body">
+  <div class="login-container">
+    <div class="album-cover">
+      <div class="cover-shine"></div>
+      <div class="cover-top">
+        <div class="cover-badge">FIFA</div>
+        <div class="cover-host">USA · CAN · MEX</div>
+      </div>
+      <div class="cover-title">
+        <div class="cover-line1">Álbum do</div>
+        <div class="cover-line2">Cauã</div>
+        <div class="cover-line3">Copa 2026</div>
+      </div>
+      <div class="cover-trophy">🏆</div>
+      <div class="cover-stickers">980 figurinhas</div>
+    </div>
+
+    <form id="loginForm" class="login-card" autocomplete="off">
+      <h1>Entrar no álbum</h1>
+      <label>
+        <span>Nome do colecionador</span>
+        <input type="text" id="loginName" maxlength="20" placeholder="Ex: Cauã" required>
+      </label>
+      <label>
+        <span>PIN de 4 dígitos</span>
+        <input type="password" id="loginPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="••••" required>
+      </label>
+      <button type="submit" class="btn-primary">Abrir álbum</button>
+
+      <div id="loginError" class="login-error" hidden></div>
+
+      <div class="profiles-section" id="profilesSection" hidden>
+        <h2>Perfis salvos</h2>
+        <div id="profilesList" class="profiles-list"></div>
+      </div>
+
+      <p class="login-hint">Cada perfil tem suas próprias figurinhas marcadas.<br>
+      Primeira vez? Escolha um nome e PIN — fica salvo neste celular.</p>
+    </form>
+  </div>
+
+  <script src="data/countries.js"></script>
+  <script src="data/stickers.js"></script>
+  <script>
+    // Login logic
+    const form = document.getElementById('loginForm');
+    const nameInput = document.getElementById('loginName');
+    const pinInput = document.getElementById('loginPin');
+    const errorBox = document.getElementById('loginError');
+    const profilesSection = document.getElementById('profilesSection');
+    const profilesList = document.getElementById('profilesList');
+
+    function getProfiles() {
+      try { return JSON.parse(localStorage.getItem('caua_profiles') || '{}'); }
+      catch(e) { return {}; }
+    }
+    function saveProfiles(p) {
+      localStorage.setItem('caua_profiles', JSON.stringify(p));
+    }
+
+    function renderProfiles() {
+      const profiles = getProfiles();
+      const names = Object.keys(profiles);
+      if (names.length === 0) { profilesSection.hidden = true; return; }
+      profilesSection.hidden = false;
+      profilesList.innerHTML = '';
+      names.forEach(n => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'profile-chip';
+        btn.innerHTML = `<span class="profile-avatar">${n.charAt(0).toUpperCase()}</span><span>${n}</span>`;
+        btn.addEventListener('click', () => {
+          nameInput.value = n;
+          pinInput.focus();
+        });
+        profilesList.appendChild(btn);
+      });
+    }
+    renderProfiles();
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      errorBox.hidden = true;
+      const name = nameInput.value.trim();
+      const pin = pinInput.value.trim();
+      if (!name || !/^\d{4}$/.test(pin)) {
+        errorBox.textContent = 'Preencha o nome e um PIN de 4 dígitos.';
+        errorBox.hidden = false;
+        return;
+      }
+      const profiles = getProfiles();
+      if (profiles[name]) {
+        if (profiles[name].pin !== pin) {
+          errorBox.textContent = 'PIN incorreto para este perfil.';
+          errorBox.hidden = false;
+          return;
+        }
+      } else {
+        profiles[name] = { pin, created: Date.now() };
+        saveProfiles(profiles);
+      }
+      localStorage.setItem('caua_currentProfile', name);
+      window.location.href = 'app.html';
+    });
+  </script>
+</body>
+</html>

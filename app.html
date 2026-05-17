@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a2463">
+  <title>Álbum do Cauã - Copa 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&family=Press+Start+2P&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="app-body">
+  <header class="app-header">
+    <div class="header-left">
+      <div class="header-avatar" id="headerAvatar">C</div>
+      <div>
+        <div class="header-name" id="headerName">Cauã</div>
+        <div class="header-progress" id="headerProgress">0 / 980</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="settingsBtn" title="Configurações">⚙️</button>
+      <button class="icon-btn" id="logoutBtn" title="Sair">🚪</button>
+    </div>
+  </header>
+
+  <div class="global-progress">
+    <div class="global-progress-bar" id="globalProgressBar"></div>
+  </div>
+
+  <main id="mainContent">
+    <!-- TAB 1: COLEÇÃO -->
+    <section class="tab-pane" data-pane="collection">
+      <div class="toolbar">
+        <input type="search" id="searchInput" placeholder="Buscar por número ou nome..." class="search-input">
+        <div class="filter-chips" id="filterChips">
+          <button class="chip active" data-filter="all">Todas</button>
+          <button class="chip" data-filter="owned">Tenho</button>
+          <button class="chip" data-filter="missing">Faltam</button>
+          <button class="chip" data-filter="duplicates">Repetidas</button>
+        </div>
+      </div>
+      <div id="sectionsList"></div>
+    </section>
+
+    <!-- TAB 2: PAÍSES E MAPA -->
+    <section class="tab-pane" data-pane="countries" hidden>
+      <div class="map-toggle">
+        <button class="chip active" data-view="grid">🇺🇳 Bandeiras</button>
+        <button class="chip" data-view="map">🗺️ Mapa Mundi</button>
+      </div>
+      <div id="countriesGrid" class="countries-grid"></div>
+      <div id="worldMap" class="world-map" hidden></div>
+    </section>
+
+    <!-- TAB 3: JOGOS -->
+    <section class="tab-pane" data-pane="schedule" hidden>
+      <div class="toolbar">
+        <div class="filter-chips" id="phaseChips">
+          <button class="chip active" data-phase="all">Todos</button>
+          <button class="chip" data-phase="Grupos">Grupos</button>
+          <button class="chip" data-phase="Oitavas">Oitavas</button>
+          <button class="chip" data-phase="Oitavas Finais">R16</button>
+          <button class="chip" data-phase="Quartas">Quartas</button>
+          <button class="chip" data-phase="Semis">Semis</button>
+          <button class="chip" data-phase="Final">Final</button>
+        </div>
+        <select id="countryFilter" class="search-input">
+          <option value="">Todos os países</option>
+        </select>
+      </div>
+      <div id="nextMatch" class="next-match"></div>
+      <div id="matchesList"></div>
+    </section>
+  </main>
+
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="collection">
+      <span class="tab-icon">📖</span>
+      <span class="tab-label">Coleção</span>
+    </button>
+    <button class="tab-btn" data-tab="countries">
+      <span class="tab-icon">🌍</span>
+      <span class="tab-label">Países</span>
+    </button>
+    <button class="tab-btn" data-tab="schedule">
+      <span class="tab-icon">⚽</span>
+      <span class="tab-label">Jogos</span>
+    </button>
+  </nav>
+
+  <!-- Modal país -->
+  <div id="countryModal" class="modal" hidden>
+    <div class="modal-content">
+      <button class="modal-close" id="closeCountryModal">✕</button>
+      <div id="countryModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Modal configurações -->
+  <div id="settingsModal" class="modal" hidden>
+    <div class="modal-content">
+      <button class="modal-close" id="closeSettingsModal">✕</button>
+      <h2>Configurações</h2>
+
+      <div class="setting-group">
+        <h3>Tema</h3>
+        <label>Cor principal</label>
+        <div class="color-options" id="colorOptions"></div>
+        <label>Fonte do título</label>
+        <select id="fontSelect">
+          <option value="'Bebas Neue', sans-serif">Bebas Neue (padrão)</option>
+          <option value="'Fredoka', sans-serif">Fredoka (arredondada)</option>
+          <option value="'Press Start 2P', monospace">Pixel (game)</option>
+          <option value="'Nunito', sans-serif">Nunito (clean)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <h3>Backup</h3>
+        <button class="btn-secondary" id="exportBtn">📥 Exportar coleção (JSON)</button>
+        <button class="btn-secondary" id="importBtn">📤 Importar coleção (JSON)</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
+
+      <div class="setting-group">
+        <h3>Conta</h3>
+        <div class="account-info">
+          Perfil: <strong id="settingsProfileName"></strong>
+        </div>
+        <button class="btn-danger" id="resetBtn">🔄 Zerar minha coleção</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confete container -->
+  <div id="confetti"></div>
+
+  <script src="data/countries.js"></script>
+  <script src="data/stickers.js"></script>
+  <script src="data/schedule.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
