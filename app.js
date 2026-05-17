@@ -1627,7 +1627,7 @@
     const doc = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = 210, pageH = 297;
     const margin = 8;
-    const colWidth = (pageW - margin * 3) / 2; // 2 colunas
+    const colWidth = (pageW - margin * 3) / 2;
     const groups = getMissingByCountry();
     const owned = totalOwned();
     const total = window.STICKERS_TOTAL;
@@ -1652,47 +1652,70 @@
       return;
     }
 
-    // Layout em 2 colunas, fonte pequena pra caber tudo
-    doc.setFontSize(8);
-    let x = margin, y = margin + 24;
-    let col = 0;
-    const colX = [margin, margin + colWidth + margin];
-    const lineH = 3.5;
-    const groupGap = 2;
-    const maxY = pageH - margin - 6;
-    // Estima altura disponível por coluna
-    groups.forEach(g => {
-      const compactStr = compactNumbers(g.missing);
-      // Calcula linhas necessárias
-      const titleLine = `${g.code} ${g.name} (${g.missing.length}/${g.total}):`;
-      const valueLines = doc.splitTextToSize(compactStr, colWidth);
-      const totalLines = 1 + valueLines.length;
-      const blockH = totalLines * lineH + groupGap;
-      // Se não cabe na coluna atual, pula
-      if (y + blockH > maxY) {
-        col++;
-        if (col >= 2) {
-          // Reduz fonte e recomeça (best-effort one page)
-          doc.setFontSize(7);
-          col = 0; y = margin + 24;
-          x = colX[0];
-        } else {
+    // Cada figurinha listada individualmente (sem agrupar em intervalos)
+    // Format: "BRA Brasil (15): 01, 02, 03, 04, 05, 08, 10, 12, 14, 15, 16, 17, 18, 19, 20"
+    // Tenta caber em uma página - reduz fonte se necessário
+    function tryRender(fontSize, lineH, useTwoColumns) {
+      doc.setFontSize(fontSize);
+      const cols = useTwoColumns ? 2 : 1;
+      const w = useTwoColumns ? colWidth : (pageW - margin * 2);
+      const colX = useTwoColumns ? [margin, margin + colWidth + margin] : [margin];
+      let x = colX[0], y = margin + 24;
+      let col = 0;
+      const maxY = pageH - margin - 6;
+
+      for (const g of groups) {
+        const numsStr = g.missing.map(n => String(n).padStart(2, '0')).join(', ');
+        const titleLine = `${g.code} ${g.name} (faltam ${g.missing.length}):`;
+        const valueLines = doc.splitTextToSize(numsStr, w);
+        const blockH = (1 + valueLines.length) * lineH + 1.5;
+        if (y + blockH > maxY) {
+          col++;
+          if (col >= cols) return false; // não coube nessa tentativa
           y = margin + 24;
           x = colX[col];
         }
+        doc.setFont(undefined, 'bold');
+        doc.text(titleLine, x, y);
+        y += lineH;
+        doc.setFont(undefined, 'normal');
+        valueLines.forEach(l => { doc.text(l, x, y); y += lineH; });
+        y += 1.5;
       }
+      return true;
+    }
+
+    // Tenta tamanhos progressivamente menores até caber
+    const attempts = [
+      { size: 9, line: 3.6, twoCol: true },
+      { size: 8, line: 3.3, twoCol: true },
+      { size: 7, line: 2.9, twoCol: true },
+      { size: 6.5, line: 2.6, twoCol: true },
+      { size: 6, line: 2.4, twoCol: true },
+      { size: 5.5, line: 2.2, twoCol: true }
+    ];
+    let fit = false;
+    for (const a of attempts) {
+      // Limpa o conteúdo atual (recria a partir do título)
+      doc.deletePage(1);
+      doc.addPage();
+      doc.setFontSize(16);
       doc.setFont(undefined, 'bold');
-      doc.text(titleLine, x, y);
-      y += lineH;
+      doc.text(`Álbum Copa 2026 - ${profileName}`, pageW / 2, margin + 6, { align: 'center' });
+      doc.setFontSize(11);
       doc.setFont(undefined, 'normal');
-      valueLines.forEach(l => { doc.text(l, x, y); y += lineH; });
-      y += groupGap;
-    });
+      doc.text(`Faltam ${missing} de ${total} figurinhas (${(owned/total*100).toFixed(0)}% completo)`, pageW / 2, margin + 12, { align: 'center' });
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} · copa.massarenti.me`, pageW / 2, margin + 17, { align: 'center' });
+      doc.setTextColor(0);
+      if (tryRender(a.size, a.line, a.twoCol)) { fit = true; break; }
+    }
 
     // Rodapé
     doc.setFontSize(7);
     doc.setTextColor(140);
-    doc.text('Quer ajudar com trocas? Compartilhe este PDF com sua família/amigos · copa.massarenti.me', pageW / 2, pageH - 4, { align: 'center' });
+    doc.text('Quer ajudar com trocas? Compartilhe este PDF · copa.massarenti.me', pageW / 2, pageH - 4, { align: 'center' });
 
     doc.save(`figurinhas-faltam-${profileName}.pdf`);
   }

@@ -1,7 +1,16 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 59;
+window.APP_VERSION = 60;
 window.CHANGELOG = [
+  {
+    version: 60,
+    date: '17/mai',
+    title: '📋 PDF detalhado',
+    items: [
+      '🔢 Agora o PDF lista TODAS as figurinhas que faltam, uma por uma (ex: 01, 02, 05, 08, 12)',
+      '🤏 Ajuste automático da fonte pra caber tudo em uma página só'
+    ]
+  },
   {
     version: 59,
     date: '17/mai',
