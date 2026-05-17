@@ -1768,7 +1768,27 @@ main { padding: 12px 12px 100px; }
   display: flex;
   flex-direction: column;
   gap: 6px;
+  position: relative;
 }
+.family-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--c-bg-soft);
+  color: var(--c-muted);
+  border: 1px solid var(--c-border);
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  cursor: pointer;
+}
+.family-remove:hover { background: var(--c-red); color: #fff; border-color: var(--c-red); }
 .family-card:not(.me):active { transform: scale(.97); }
 .family-card.me {
   background: linear-gradient(160deg, rgba(227,178,60,.12), #fff);

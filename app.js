@@ -25,15 +25,16 @@
   function loadData() {
     try {
       const raw = localStorage.getItem(storageKey);
-      if (!raw) return { counts: {}, sectionsCollapsed: {}, scores: {} };
+      if (!raw) return { counts: {}, sectionsCollapsed: {}, scores: {}, follows: [] };
       const parsed = JSON.parse(raw);
       return {
         counts: parsed.counts || {},
         sectionsCollapsed: parsed.sectionsCollapsed || {},
-        scores: parsed.scores || {}
+        scores: parsed.scores || {},
+        follows: parsed.follows || []
       };
     } catch (e) {
-      return { counts: {}, sectionsCollapsed: {}, scores: {} };
+      return { counts: {}, sectionsCollapsed: {}, scores: {}, follows: [] };
     }
   }
 
@@ -61,6 +62,7 @@
         .update({
           counts: state.counts,
           scores: state.scores,
+          follows: state.follows || [],
           updated_at: new Date().toISOString()
         })
         .eq('name', profileName);
@@ -117,6 +119,7 @@
           // Nuvem é mais nova → usa
           state.counts = data.counts || {};
           state.scores = data.scores || {};
+          state.follows = data.follows || [];
           localStorage.setItem(storageKey, JSON.stringify(state));
           localStorage.setItem(storageKey + '_updated', data.updated_at || new Date().toISOString());
           setCloudStatus('ok', 'Carregado da nuvem');
@@ -1304,6 +1307,7 @@
     const isMe = p.name === profileName;
     return `
       <div class="family-card ${isMe ? 'me' : ''}" data-name="${p.name}">
+        ${!isMe ? `<button class="family-remove" data-name="${p.name}" title="Remover da lista">✗</button>` : ''}
         <div class="family-card-top">
           <div class="family-avatar">${p.name.charAt(0).toUpperCase()}</div>
           <div class="family-name-block">
@@ -1401,12 +1405,15 @@
         </div>
       ` : ''}
     `;
-    // Bloco fixo da família SEMPRE no TOPO (carrega async)
+    // Bloco fixo da minha lista SEMPRE no TOPO (carrega async)
     const familyBlock = `
       <div class="dashboard-section" id="familySection">
-        <h3>👨‍👩‍👧 Família <button id="refreshFamily" class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-left:8px">🔄 Atualizar</button></h3>
+        <h3>👨‍👩‍👧 Minha lista
+          <button id="addFollow" class="btn-primary" style="font-size:11px;padding:4px 10px;margin-left:8px">+ Adicionar</button>
+          <button id="refreshFamily" class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-left:4px">🔄</button>
+        </h3>
         <div class="family-list" id="familyList">
-          <div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px">Carregando família...</div>
+          <div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px">Carregando...</div>
         </div>
       </div>
     `;
@@ -1418,6 +1425,7 @@
       r.addEventListener('click', () => openCountryModal(r.dataset.code));
     });
     $('#refreshFamily').addEventListener('click', loadAndRenderFamily);
+    $('#addFollow').addEventListener('click', openAddFollowDialog);
     loadAndRenderFamily();
   }
 
@@ -1427,26 +1435,74 @@
     if (!supabaseClient) {
       listEl.innerHTML = `
         <div style="padding:16px;background:#fff3cd;border:1px solid #ffe07a;border-radius:10px;color:#856404;font-size:13px;text-align:center">
-          📴 Sem conexão com a nuvem. Verifique sua internet.
+          📴 Sem conexão com a nuvem.
         </div>
       `;
       return;
     }
-    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px">Carregando família...</div>';
-    const profiles = await loadFamilyProfiles();
-    if (!profiles || profiles.length === 0) {
-      listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--c-muted);font-size:13px">Nenhum perfil encontrado. Família, criem perfis no mesmo link!</div>';
-      return;
+    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px">Carregando...</div>';
+    const allProfiles = await loadFamilyProfiles();
+    const follows = state.follows || [];
+    const visibleProfiles = allProfiles.filter(p => p.name === profileName || follows.includes(p.name));
+
+    if (visibleProfiles.length <= 1) {
+      // Só o "eu" → renderiza + msg
+      listEl.innerHTML = visibleProfiles.map(buildFamilyRow).join('') +
+        '<div style="padding:20px;text-align:center;color:var(--c-muted);font-size:12px;grid-column:1/-1">Sua lista está vazia. Clique em <strong>+ Adicionar</strong> pra acompanhar família e amigos.</div>';
+    } else {
+      listEl.innerHTML = visibleProfiles.map(buildFamilyRow).join('');
     }
-    listEl.innerHTML = profiles.map(buildFamilyRow).join('');
+
     listEl.querySelectorAll('.family-card').forEach(r => {
       if (r.classList.contains('me')) return;
-      r.addEventListener('click', async () => {
+      r.addEventListener('click', async (e) => {
+        if (e.target.closest('.family-remove')) return;
         const familyName = r.dataset.name;
         const code = await generateFamilyViewCode(familyName);
         if (code) window.location.href = `app.html?view=${code}`;
       });
     });
+    listEl.querySelectorAll('.family-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const name = btn.dataset.name;
+        if (!confirm('Remover ' + name + ' da sua lista?')) return;
+        state.follows = (state.follows || []).filter(f => f !== name);
+        saveData();
+        loadAndRenderFamily();
+      });
+    });
+  }
+
+  async function openAddFollowDialog() {
+    if (!supabaseClient) {
+      alert('Sem conexão com a nuvem.');
+      return;
+    }
+    const name = prompt('Digite o nome exato da pessoa que você quer acompanhar (igual ao nome de perfil dela):');
+    if (!name) return;
+    const trimmed = name.trim();
+    if (trimmed === profileName) {
+      alert('Você não precisa adicionar a si mesmo — já aparece sempre.');
+      return;
+    }
+    if ((state.follows || []).includes(trimmed)) {
+      alert('Essa pessoa já está na sua lista.');
+      return;
+    }
+    // Verifica se o perfil existe
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('name')
+      .eq('name', trimmed)
+      .maybeSingle();
+    if (error || !data) {
+      alert(`Perfil "${trimmed}" não encontrado. Confira se o nome está exato (com maiúsculas/acentos).`);
+      return;
+    }
+    state.follows = [...(state.follows || []), trimmed];
+    saveData();
+    loadAndRenderFamily();
   }
 
   async function generateFamilyViewCode(familyName) {
