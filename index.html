@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=22">
+  <link rel="stylesheet" href="style.css?v=23">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -135,9 +135,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=22"></script>
-  <script src="data/countries.js?v=22"></script>
-  <script src="data/stickers.js?v=22"></script>
+  <script src="data/supabase-config.js?v=23"></script>
+  <script src="data/countries.js?v=23"></script>
+  <script src="data/stickers.js?v=23"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -342,9 +342,8 @@
         || window.navigator.standalone === true;
       if (isStandalone) return;
 
-      // Usuário dispensou? Não mostra de novo por 7 dias
-      const dismissedAt = parseInt(localStorage.getItem('caua_installDismissed') || '0', 10);
-      if (dismissedAt && (Date.now() - dismissedAt) < 7 * 24 * 60 * 60 * 1000) return;
+      // Já viu o banner uma vez? Nunca mais mostra (só no primeiro login)
+      if (localStorage.getItem('caua_installSeen')) return;
 
       const ua = navigator.userAgent;
       const isIOS = /iPhone|iPad|iPod/i.test(ua);
@@ -356,8 +355,9 @@
       const isFirefox = /Firefox\//i.test(ua) && !isFirefoxIOS;
       let deferredPrompt = null;
 
-      // Mostra o banner pra qualquer navegador (a não ser que já esteja instalado/dispensado)
+      // Mostra o banner UMA ÚNICA VEZ - marca como visto imediatamente
       banner.hidden = false;
+      localStorage.setItem('caua_installSeen', String(Date.now()));
 
       // Chromium-based (Chrome, Edge, Brave, Samsung) - captura evento nativo
       window.addEventListener('beforeinstallprompt', (e) => {
@@ -453,7 +453,6 @@
 
       dismissBtn.addEventListener('click', () => {
         banner.hidden = true;
-        localStorage.setItem('caua_installDismissed', String(Date.now()));
       });
 
       window.addEventListener('appinstalled', () => {
