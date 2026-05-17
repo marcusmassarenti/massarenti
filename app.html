@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&family=Press+Start+2P&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=27">
+  <link rel="stylesheet" href="style.css?v=28">
 </head>
 <body class="app-body">
   <header class="app-header">
@@ -26,6 +26,7 @@
       </div>
     </div>
     <div class="header-right">
+      <button class="icon-btn" id="faqBtn" title="Como usar / FAQ">❓</button>
       <button class="icon-btn" id="settingsBtn" title="Configurações">⚙️</button>
       <button class="icon-btn" id="logoutBtn" title="Sair">🚪</button>
     </div>
@@ -132,6 +133,116 @@
     </button>
   </nav>
 
+  <!-- Modal FAQ / Como usar -->
+  <div id="faqModal" class="modal" hidden>
+    <div class="modal-content">
+      <button class="modal-close" id="closeFaqModal">✕</button>
+      <h2>❓ Como usar o álbum</h2>
+
+      <div class="faq-section">
+        <h3>🚀 Começando</h3>
+        <details open>
+          <summary><strong>1. Como crio meu perfil?</strong></summary>
+          <p>Na tela inicial, escolhe um <strong>nome</strong> (qualquer um, tipo "Cauã" ou "JoãoPro123") e um <strong>PIN de 4 dígitos</strong>. Clica no botão verde. Pronto! Sua conta foi criada na nuvem e seu progresso fica salvo automaticamente.</p>
+        </details>
+        <details>
+          <summary><strong>2. Esqueci meu PIN, e agora?</strong></summary>
+          <p>O PIN só fica salvo na nuvem. Se esqueceu, não tem como recuperar — só criando outro perfil com nome diferente. Por isso anota num lugar seguro!</p>
+        </details>
+        <details>
+          <summary><strong>3. Como instalo no celular?</strong></summary>
+          <p>Aparece um banner "Instala como app!" na primeira visita. Toca em <strong>Instalar</strong> e segue as instruções:</p>
+          <ul>
+            <li><strong>iPhone (Safari)</strong>: Compartilhar 📤 → Adicionar à Tela de Início</li>
+            <li><strong>Android (Chrome)</strong>: aceita o popup "Instalar app"</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="faq-section">
+        <h3>📖 Colando figurinhas</h3>
+        <details>
+          <summary><strong>Como marco uma figurinha que tenho?</strong></summary>
+          <p>Vai em <strong>Coleção</strong>, clica no card do país, e toca na figurinha. Ela fica branca com borda preta (colada) e aparece um confete 🎉.</p>
+        </details>
+        <details>
+          <summary><strong>Tenho uma repetida — como conto?</strong></summary>
+          <p>É só tocar de novo! Cada toque adiciona <strong>+1 repetida</strong>. Aparece um número vermelho no canto da figurinha mostrando quantas extras você tem.</p>
+        </details>
+        <details>
+          <summary><strong>Troquei uma repetida com amigo. Como tiro?</strong></summary>
+          <p>Toca no botão <strong>− vermelho</strong> no canto superior direito da figurinha. Tira 1 repetida (a colada continua).</p>
+        </details>
+        <details>
+          <summary><strong>Marquei sem querer, como apago?</strong></summary>
+          <p>Toca no botão <strong>✗ cinza</strong> no canto superior esquerdo. Apaga tudo (volta a estar faltando).</p>
+        </details>
+      </div>
+
+      <div class="faq-section">
+        <h3>👨‍👩‍👧 Família e amigos (grupos)</h3>
+        <details>
+          <summary><strong>Como crio um grupo?</strong></summary>
+          <p>No <strong>Painel</strong>, clica em <strong>+ Grupo</strong>. Escolhe a opção "Criar grupo novo", dá um nome (ex: "Família Massarenti") e clica em Criar. Você vira o 👑 admin do grupo.</p>
+        </details>
+        <details>
+          <summary><strong>Como entro num grupo de amigos?</strong></summary>
+          <p>No Painel → <strong>+ Grupo</strong> → veja a lista de grupos existentes → clica em <strong>📨 Pedir entrada</strong>. O admin do grupo vai receber sua solicitação.</p>
+        </details>
+        <details>
+          <summary><strong>Como aceito pedidos no meu grupo?</strong></summary>
+          <p>Se você é admin do grupo selecionado, aparece uma caixa amarela mostrando "📨 X pedidos pendentes" com botões ✓ Aceitar / ✗ Recusar pra cada um.</p>
+        </details>
+        <details>
+          <summary><strong>Família NÃO pode ver meus amigos, certo?</strong></summary>
+          <p>Certo! Cada grupo é isolado. Quem está no grupo "Família" não vê quem está no grupo "Amigos". E você só vê os grupos em que estiver.</p>
+        </details>
+        <details>
+          <summary><strong>Como vejo o álbum de outra pessoa?</strong></summary>
+          <p>No Painel, dentro do grupo, toca no card de qualquer membro. Abre o álbum dele em modo só-leitura (você só vê, não muda nada).</p>
+        </details>
+      </div>
+
+      <div class="faq-section">
+        <h3>⚽ Jogos e Chave</h3>
+        <details>
+          <summary><strong>Como coloco o placar de um jogo?</strong></summary>
+          <p>Vai em <strong>Jogos</strong>, encontra a partida e digita os gols nos dois campinhos amarelos. Salva automaticamente.</p>
+        </details>
+        <details>
+          <summary><strong>E se empatar num jogo do mata-mata?</strong></summary>
+          <p>Aparecem dois botões "Quem ganhou nos pênaltis?" — escolhe o time que avançou.</p>
+        </details>
+        <details>
+          <summary><strong>A chave se atualiza sozinha?</strong></summary>
+          <p>Sim! Conforme você coloca placares na fase de grupos, a classificação se monta. E quando você coloca os placares do mata-mata, os jogos seguintes (oitavas, quartas, etc) já mostram quem avançou.</p>
+        </details>
+      </div>
+
+      <div class="faq-section">
+        <h3>🏆 Competição</h3>
+        <details>
+          <summary><strong>Tem ranking dentro do grupo?</strong></summary>
+          <p>Sim! No Painel, dentro do grupo, os membros aparecem ordenados do que tem mais figurinhas. Top 3 ganham 🥇 🥈 🥉. Empate desempata por número de repetidas.</p>
+        </details>
+      </div>
+
+      <div class="faq-section">
+        <h3>🛠️ Problemas</h3>
+        <details>
+          <summary><strong>App travou ou não atualiza</strong></summary>
+          <p>Na tela de login, lá no rodapé, tem um botão <strong>"🔄 Tela travada?"</strong> — clica nele que apaga o cache e recarrega limpo.</p>
+        </details>
+        <details>
+          <summary><strong>Perdi meu álbum / mudei de celular</strong></summary>
+          <p>Não perde! Os dados ficam salvos na nuvem (Supabase). Só fazer login com o mesmo nome+PIN no novo celular que tudo volta.</p>
+        </details>
+      </div>
+
+      <p class="faq-footer">⚽ Boa Copa, colecionador! 🏆</p>
+    </div>
+  </div>
+
   <!-- Modal de grupos -->
   <div id="groupsModal" class="modal" hidden>
     <div class="modal-content">
@@ -224,13 +335,15 @@
   <!-- Confete container -->
   <div id="confetti"></div>
 
+  <footer class="app-footer in-app">⚽ Desenvolvido por <strong>Cauã Massarenti</strong> · 2026 🏆</footer>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=27"></script>
-  <script src="data/countries.js?v=27"></script>
-  <script src="data/stickers.js?v=27"></script>
-  <script src="data/schedule.js?v=27"></script>
-  <script src="data/world-map.js?v=27"></script>
-  <script src="app.js?v=27"></script>
+  <script src="data/supabase-config.js?v=28"></script>
+  <script src="data/countries.js?v=28"></script>
+  <script src="data/stickers.js?v=28"></script>
+  <script src="data/schedule.js?v=28"></script>
+  <script src="data/world-map.js?v=28"></script>
+  <script src="app.js?v=28"></script>
   <script>
     // Service Worker - auto-atualiza quando tem versão nova
     if ('serviceWorker' in navigator) {

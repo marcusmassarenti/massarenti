@@ -2357,6 +2357,97 @@ main { padding: 12px 12px 100px; }
 .view-mode .logout-btn,
 .view-mode .settings-btn { display: none; }
 
+/* === FOOTER === */
+.app-footer {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255,255,255,.8);
+  padding: 16px 12px;
+  margin-top: 12px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+.app-footer strong {
+  background: linear-gradient(90deg, var(--p-red), var(--p-orange), var(--p-yellow), var(--p-green), var(--p-blue), var(--p-purple));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900;
+  font-size: 12px;
+}
+.app-footer.in-app {
+  color: var(--c-muted);
+  border-top: 1px solid var(--c-border);
+  padding: 16px 12px 90px;
+  margin: 30px 12px 0;
+  background: transparent;
+}
+
+/* === FAQ === */
+.faq-section { margin-bottom: 18px; }
+.faq-section > h3 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 15px;
+  margin-bottom: 8px;
+  color: var(--c-ink);
+  border-bottom: 2px solid var(--c-gold);
+  padding-bottom: 4px;
+}
+.faq-section details {
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  transition: background .15s;
+}
+.faq-section details[open] { background: var(--c-bg-soft); border-color: var(--c-gold); }
+.faq-section summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  list-style: none;
+  position: relative;
+  padding-right: 24px;
+  user-select: none;
+}
+.faq-section summary::-webkit-details-marker { display: none; }
+.faq-section summary::after {
+  content: '▾';
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 14px;
+  color: var(--c-muted);
+  transition: transform .2s;
+}
+.faq-section details[open] summary::after { transform: rotate(180deg); color: var(--c-ink); }
+.faq-section details p {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--c-ink-soft);
+}
+.faq-section details ul {
+  margin: 6px 0 0 18px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--c-ink-soft);
+}
+.faq-section details strong { color: var(--c-red); font-weight: 800; }
+.faq-footer {
+  text-align: center;
+  margin-top: 20px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  background: linear-gradient(90deg, var(--p-red), var(--p-yellow), var(--p-green), var(--p-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* === CONFETE === */
 #confetti {
   position: fixed;

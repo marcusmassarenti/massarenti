@@ -2177,6 +2177,11 @@
     $('#settingsProfileName').textContent = profileName;
     $('#settingsModal').hidden = false;
   });
+  if ($('#faqBtn')) {
+    $('#faqBtn').addEventListener('click', () => {
+      $('#faqModal').hidden = false;
+    });
+  }
   $('#logoutBtn').addEventListener('click', () => {
     if (confirm('Sair do perfil de ' + profileName + '?')) {
       localStorage.removeItem('caua_currentProfile');
