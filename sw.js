@@ -1,5 +1,5 @@
 // Service Worker: SEMPRE rede primeiro, cache só como fallback offline
-const CACHE_NAME = 'caua-album-v29';
+const CACHE_NAME = 'caua-album-v30';
 
 self.addEventListener('install', () => {
   self.skipWaiting(); // Ativa imediatamente

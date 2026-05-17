@@ -2244,45 +2244,6 @@
     });
   }
 
-  // Export
-  $('#exportBtn').addEventListener('click', () => {
-    const data = {
-      profile: profileName,
-      exportedAt: new Date().toISOString(),
-      version: 1,
-      counts: state.counts
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `album-caua-${profileName}-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
-
-  // Import
-  $('#importBtn').addEventListener('click', () => $('#importFile').click());
-  $('#importFile').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const data = JSON.parse(reader.result);
-        if (!data.counts) throw new Error('formato inválido');
-        if (!confirm('Importar coleção? Isso substituirá suas figurinhas atuais.')) return;
-        state.counts = data.counts;
-        saveData();
-        renderCollection();
-        alert('Coleção importada com sucesso!');
-      } catch (err) {
-        alert('Arquivo inválido: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  });
-
   // Reset (zera figurinhas E placares)
   $('#resetBtn').addEventListener('click', () => {
     if (confirm('Tem certeza que quer ZERAR tudo de ' + profileName + '?\n\nIsso apaga:\n• Todas as figurinhas coladas\n• Todos os placares dos jogos\n\nA conta continua. Não dá pra desfazer!')) {
