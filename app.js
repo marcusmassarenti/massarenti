@@ -737,6 +737,81 @@
     saveData();
     renderCollection();
     if (!$('#countryModal').hidden) renderCountryModalContent();
+    // Verifica se completou o álbum agora
+    if (current === 0 && totalOwned() === window.STICKERS_TOTAL) {
+      celebrateCompletion();
+    }
+  }
+
+  function celebrateCompletion() {
+    const seenKey = `caua_celebrated_${profileName}`;
+    if (localStorage.getItem(seenKey)) return; // já comemorou antes (não acumula)
+    localStorage.setItem(seenKey, '1');
+
+    // Vibração épica (3 pulsos longos)
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+
+    // Confete pra todo lado por 8 segundos
+    const colors = ['#FFD700', '#d4444a', '#4a8ec6', '#54a96d', '#f06a25', '#5d4a9c', '#e8a4b8', '#fff'];
+    const confettiBox = $('#confetti');
+    let confettiInterval = setInterval(() => {
+      for (let i = 0; i < 6; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-piece';
+        p.style.left = (Math.random() * window.innerWidth) + 'px';
+        p.style.top = '-10px';
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.setProperty('--dx', (Math.random() * 200 - 100) + 'px');
+        p.style.setProperty('--dy', (window.innerHeight + 100) + 'px');
+        p.style.borderRadius = Math.random() > .5 ? '50%' : '2px';
+        p.style.animationDuration = '3s';
+        confettiBox.appendChild(p);
+        setTimeout(() => p.remove(), 3500);
+      }
+    }, 200);
+    setTimeout(() => clearInterval(confettiInterval), 8000);
+
+    // Estrelas brotando no centro
+    for (let i = 0; i < 15; i++) {
+      setTimeout(() => {
+        const star = document.createElement('div');
+        star.className = 'star-burst';
+        star.style.left = (40 + Math.random() * 20) + '%';
+        star.style.top = (30 + Math.random() * 40) + '%';
+        star.style.fontSize = (30 + Math.random() * 30) + 'px';
+        star.textContent = ['🌟', '⭐', '✨', '🎉', '🎊'][Math.floor(Math.random() * 5)];
+        confettiBox.appendChild(star);
+        setTimeout(() => star.remove(), 1500);
+      }, i * 200);
+    }
+
+    // Stats
+    const statsEl = $('#completionStats');
+    if (statsEl) {
+      let dup = 0;
+      Object.values(state.counts).forEach(v => { dup += Math.max(0, v - 1); });
+      statsEl.innerHTML = `
+        <div class="cc-stat-line">📖 <strong>${window.STICKERS_TOTAL}</strong> figurinhas coladas</div>
+        <div class="cc-stat-line">🔁 <strong>${dup}</strong> repetidas que você ajudou a trocar</div>
+        <div class="cc-stat-line">⚽ Você é um <strong>colecionador campeão!</strong></div>
+      `;
+    }
+
+    // Botão compartilhar conquista no WhatsApp
+    if ($('#shareCompletionBtn')) {
+      $('#shareCompletionBtn').onclick = () => {
+        const txt = `🏆 *COMPLETEI O ÁLBUM DA COPA 2026!* 🏆\n\nAs ${window.STICKERS_TOTAL} figurinhas estão TODAS coladas! 🎉⚽\n\nUsei o app do Cauã pra acompanhar:\n🔗 https://copa.massarenti.me`;
+        const url = `https://wa.me/?text=${encodeURIComponent(txt)}`;
+        window.open(url, '_blank');
+      };
+    }
+    // Botões fechar
+    const close = () => { $('#completionModal').hidden = true; };
+    if ($('#closeCompletion')) $('#closeCompletion').onclick = close;
+    if ($('#completionOk')) $('#completionOk').onclick = close;
+
+    // Abre modal
+    $('#completionModal').hidden = false;
   }
 
   function animateStickerGet(el, evt, shiny, isDuplicate) {

@@ -1,7 +1,16 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 58;
+window.APP_VERSION = 59;
 window.CHANGELOG = [
+  {
+    version: 59,
+    date: '17/mai',
+    title: '🏆 Comemoração de conquista',
+    items: [
+      '🎉 Quando completar o álbum 100%, comemoração épica com confete, troféu e mensagem de parabéns',
+      '📢 Botão pra compartilhar a conquista no WhatsApp'
+    ]
+  },
   {
     version: 58,
     date: '17/mai',
