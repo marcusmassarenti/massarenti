@@ -2254,11 +2254,56 @@ main { padding: 12px 12px 8px; }
 }
 .group-badge.member { background: var(--c-success); color: #fff; }
 
-/* === FAMÍLIA (grid de cards compactos) === */
+/* === FAMÍLIA (top 3 em 1 linha + lista compacta) === */
 .family-list {
+  display: block;
+}
+.podium-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.podium-row .family-card {
+  padding: 8px 6px;
+  gap: 4px;
+}
+.podium-row .family-medal {
+  font-size: 22px;
+  top: -8px;
+  left: -6px;
+}
+.podium-row .family-card-top {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+.podium-row .family-avatar {
+  width: 36px; height: 36px;
+  font-size: 14px;
+}
+.podium-row .family-name-block {
+  text-align: center;
+  align-items: center;
+  width: 100%;
+}
+.podium-row .family-name {
+  font-size: 12px;
+  text-align: center;
+  width: 100%;
+}
+.podium-row .family-pct {
+  font-size: 16px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  color: var(--c-ink);
+}
+.podium-row .family-meta {
+  font-size: 10px;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
 }
 .family-card {
   background: #fff;

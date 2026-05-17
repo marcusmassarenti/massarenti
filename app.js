@@ -2010,7 +2010,7 @@
     const meCard = meInRest && !podium.find(p => p.name === profileName)
       ? `<div class="my-pos-card" data-name="${profileName}">${buildCompactRow(meInRest)}</div>`
       : '';
-    const podiumHtml = podium.map(buildFamilyRow).join('');
+    const podiumHtml = `<div class="podium-row">${podium.map(buildFamilyRow).join('')}</div>`;
     const restHtml = rest.length > 0 ? `
       <details class="family-rest" ${rest.length <= 3 ? 'open' : ''}>
         <summary>Ver os outros ${rest.length} ${rest.length === 1 ? 'membro' : 'membros'} ▾</summary>
