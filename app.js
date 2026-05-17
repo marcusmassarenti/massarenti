@@ -790,7 +790,7 @@
     UZB: 'uz', JOR: 'jo', IRQ: 'iq', NZL: 'nz'
   };
 
-  let showMapFlags = true;
+  let showMapFlags = false; // No mapa mundi, padrão é SEM bandeiras coladas (só o mapa)
   function renderWorldMap(container) {
     const map = container || $('#worldMap');
     if (!window.WORLD_MAP_SVG) {
@@ -2024,10 +2024,10 @@
     setTimeout(() => renderWorldMap($('#worldMapFullscreen')), 30);
   });
 
-  // Toggle bandeiras
+  // Toggle bandeiras no mapa
   $('#toggleMapFlags').addEventListener('click', (e) => {
     showMapFlags = !showMapFlags;
-    e.currentTarget.textContent = '🚩 Bandeiras: ' + (showMapFlags ? 'ON' : 'OFF');
+    e.currentTarget.textContent = showMapFlags ? '🚩 Esconder bandeiras' : '🚩 Mostrar bandeiras';
     document.querySelectorAll('.world-map svg .wm-flag').forEach(f => {
       f.style.display = showMapFlags ? '' : 'none';
     });
