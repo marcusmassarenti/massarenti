@@ -326,8 +326,9 @@
     el.title = `${s.name} — toque pra colar · de novo vira repetida · botão ✗ desmarca · botão − tira uma repetida`;
     const minusBtn = el.querySelector('.dup-minus');
     if (minusBtn) {
-      minusBtn.addEventListener('click', (e) => {
+      const handleMinus = (e) => {
         e.stopPropagation();
+        e.preventDefault();
         const cur = ownedCount(s.number);
         if (cur > 1) {
           state.counts[s.number] = cur - 1;
@@ -336,22 +337,28 @@
           if (!$('#countryModal').hidden) renderCountryModalContent();
           if (navigator.vibrate) navigator.vibrate(20);
         }
+      };
+      minusBtn.addEventListener('click', handleMinus);
+      // Bloqueia bubbling em todos os eventos relacionados (pra não disparar o sticker)
+      ['mousedown','touchstart','touchend','pointerdown'].forEach(evt => {
+        minusBtn.addEventListener(evt, (e) => e.stopPropagation(), { passive: false });
       });
-      minusBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-      minusBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
     }
     const removeBtn = el.querySelector('.sticker-remove');
     if (removeBtn) {
-      removeBtn.addEventListener('click', (e) => {
+      const handleRemove = (e) => {
         e.stopPropagation();
+        e.preventDefault();
         delete state.counts[s.number];
         saveData();
         renderCollection();
         if (!$('#countryModal').hidden) renderCountryModalContent();
         if (navigator.vibrate) navigator.vibrate([30, 30, 30]);
+      };
+      removeBtn.addEventListener('click', handleRemove);
+      ['mousedown','touchstart','touchend','pointerdown'].forEach(evt => {
+        removeBtn.addEventListener(evt, (e) => e.stopPropagation(), { passive: false });
       });
-      removeBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-      removeBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
     }
 
     if (viewMode) return el; // view mode: sem interação
