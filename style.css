@@ -40,62 +40,59 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
-  font-family: var(--font-body);
+  font-family: 'Nunito', sans-serif;
   color: var(--c-ink);
   background: var(--c-bg);
   -webkit-tap-highlight-color: transparent;
 }
-body { font-family: var(--font-body); }
 
-/* === AJUSTES POR FONTE === */
-/* Pixel (Press Start 2P) - cada caractere é largo, precisa diminuir */
-body[data-font="pixel"] { font-size: 12px; line-height: 1.5; }
-body[data-font="pixel"] .header-name { font-size: 13px; letter-spacing: 0; }
-body[data-font="pixel"] .header-progress { font-size: 9px; }
-body[data-font="pixel"] .countdown-label { font-size: 9px; letter-spacing: 1px; }
-body[data-font="pixel"] .countdown-days { font-size: 38px; letter-spacing: 0; }
-body[data-font="pixel"] .countdown-sub { font-size: 11px; }
-body[data-font="pixel"] .countdown-date { font-size: 9px; padding: 4px 8px; }
+/* Fonte personalizada SÓ em destaques (números, títulos brandey).
+   Body, menus, botões, textos ficam SEMPRE em Nunito pra legibilidade. */
+.header-name,
+.countdown-days,
+.countdown-label,
+.stat-value,
+.ap-stat-value,
+.cover-name-big,
+.cover-26,
+.fcr-pct,
+.family-pct,
+.brazil-day,
+.qs-input,
+.sticker-num,
+.bk-score,
+h1, h2, h3,
+.section-title,
+.brazil-block h3,
+.today-block h3,
+.modal-content h2 {
+  font-family: var(--font-body, 'Nunito', sans-serif) !important;
+}
+
+/* Ajustes específicos quando a fonte é Pixel (precisa MAIS espaço) */
+body[data-font="pixel"] .countdown-days { font-size: 34px; letter-spacing: 0; }
 body[data-font="pixel"] .stat-value { font-size: 18px; }
 body[data-font="pixel"] .stat-card.big .stat-value { font-size: 26px; }
-body[data-font="pixel"] .stat-label { font-size: 8px; }
-body[data-font="pixel"] h2 { font-size: 16px; }
-body[data-font="pixel"] h3 { font-size: 13px; }
-body[data-font="pixel"] .modal-content h2 { font-size: 16px; }
-body[data-font="pixel"] .login-card h1 { font-size: 16px; }
-body[data-font="pixel"] .btn-primary { font-size: 12px; padding: 12px; letter-spacing: 0; }
-body[data-font="pixel"] .btn-secondary { font-size: 11px; }
-body[data-font="pixel"] .chip { font-size: 11px; padding: 8px 12px; }
-body[data-font="pixel"] .tab-icon { font-size: 18px; }
-body[data-font="pixel"] .tab-label { font-size: 8px; letter-spacing: 0; }
-body[data-font="pixel"] .section-title { font-size: 13px; }
-body[data-font="pixel"] .section-meta { font-size: 9px; }
-body[data-font="pixel"] .sticker-num { font-size: 16px; }
-body[data-font="pixel"] .sticker-code { font-size: 9px; }
-body[data-font="pixel"] .family-name { font-size: 11px; }
-body[data-font="pixel"] .family-pct { font-size: 12px; }
-body[data-font="pixel"] .family-meta { font-size: 9px; }
-body[data-font="pixel"] .cc-stat-main { font-size: 18px; }
-body[data-font="pixel"] .cc-name { font-size: 11px; }
-body[data-font="pixel"] .match-day { font-size: 18px; }
-body[data-font="pixel"] .match-time { font-size: 11px; }
-body[data-font="pixel"] .match-team-side { font-size: 11px; }
-body[data-font="pixel"] .login-flow-hint, body[data-font="pixel"] .name-status,
-body[data-font="pixel"] .login-hint, body[data-font="pixel"] .profiles-helper { font-size: 10px; line-height: 1.6; }
-body[data-font="pixel"] .podium-banner { font-size: 11px; }
-body[data-font="pixel"] .group-tab { font-size: 10px; }
-body[data-font="pixel"] .brazil-day { font-size: 16px; }
-body[data-font="pixel"] .brazil-teams { font-size: 11px; }
+body[data-font="pixel"] .ap-stat-value { font-size: 16px; }
+body[data-font="pixel"] .header-name { font-size: 13px; letter-spacing: 0; }
+body[data-font="pixel"] .cover-26 { font-size: 32px; letter-spacing: 0; }
+body[data-font="pixel"] .cover-name-big { font-size: 14px; }
+body[data-font="pixel"] h1 { font-size: 14px; }
+body[data-font="pixel"] h2 { font-size: 14px; letter-spacing: 0; }
+body[data-font="pixel"] h3 { font-size: 11px; letter-spacing: 0; }
+body[data-font="pixel"] .section-title { font-size: 11px; letter-spacing: 0; }
+body[data-font="pixel"] .modal-content h2 { font-size: 14px; }
+body[data-font="pixel"] .sticker-num { font-size: 14px; }
+body[data-font="pixel"] .qs-input { font-size: 22px; }
+body[data-font="pixel"] .family-pct { font-size: 11px; }
+body[data-font="pixel"] .fcr-pct { font-size: 11px; }
+body[data-font="pixel"] .brazil-day { font-size: 14px; }
+body[data-font="pixel"] .countdown-label { font-size: 9px; letter-spacing: 1px; }
 
-/* Bebas Neue - alta e fina */
-body[data-font="bebas"] { font-size: 17px; letter-spacing: .5px; }
-body[data-font="bebas"] .header-name { font-size: 20px; letter-spacing: 1px; }
-body[data-font="bebas"] h2, body[data-font="bebas"] h3 { letter-spacing: 1px; }
-
-/* Fredoka - arredondada */
-body[data-font="fredoka"] { font-size: 14.5px; }
-
-/* Nunito é o padrão, sem ajuste */
+/* Bebas Neue - alta e fina, fica natural com mais letter-spacing */
+body[data-font="bebas"] .header-name,
+body[data-font="bebas"] h1, body[data-font="bebas"] h2, body[data-font="bebas"] h3,
+body[data-font="bebas"] .section-title { letter-spacing: 1.5px; }
 body {
   min-height: 100vh;
   min-height: 100dvh;
