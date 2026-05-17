@@ -115,6 +115,8 @@
     </form>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="data/supabase-config.js"></script>
   <script src="data/countries.js"></script>
   <script src="data/stickers.js"></script>
   <script>
@@ -125,18 +127,36 @@
     const profilesSection = document.getElementById('profilesSection');
     const profilesList = document.getElementById('profilesList');
 
-    function getProfiles() {
-      try { return JSON.parse(localStorage.getItem('caua_profiles') || '{}'); }
-      catch(e) { return {}; }
-    }
-    function saveProfiles(p) {
-      localStorage.setItem('caua_profiles', JSON.stringify(p));
+    // Cliente Supabase
+    let supabaseClient = null;
+    try {
+      if (window.SUPABASE_CONFIG && window.supabase) {
+        supabaseClient = window.supabase.createClient(
+          window.SUPABASE_CONFIG.url,
+          window.SUPABASE_CONFIG.anonKey
+        );
+      }
+    } catch (e) { console.warn('Supabase indisponível, modo local', e); }
+
+    async function loadProfilesFromCloud() {
+      if (!supabaseClient) return null;
+      try {
+        const { data, error } = await supabaseClient.from('profiles').select('name');
+        if (error) throw error;
+        return (data || []).map(d => d.name);
+      } catch (e) {
+        console.warn('Erro ao listar perfis:', e);
+        return null;
+      }
     }
 
-    function renderProfiles() {
-      const profiles = getProfiles();
-      const names = Object.keys(profiles);
-      if (names.length === 0) { profilesSection.hidden = true; return; }
+    async function renderProfiles() {
+      profilesList.innerHTML = '<div style="font-size:11px;opacity:.6">Carregando...</div>';
+      const names = await loadProfilesFromCloud();
+      if (!names || names.length === 0) {
+        profilesSection.hidden = true;
+        return;
+      }
       profilesSection.hidden = false;
       profilesList.innerHTML = '';
       names.forEach(n => {
@@ -153,7 +173,7 @@
     }
     renderProfiles();
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorBox.hidden = true;
       const name = nameInput.value.trim();
@@ -163,19 +183,67 @@
         errorBox.hidden = false;
         return;
       }
-      const profiles = getProfiles();
-      if (profiles[name]) {
-        if (profiles[name].pin !== pin) {
-          errorBox.textContent = 'PIN incorreto para este perfil.';
-          errorBox.hidden = false;
-          return;
+
+      const submitBtn = form.querySelector('button[type=submit]');
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = 'Conectando...';
+      submitBtn.disabled = true;
+
+      try {
+        if (supabaseClient) {
+          // Modo nuvem (família)
+          const { data: existing, error: fetchErr } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('name', name)
+            .maybeSingle();
+
+          if (fetchErr) throw fetchErr;
+
+          if (!existing) {
+            // Novo perfil - cria
+            const { error: insertErr } = await supabaseClient
+              .from('profiles')
+              .insert({ name, pin, counts: {}, scores: {} });
+            if (insertErr) throw insertErr;
+          } else {
+            if (existing.pin !== pin) {
+              errorBox.textContent = 'PIN incorreto para este perfil.';
+              errorBox.hidden = false;
+              submitBtn.textContent = originalText;
+              submitBtn.disabled = false;
+              return;
+            }
+          }
+          localStorage.setItem('caua_currentProfile', name);
+          localStorage.setItem('caua_currentPin', pin);
+          window.location.href = 'app.html';
+        } else {
+          // Modo local (offline / Supabase indisponível)
+          const profiles = JSON.parse(localStorage.getItem('caua_profiles') || '{}');
+          if (profiles[name]) {
+            if (profiles[name].pin !== pin) {
+              errorBox.textContent = 'PIN incorreto.';
+              errorBox.hidden = false;
+              submitBtn.textContent = originalText;
+              submitBtn.disabled = false;
+              return;
+            }
+          } else {
+            profiles[name] = { pin };
+            localStorage.setItem('caua_profiles', JSON.stringify(profiles));
+          }
+          localStorage.setItem('caua_currentProfile', name);
+          localStorage.setItem('caua_currentPin', pin);
+          window.location.href = 'app.html';
         }
-      } else {
-        profiles[name] = { pin, created: Date.now() };
-        saveProfiles(profiles);
+      } catch (err) {
+        console.error(err);
+        errorBox.textContent = 'Erro: ' + (err.message || 'tente novamente');
+        errorBox.hidden = false;
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
       }
-      localStorage.setItem('caua_currentProfile', name);
-      window.location.href = 'app.html';
     });
   </script>
 </body>

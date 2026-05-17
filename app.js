@@ -9,6 +9,18 @@
 
   const storageKey = `caua_data_${profileName}`;
   const themeKey = `caua_theme_${profileName}`;
+  const storedPin = localStorage.getItem('caua_currentPin') || '';
+
+  // Cliente Supabase
+  let supabaseClient = null;
+  try {
+    if (window.SUPABASE_CONFIG && window.supabase) {
+      supabaseClient = window.supabase.createClient(
+        window.SUPABASE_CONFIG.url,
+        window.SUPABASE_CONFIG.anonKey
+      );
+    }
+  } catch (e) { console.warn('Supabase indisponível, modo local', e); }
 
   function loadData() {
     try {
@@ -24,8 +36,62 @@
       return { counts: {}, sectionsCollapsed: {}, scores: {} };
     }
   }
+
+  // Salva local sempre. Se Supabase disponível, sincroniza (com debounce)
+  let _syncTimer = null;
   function saveData() {
     localStorage.setItem(storageKey, JSON.stringify(state));
+    if (supabaseClient && !viewMode) {
+      clearTimeout(_syncTimer);
+      _syncTimer = setTimeout(syncToCloud, 600);
+    }
+  }
+
+  async function syncToCloud() {
+    if (!supabaseClient || viewMode) return;
+    try {
+      const { error } = await supabaseClient
+        .from('profiles')
+        .update({
+          counts: state.counts,
+          scores: state.scores,
+          updated_at: new Date().toISOString()
+        })
+        .eq('name', profileName);
+      if (error) console.warn('Sync error:', error);
+      else console.log('☁️ Sincronizado');
+    } catch (e) { console.warn('Sync failed:', e); }
+  }
+
+  async function loadFromCloud() {
+    if (!supabaseClient) return false;
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('name', profileName)
+        .maybeSingle();
+      if (error) { console.warn(error); return false; }
+      if (data) {
+        state.counts = data.counts || {};
+        state.scores = data.scores || {};
+        localStorage.setItem(storageKey, JSON.stringify(state));
+        return true;
+      }
+    } catch (e) { console.warn(e); }
+    return false;
+  }
+
+  async function loadFamilyProfiles() {
+    if (!supabaseClient) return [];
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('name, counts, scores, updated_at')
+        .order('name');
+      if (error) { console.warn(error); return []; }
+      return data || [];
+    } catch (e) { console.warn(e); return []; }
   }
   function loadTheme() {
     try { return JSON.parse(localStorage.getItem(themeKey) || '{}'); }
@@ -1152,6 +1218,38 @@
   }
 
   // ---------- DASHBOARD ----------
+  async function renderFamilySection() {
+    if (!supabaseClient) return '';
+    const profiles = await loadFamilyProfiles();
+    if (profiles.length === 0) return '';
+    const rows = profiles.map(p => {
+      const counts = p.counts || {};
+      let owned = 0;
+      Object.keys(counts).forEach(k => { if (counts[k] > 0) owned++; });
+      const total = 980;
+      const pct = (owned / total * 100).toFixed(1);
+      const dup = Object.keys(counts).reduce((acc, k) => acc + Math.max(0, counts[k] - 1), 0);
+      const isMe = p.name === profileName;
+      return `
+        <div class="family-row ${isMe ? 'me' : ''}" data-name="${p.name}">
+          <div class="family-avatar">${p.name.charAt(0).toUpperCase()}</div>
+          <div class="family-info">
+            <div class="family-name">${p.name}${isMe ? ' (eu)' : ''}</div>
+            <div class="family-progress-bar"><div style="width:${pct}%"></div></div>
+            <div class="family-meta">${owned}/${total} · ${pct}% · ${dup} repetidas</div>
+          </div>
+          <div class="family-action">${isMe ? '' : '👀'}</div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="dashboard-section">
+        <h3>👨‍👩‍👧 Família (${profiles.length})</h3>
+        <div class="family-list">${rows}</div>
+      </div>
+    `;
+  }
+
   function renderDashboard() {
     const owned = totalOwned();
     const total = window.STICKERS_TOTAL;
@@ -1237,6 +1335,44 @@
     $$('#dashboardContent .country-missing-row').forEach(r => {
       r.addEventListener('click', () => openCountryModal(r.dataset.code));
     });
+    // Carrega família async
+    renderFamilySection().then(familyHtml => {
+      if (familyHtml) {
+        $('#dashboardContent').insertAdjacentHTML('afterbegin', familyHtml);
+        $$('#dashboardContent .family-row').forEach(r => {
+          if (r.classList.contains('me')) return;
+          r.addEventListener('click', async () => {
+            const familyName = r.dataset.name;
+            // Abre álbum desse membro em view mode
+            const code = await generateFamilyViewCode(familyName);
+            if (code) window.location.href = `app.html?view=${code}`;
+          });
+        });
+      }
+    });
+  }
+
+  async function generateFamilyViewCode(familyName) {
+    if (!supabaseClient) return null;
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('name, counts, scores')
+      .eq('name', familyName)
+      .maybeSingle();
+    if (error || !data) return null;
+    const counts = [];
+    for (let i = 1; i <= 980; i++) {
+      counts.push(Math.min(9, (data.counts || {})[i] || 0).toString(16));
+    }
+    const scoresArr = [];
+    Object.keys(data.scores || {}).forEach(id => {
+      const sc = data.scores[id];
+      let s = `${id},${sc.home},${sc.away}`;
+      if (sc.penaltyWinner) s += ',' + (sc.penaltyWinner === 'home' ? 'h' : 'a');
+      scoresArr.push(s);
+    });
+    const payload = { n: data.name, c: counts.join(''), s: scoresArr.join('|') };
+    return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
   }
 
   // ---------- TABS ----------
@@ -1564,4 +1700,32 @@
   // ---------- INIT ----------
   fillCountryFilter();
   renderCollection();
+
+  // Carrega do Supabase na inicialização (se disponível) e re-renderiza
+  if (supabaseClient && !viewMode) {
+    loadFromCloud().then(loaded => {
+      if (loaded) {
+        renderCollection();
+        updateGlobalProgress();
+      }
+    });
+    // Sub real-time
+    supabaseClient
+      .channel('family_updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, payload => {
+        // Se a alteração for do MEU perfil, atualizar
+        if (payload.new && payload.new.name === profileName) {
+          state.counts = payload.new.counts || {};
+          state.scores = payload.new.scores || {};
+          localStorage.setItem(storageKey, JSON.stringify(state));
+          // Re-render se aba ativa
+          const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
+          if (activeTab === 'collection') renderCollection();
+          if (activeTab === 'dashboard') renderDashboard();
+          if (activeTab === 'bracket') renderBracket();
+          if (activeTab === 'schedule') renderSchedule();
+        }
+      })
+      .subscribe();
+  }
 })();
