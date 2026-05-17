@@ -186,9 +186,25 @@
       <div class="flag-mini">${flag}</div>
       <div class="sticker-code">${s.code}</div>
       <div class="sticker-num">${String(s.localNumber).padStart(2,'0')}</div>
-      <div class="sticker-name">${s.description || ''}</div>
+      ${count > 1 ? `<button class="dup-minus" type="button" aria-label="Tirar uma repetida (troquei)">−</button>` : ''}
+      ${count > 1 ? `<span class="dup-badge">+${count-1}</span>` : ''}
     `;
-    el.title = `${s.name} — toque pra marcar (toque de novo vira repetida) · segure pra remover`;
+    el.title = `${s.name} — toque pra colar · toque de novo vira repetida · botão − tira repetida (quando troquei)`;
+    const minusBtn = el.querySelector('.dup-minus');
+    if (minusBtn) {
+      minusBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cur = ownedCount(s.number);
+        if (cur > 1) {
+          state.counts[s.number] = cur - 1;
+          saveData();
+          renderCollection();
+          if (navigator.vibrate) navigator.vibrate(20);
+        }
+      });
+      minusBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+      minusBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+    }
 
     let pressTimer = null;
     let longPressed = false;

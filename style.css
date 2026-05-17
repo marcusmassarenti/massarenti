@@ -602,8 +602,8 @@ main { padding: 12px 12px 100px; }
 /* === SEÇÕES === */
 .section-block {
   background: var(--c-card);
-  border-radius: var(--radius);
-  margin-bottom: 12px;
+  border-radius: 10px;
+  margin-bottom: 8px;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   border: 1px solid var(--c-border);
@@ -611,8 +611,8 @@ main { padding: 12px 12px 100px; }
 .section-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 8px 12px 8px 16px;
   background: #fff;
   color: var(--c-ink);
   cursor: pointer;
@@ -634,19 +634,22 @@ main { padding: 12px 12px 100px; }
 .section-block:nth-child(7n+5) .section-header::before { background: var(--p-blue); }
 .section-block:nth-child(7n+6) .section-header::before { background: var(--p-purple); }
 .section-block:nth-child(7n) .section-header::before { background: var(--p-pink); }
-.section-flag { font-size: 28px; line-height: 1; }
-.section-info { flex: 1; }
+.section-flag { font-size: 22px; line-height: 1; }
+.section-info { flex: 1; min-width: 0; }
 .section-title {
   font-family: 'Nunito', sans-serif;
   font-weight: 900;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.1;
   letter-spacing: -.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .section-meta {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--c-muted);
-  margin-top: 2px;
+  margin-top: 1px;
   font-weight: 700;
 }
 .section-progress-mini {
@@ -682,16 +685,16 @@ main { padding: 12px 12px 100px; }
 
 .stickers-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 8px;
-  padding: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  gap: 6px;
+  padding: 8px;
 }
 .sticker {
   position: relative;
   aspect-ratio: 3/4;
   background: #fafafa;
-  border: 2px dashed #d8d8d8;
-  border-radius: 10px;
+  border: 1.5px dashed #d8d8d8;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -700,8 +703,9 @@ main { padding: 12px 12px 100px; }
   transition: all .15s;
   overflow: hidden;
   user-select: none;
+  padding: 4px 2px;
 }
-.sticker:active { transform: scale(.94); }
+.sticker:active { transform: scale(.92); }
 .sticker.owned {
   background: #fff;
   border: 2px solid var(--c-ink);
@@ -711,59 +715,67 @@ main { padding: 12px 12px 100px; }
 .sticker.owned.shiny {
   background: linear-gradient(135deg, #fff7d6 0%, #ffe27a 50%, #ffd24a 100%);
   border-color: var(--c-gold);
-  box-shadow: 0 2px 12px rgba(227,178,60,.4);
+  box-shadow: 0 2px 10px rgba(227,178,60,.4);
 }
 .sticker.duplicate {
   border-color: var(--c-red);
   background: linear-gradient(135deg, #ffe7e9 0%, #fff 100%);
 }
-.sticker.duplicate::before {
-  content: attr(data-count);
+.dup-badge {
   position: absolute;
-  top: 4px; right: 4px;
+  top: 3px; left: 3px;
   background: var(--c-red);
   color: #fff;
   font-size: 10px;
   font-weight: 900;
-  padding: 2px 6px;
-  border-radius: 10px;
+  padding: 1px 5px;
+  border-radius: 8px;
   border: 1.5px solid #fff;
-  min-width: 22px;
+  min-width: 20px;
   text-align: center;
+  pointer-events: none;
 }
+.dup-minus {
+  position: absolute;
+  top: 2px; right: 2px;
+  width: 22px; height: 22px;
+  background: var(--c-red);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 18px;
+  padding: 0;
+  border: 1.5px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  z-index: 3;
+}
+.dup-minus:active { transform: scale(.85); }
 .sticker-code {
   font-family: 'Nunito', sans-serif;
   font-weight: 900;
-  font-size: 13px;
-  letter-spacing: .5px;
+  font-size: 11px;
+  letter-spacing: .3px;
   line-height: 1;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .sticker-num {
   font-family: 'Nunito', sans-serif;
   font-weight: 900;
-  font-size: 26px;
+  font-size: 20px;
   letter-spacing: -.5px;
   line-height: 1;
   margin-top: 2px;
 }
-.sticker-name {
-  font-size: 9px;
-  line-height: 1.15;
-  padding: 0 4px;
-  text-align: center;
-  margin-top: 4px;
-  font-weight: 700;
-  max-height: 24px;
-  overflow: hidden;
-  color: var(--c-muted);
-}
 .sticker:not(.owned) .sticker-num,
 .sticker:not(.owned) .sticker-code { color: #b0b0b0; }
 .sticker .flag-mini {
-  font-size: 18px;
+  font-size: 14px;
   line-height: 1;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 /* === PAÍSES === */
