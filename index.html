@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=21">
+  <link rel="stylesheet" href="style.css?v=22">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -135,9 +135,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=21"></script>
-  <script src="data/countries.js?v=21"></script>
-  <script src="data/stickers.js?v=21"></script>
+  <script src="data/supabase-config.js?v=22"></script>
+  <script src="data/countries.js?v=22"></script>
+  <script src="data/stickers.js?v=22"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -348,9 +348,12 @@
 
       const ua = navigator.userAgent;
       const isIOS = /iPhone|iPad|iPod/i.test(ua);
-      const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
-      const isEdge = /Edg\//i.test(ua);
-      const isFirefox = /Firefox\//i.test(ua);
+      const isEdgeIOS = /EdgiOS\//i.test(ua);
+      const isChromeIOS = /CriOS\//i.test(ua);
+      const isFirefoxIOS = /FxiOS\//i.test(ua);
+      const isSafari = isIOS && !isEdgeIOS && !isChromeIOS && !isFirefoxIOS;
+      const isEdgeDesktop = /Edg\//i.test(ua) && !isEdgeIOS;
+      const isFirefox = /Firefox\//i.test(ua) && !isFirefoxIOS;
       let deferredPrompt = null;
 
       // Mostra o banner pra qualquer navegador (a não ser que já esteja instalado/dispensado)
@@ -372,7 +375,50 @@
           return;
         }
         // Fallback: instruções específicas por navegador
-        if (isIOS) {
+        if (isEdgeIOS) {
+          if (confirm(
+            '⚠️ No iPhone, só o SAFARI consegue instalar como app (regra da Apple).\n\n' +
+            'Quer copiar o link e abrir no Safari?\n\n' +
+            'OK = copia link → você abre Safari e cola\n' +
+            'Cancelar = ver instruções pra adicionar atalho no Edge (não fica tão bom)'
+          )) {
+            try {
+              await navigator.clipboard.writeText(window.location.href);
+              alert(
+                '✅ Link copiado!\n\n' +
+                'Agora:\n' +
+                '1. Abre o Safari (bússola azul)\n' +
+                '2. Cola na barra de endereço (toca e mantém → Colar)\n' +
+                '3. Aperta Ir\n' +
+                '4. Toca em Compartilhar (📤) → Adicionar à Tela de Início'
+              );
+            } catch (e) {
+              alert('Copia este link e abre no Safari:\n\n' + window.location.href);
+            }
+          } else {
+            alert(
+              '📱 Atalho no Edge iOS (sem instalação real):\n\n' +
+              '1. Toca no botão central do Edge (≡ ou ⋯)\n' +
+              '2. Procura "Compartilhar"\n' +
+              '3. Escolhe "Adicionar à Tela de Início"\n' +
+              '4. Confirma → "Adicionar"\n\n' +
+              'Vai virar um atalho normal (não app standalone).'
+            );
+          }
+        } else if (isChromeIOS || isFirefoxIOS) {
+          if (confirm(
+            '⚠️ No iPhone, só o SAFARI consegue instalar como app.\n\n' +
+            'OK = copio o link pra você abrir no Safari\n' +
+            'Cancelar'
+          )) {
+            try {
+              await navigator.clipboard.writeText(window.location.href);
+              alert('✅ Link copiado! Abre o Safari e cola na barra de endereço.');
+            } catch (e) {
+              alert('Copia: ' + window.location.href);
+            }
+          }
+        } else if (isIOS) {
           alert(
             '📱 Pra instalar no iPhone (Safari):\n\n' +
             '1. Toca no botão de Compartilhar (📤 quadradinho com setinha pra cima — barra de baixo)\n' +
@@ -380,9 +426,9 @@
             '3. Toca em "Adicionar"\n\n' +
             'Pronto! O ícone fica na sua tela inicial 🎉'
           );
-        } else if (isEdge) {
+        } else if (isEdgeDesktop) {
           alert(
-            '💻 Pra instalar no Edge:\n\n' +
+            '💻 Pra instalar no Edge (PC):\n\n' +
             '1. Toca no ⋯ (três pontinhos no topo direito)\n' +
             '2. Vai em "Apps" → "Instalar este site como aplicativo"\n' +
             '3. Confirma o nome → "Instalar"\n\n' +
