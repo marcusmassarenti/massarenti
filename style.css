@@ -76,6 +76,7 @@ input, select { font-family: inherit; font-size: 16px; }
     radial-gradient(circle at 95% 95%, var(--p-purple) 0%, transparent 30%),
     radial-gradient(circle at 50% 50%, var(--p-pink) 0%, transparent 50%),
     linear-gradient(135deg, var(--p-red) 0%, var(--p-orange) 25%, var(--p-yellow) 50%, var(--p-green) 75%, var(--p-blue) 100%);
+  background-attachment: fixed;
   color: var(--c-ink);
   display: flex;
   align-items: center;
@@ -85,11 +86,15 @@ input, select { font-family: inherit; font-size: 16px; }
   overflow-x: hidden;
   min-height: 100vh;
   min-height: 100dvh;
+  -webkit-overflow-scrolling: touch;
 }
 .login-body::before {
   content: '';
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
   background-image:
     radial-gradient(circle at 15% 20%, var(--p-yellow) 5%, transparent 6%),
     radial-gradient(circle at 85% 25%, var(--p-teal) 5%, transparent 6%),
@@ -97,13 +102,10 @@ input, select { font-family: inherit; font-size: 16px; }
     radial-gradient(circle at 75% 85%, var(--p-orange) 5%, transparent 6%),
     radial-gradient(circle at 50% 10%, var(--p-purple) 4%, transparent 5%),
     radial-gradient(circle at 10% 50%, var(--p-rose) 4%, transparent 5%),
-    radial-gradient(circle at 90% 60%, var(--p-green) 4%, transparent 5%),
-    radial-gradient(circle at 50% 50%, var(--p-red) 3%, transparent 4%),
-    radial-gradient(circle at 30% 40%, var(--p-blue) 3%, transparent 4%),
-    radial-gradient(circle at 70% 70%, var(--p-yellow) 3%, transparent 4%);
+    radial-gradient(circle at 90% 60%, var(--p-green) 4%, transparent 5%);
   pointer-events: none;
   z-index: 0;
-  opacity: .75;
+  opacity: .65;
 }
 .login-container {
   width: 100%;
@@ -746,7 +748,7 @@ input, select { font-family: inherit; font-size: 16px; }
     radial-gradient(circle at 0% 100%, rgba(232, 164, 184, .2) 0%, transparent 30%),
     radial-gradient(circle at 100% 100%, rgba(84, 169, 109, .2) 0%, transparent 30%),
     #fbf9f5;
-  padding-bottom: 80px;
+  padding-bottom: 70px;
 }
 .app-header {
   background: #fff;
@@ -824,7 +826,7 @@ input, select { font-family: inherit; font-size: 16px; }
   transition: width .4s ease;
 }
 
-main { padding: 12px 12px 100px; }
+main { padding: 12px 12px 8px; }
 .tab-pane { animation: fadeIn .2s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
@@ -2365,8 +2367,8 @@ main { padding: 12px 12px 100px; }
 .app-footer.in-app {
   color: var(--c-muted);
   border-top: 1px solid var(--c-border);
-  padding: 16px 12px 90px;
-  margin: 30px 12px 0;
+  padding: 14px 12px 12px;
+  margin: 8px 12px 0;
   background: transparent;
 }
 
