@@ -478,6 +478,7 @@
   // Agrupa stickers por seção
   const SECTION_ORDER = ['intro'];
   window.COUNTRIES.forEach(c => SECTION_ORDER.push(c.code));
+  SECTION_ORDER.push('cocacola');
 
   const sectionsMap = {};
   window.STICKERS.forEach(s => {
@@ -493,6 +494,7 @@
     const c = countryByCode[sec];
     if (c) return c.flag;
     if (sec === 'intro') return '🏆';
+    if (sec === 'cocacola') return '🥤';
     return '⚽';
   }
 
@@ -636,6 +638,8 @@
     const el = document.createElement('div');
     const count = ownedCount(s.number);
     el.className = 'sticker';
+    el.dataset.sec = s.section;
+    if (s.section === 'cocacola') el.classList.add('cocacola');
     if (count > 0) el.classList.add('owned');
     if (s.shiny) el.classList.add('shiny');
     if (count > 1) {
@@ -2454,7 +2458,7 @@
     try {
       const { data: profiles, error } = await supabaseClient
         .from('profiles')
-        .select('name, counts, scores, updated_at')
+        .select('name, counts, scores, updated_at, paid')
         .order('updated_at', { ascending: false });
       if (error) throw error;
       const total = profiles.length;
@@ -2479,24 +2483,51 @@
           <div class="ap-stat-label">placares</div>
         </div>
       `;
+      const paidCount = profiles.filter(p => p.paid).length;
+      // Adiciona stat de pagamentos
+      $('#allProfilesStats').innerHTML += `
+        <div class="ap-stat-box" style="grid-column: 1 / -1; background: linear-gradient(135deg, var(--c-success), #047857);">
+          <div class="ap-stat-value">${paidCount} / ${total}</div>
+          <div class="ap-stat-label">💰 pagaram PIX (R$ ${paidCount * 7},00)</div>
+        </div>
+      `;
       $('#allProfilesList').innerHTML = profiles.map(p => {
         const owned = Object.values(p.counts || {}).filter(v => v > 0).length;
-        const pct = (owned / 980 * 100).toFixed(0);
+        const pct = (owned / window.STICKERS_TOTAL * 100).toFixed(0);
         const dup = Object.values(p.counts || {}).reduce((a, v) => a + Math.max(0, v - 1), 0);
         const d = new Date(p.updated_at);
         const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) +
           ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const isMe = p.name === profileName;
         return `
-          <div class="ap-row ${isMe ? 'me' : ''}">
+          <div class="ap-row ${isMe ? 'me' : ''} ${p.paid ? 'paid' : ''}">
             <div class="ap-avatar">${p.name.charAt(0).toUpperCase()}</div>
             <div class="ap-info">
-              <div class="ap-name">${p.name}${isMe ? ' 👤' : ''}</div>
-              <div class="ap-meta">${owned}/980 · ${pct}%${dup ? ' · 🔁 ' + dup : ''} · última atividade ${dateStr}</div>
+              <div class="ap-name">${p.name}${isMe ? ' 👤' : ''}${p.paid ? ' <span class="paid-badge">✓ pagou</span>' : ' <span class="unpaid-badge">⏳ não pagou</span>'}</div>
+              <div class="ap-meta">${owned}/${window.STICKERS_TOTAL} · ${pct}%${dup ? ' · 🔁 ' + dup : ''} · ${dateStr}</div>
             </div>
+            <label class="paid-toggle">
+              <input type="checkbox" data-name="${p.name}" ${p.paid ? 'checked' : ''}>
+              <span>R$7</span>
+            </label>
           </div>
         `;
       }).join('');
+      // Liga os checkboxes
+      $$('#allProfilesList .paid-toggle input').forEach(cb => {
+        cb.addEventListener('change', async () => {
+          const name = cb.dataset.name;
+          const paid = cb.checked;
+          try {
+            await supabaseClient.from('profiles').update({ paid }).eq('name', name);
+            showToast(paid ? `✓ ${name} marcado como PAGOU` : `${name} marcado como NÃO pagou`, 'success', 2000);
+            openAllProfilesModal(); // reload
+          } catch (e) {
+            showToast('Erro ao salvar: ' + e.message, 'error');
+            cb.checked = !paid;
+          }
+        });
+      });
     } catch (e) {
       $('#allProfilesList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--c-red)">Erro: ' + e.message + '</div>';
     }
@@ -2548,6 +2579,53 @@
       showToast('🔄 Tudo zerado. Boa nova jornada!', 'info', 3000);
     }
   });
+
+  // Lembrete de PIX (pra quem não pagou ainda, exceto o admin)
+  async function showPixReminderIfNeeded() {
+    if (!supabaseClient || viewMode || isAdminUser) return;
+    try {
+      const { data } = await supabaseClient
+        .from('profiles')
+        .select('paid')
+        .eq('name', profileName)
+        .maybeSingle();
+      if (data && data.paid === true) return; // já pagou
+      // Mostra o lembrete (mas só 1x por sessão pra não encher)
+      if (sessionStorage.getItem('caua_pix_seen')) return;
+      sessionStorage.setItem('caua_pix_seen', '1');
+      setTimeout(() => {
+        const modal = document.getElementById('pixReminderModal');
+        if (modal) modal.hidden = false;
+      }, 1200);
+    } catch (e) { /* ignora */ }
+  }
+  // Liga os botões do modal PIX
+  if (document.getElementById('copyPixBtn')) {
+    document.getElementById('copyPixBtn').onclick = async () => {
+      const key = document.getElementById('pixKey').textContent.trim();
+      try {
+        await navigator.clipboard.writeText(key);
+        showToast('✅ Chave PIX copiada!', 'success', 2000);
+        document.getElementById('copyPixBtn').textContent = '✓ Copiado!';
+        setTimeout(() => {
+          const b = document.getElementById('copyPixBtn');
+          if (b) b.textContent = '📋 Copiar';
+        }, 2500);
+      } catch (e) {
+        showToast('Não consegui copiar. Cole manualmente: ' + key, 'info', 4000);
+      }
+    };
+  }
+  if (document.getElementById('closePixReminder')) {
+    document.getElementById('closePixReminder').onclick = () => {
+      document.getElementById('pixReminderModal').hidden = true;
+    };
+  }
+  if (document.getElementById('pixLater')) {
+    document.getElementById('pixLater').onclick = () => {
+      document.getElementById('pixReminderModal').hidden = true;
+    };
+  }
 
   // Boas-vindas pra novos usuários (primeira vez no dispositivo)
   async function showWelcomeIfNeeded() {
@@ -2607,6 +2685,7 @@
   fillCountryFilter();
   renderDashboard();
   showWelcomeIfNeeded();
+  showPixReminderIfNeeded();
 
   // Atualiza o painel a cada 60s pra contagem regressiva e jogos do dia ficarem frescos
   setInterval(() => {

@@ -55,6 +55,28 @@
     }
   });
 
+  // ============ COCA-COLA (CC-01 a CC-14) - 14 figurinhas bônus ============
+  const ccDescriptions = [
+    'Coca-Cola Oficial', 'Garrafa Histórica', 'Lata Edição Copa',
+    'Polar Bears', 'Onda Coca', 'Coca Zero', 'Sprite Brasil',
+    'Fanta Laranja Copa', 'Coca-Cola Vintage', 'Logo 100 anos',
+    'Mascote Coca', 'Coca + Troféu', 'Caminhão Coca', 'Patrocínio Oficial'
+  ];
+  for (let i = 1; i <= 14; i++) {
+    stickers.push({
+      number: num++,
+      localNumber: i,
+      section: 'cocacola',
+      sectionName: 'Coca-Cola',
+      country: null,
+      code: 'CC',
+      name: `CC-${pad(i)}`,
+      description: ccDescriptions[i - 1] || `Coca-Cola #${i}`,
+      type: 'cocacola',
+      shiny: true
+    });
+  }
+
   window.STICKERS = stickers;
   window.STICKERS_TOTAL = stickers.length;
 })();

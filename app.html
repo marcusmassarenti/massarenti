@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=Press+Start+2P&family=Fredoka:wght@400;600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=51">
+  <link rel="stylesheet" href="style.css?v=52">
 </head>
 <body class="app-body">
   <header class="app-header">
@@ -144,6 +144,32 @@
       <h2>👥 Usuários cadastrados</h2>
       <div id="allProfilesStats" class="all-profiles-stats"></div>
       <div id="allProfilesList">Carregando...</div>
+    </div>
+  </div>
+
+  <!-- Modal lembrete PIX (quem não pagou) -->
+  <div id="pixReminderModal" class="modal" hidden>
+    <div class="modal-content pix-content">
+      <button class="modal-close" id="closePixReminder">✕</button>
+      <div class="pix-header">
+        <div class="pix-icon">💰</div>
+        <h2>Oi, lembrete legal!</h2>
+        <p class="pix-msg">Tô pedindo só <strong>R$ 7,00</strong> via PIX pra liberar acesso completo. Vou usar a grana pra <strong>comprar mais figurinha!</strong> 🎯</p>
+      </div>
+      <div class="pix-key-box">
+        <div class="pix-key-label">📲 Chave PIX (CPF)</div>
+        <div class="pix-key-row">
+          <code class="pix-key" id="pixKey">51831504863</code>
+          <button class="btn-primary" id="copyPixBtn">📋 Copiar</button>
+        </div>
+      </div>
+      <p class="pix-instructions">
+        Depois do pagamento, manda print no privado do Cauã que eu marco como pago aqui. 🤝
+      </p>
+      <a href="https://youtube.com/@cauamassarenti?sub_confirmation=1" target="_blank" rel="noopener" class="youtube-link" style="width:100%;justify-content:center;margin-top:8px">
+        <span class="yt-icon">▶</span> Aproveita e se inscreve no canal!
+      </a>
+      <button class="btn-secondary" id="pixLater" style="width:100%;margin-top:10px">Já paguei / Depois eu vejo</button>
     </div>
   </div>
 
@@ -371,12 +397,12 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=51"></script>
-  <script src="data/countries.js?v=51"></script>
-  <script src="data/stickers.js?v=51"></script>
-  <script src="data/schedule.js?v=51"></script>
-  <script src="data/world-map.js?v=51"></script>
-  <script src="app.js?v=51"></script>
+  <script src="data/supabase-config.js?v=52"></script>
+  <script src="data/countries.js?v=52"></script>
+  <script src="data/stickers.js?v=52"></script>
+  <script src="data/schedule.js?v=52"></script>
+  <script src="data/world-map.js?v=52"></script>
+  <script src="app.js?v=52"></script>
   <script>
     // Service Worker - auto-atualiza quando tem versão nova
     if ('serviceWorker' in navigator) {
