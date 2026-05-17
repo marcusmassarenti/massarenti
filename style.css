@@ -2942,6 +2942,24 @@ main { padding: 12px 12px 8px; }
   font-weight: 600;
   padding: 0 8px;
 }
+.pix-blessing {
+  text-align: center;
+  font-size: 13px;
+  color: var(--c-ink);
+  font-weight: 700;
+  margin-top: 14px;
+  padding: 12px;
+  background: linear-gradient(135deg, #fff8d6, #ffe7e9);
+  border-radius: 10px;
+  line-height: 1.5;
+}
+.pix-blessing strong {
+  background: linear-gradient(90deg, var(--p-red), var(--p-purple));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900;
+}
 
 /* === ADMIN: badges + checkbox === */
 .paid-badge {
