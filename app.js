@@ -1439,7 +1439,7 @@
       return;
     }
     listEl.innerHTML = profiles.map(buildFamilyRow).join('');
-    listEl.querySelectorAll('.family-row').forEach(r => {
+    listEl.querySelectorAll('.family-card').forEach(r => {
       if (r.classList.contains('me')) return;
       r.addEventListener('click', async () => {
         const familyName = r.dataset.name;
