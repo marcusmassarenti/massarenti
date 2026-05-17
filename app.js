@@ -188,48 +188,75 @@
       <div class="sticker-num">${String(s.localNumber).padStart(2,'0')}</div>
       <div class="sticker-name">${s.description || ''}</div>
     `;
-    el.title = `${s.name} — ${s.description || ''} (global #${s.number})`;
-    el.addEventListener('click', (e) => toggleSticker(s, el, e));
+    el.title = `${s.name} — toque pra marcar (toque de novo vira repetida) · segure pra remover`;
+
+    let pressTimer = null;
+    let longPressed = false;
+    const startPress = (e) => {
+      longPressed = false;
+      pressTimer = setTimeout(() => {
+        longPressed = true;
+        // Long-press: decrementa
+        const cur = ownedCount(s.number);
+        if (cur > 0) {
+          if (cur === 1) delete state.counts[s.number];
+          else state.counts[s.number] = cur - 1;
+          saveData();
+          renderCollection();
+          if (navigator.vibrate) navigator.vibrate(40);
+        }
+      }, 600);
+    };
+    const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+    el.addEventListener('mousedown', startPress);
+    el.addEventListener('touchstart', startPress, { passive: true });
+    el.addEventListener('mouseup', cancelPress);
+    el.addEventListener('mouseleave', cancelPress);
+    el.addEventListener('touchend', cancelPress);
+    el.addEventListener('touchcancel', cancelPress);
+
+    el.addEventListener('click', (e) => {
+      if (longPressed) { longPressed = false; return; }
+      incrementSticker(s, el, e);
+    });
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      // Long-press / right-click adiciona uma repetida
-      state.counts[s.number] = (state.counts[s.number] || 0) + 1;
-      saveData();
-      renderCollection();
+      const cur = ownedCount(s.number);
+      if (cur > 0) {
+        if (cur === 1) delete state.counts[s.number];
+        else state.counts[s.number] = cur - 1;
+        saveData();
+        renderCollection();
+      }
     });
     return el;
   }
 
-  function toggleSticker(s, el, evt) {
+  function incrementSticker(s, el, evt) {
     const current = ownedCount(s.number);
-    if (current === 0) {
-      state.counts[s.number] = 1;
-      animateStickerGet(el, evt, s.shiny);
-    } else {
-      // Cicla: 0 -> 1 -> 2 -> 3 -> 0
-      // tap normal alterna apenas: se já tem, remove
-      delete state.counts[s.number];
-    }
+    const next = current + 1;
+    if (next > 9) return; // máximo 9 (1 colada + 8 repetidas)
+    state.counts[s.number] = next;
+    if (current === 0) animateStickerGet(el, evt, s.shiny, false);
+    else animateStickerGet(el, evt, s.shiny, true); // animação de "repetida"
     saveData();
     renderCollection();
   }
 
-  function animateStickerGet(el, evt, shiny) {
+  function animateStickerGet(el, evt, shiny, isDuplicate) {
     const rect = el.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
     const confettiBox = $('#confetti');
-    // Estrelas
     const star = document.createElement('div');
     star.className = 'star-burst';
     star.style.left = cx + 'px';
     star.style.top = cy + 'px';
-    star.textContent = shiny ? '🌟' : '⭐';
+    star.textContent = isDuplicate ? '➕' : (shiny ? '🌟' : '⭐');
     confettiBox.appendChild(star);
     setTimeout(() => star.remove(), 900);
-    // Confete
-    const colors = ['#FFD700', '#c8102e', '#0a2463', '#fff', '#10b981'];
-    const num = shiny ? 18 : 10;
+    const colors = ['#FFD700', '#d4444a', '#4a8ec6', '#fff', '#54a96d', '#f06a25', '#5d4a9c'];
+    const num = isDuplicate ? 6 : (shiny ? 18 : 10);
     for (let i = 0; i < num; i++) {
       const p = document.createElement('div');
       p.className = 'confetti-piece';
@@ -463,6 +490,94 @@
     `;
   }
 
+  // ---------- DASHBOARD ----------
+  function renderDashboard() {
+    const owned = totalOwned();
+    const total = window.STICKERS_TOTAL;
+    const dup = totalDuplicates();
+    const missing = total - owned;
+    const pct = (owned / total * 100).toFixed(1);
+
+    // por país
+    const byCountry = window.COUNTRIES.map(c => {
+      const sec = sectionsMap[c.code];
+      const cOwned = sec.items.filter(s => isOwned(s.number)).length;
+      const cTotal = sec.items.length;
+      return {
+        ...c,
+        owned: cOwned,
+        total: cTotal,
+        missing: cTotal - cOwned,
+        pct: cOwned / cTotal * 100
+      };
+    });
+    const completed = byCountry.filter(c => c.missing === 0).length;
+    const almostDone = byCountry.filter(c => c.missing > 0 && c.missing <= 3).sort((a,b) => a.missing - b.missing);
+    const inProgress = byCountry.filter(c => c.missing > 3 && c.owned > 0).sort((a,b) => b.pct - a.pct);
+    const notStarted = byCountry.filter(c => c.owned === 0);
+
+    const row = (c) => `
+      <div class="country-missing-row" data-code="${c.code}">
+        <span class="flag">${c.flag}</span>
+        <div style="flex:1;min-width:0">
+          <div class="name">${c.name} <span class="country-group-tag">${c.group}</span></div>
+          <div class="progress-mini" style="margin-top:4px"><div style="width:${c.pct}%"></div></div>
+        </div>
+        <span class="count">${c.owned}/${c.total}${c.missing>0?' · faltam '+c.missing:' ✓'}</span>
+      </div>
+    `;
+
+    const html = `
+      <div class="dashboard-stats">
+        <div class="stat-card big">
+          <div class="stat-value">${pct}%</div>
+          <div class="stat-label">do álbum completo</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--p-green)">${owned}</div>
+          <div class="stat-label">figurinhas coladas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--p-red)">${missing}</div>
+          <div class="stat-label">faltam</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--p-purple)">${dup}</div>
+          <div class="stat-label">repetidas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--p-blue)">${completed}/48</div>
+          <div class="stat-label">seleções completas</div>
+        </div>
+      </div>
+
+      ${almostDone.length ? `
+        <div class="dashboard-section">
+          <h3>🔥 Quase lá (faltam até 3)</h3>
+          ${almostDone.map(row).join('')}
+        </div>
+      ` : ''}
+
+      ${inProgress.length ? `
+        <div class="dashboard-section">
+          <h3>📈 Em andamento</h3>
+          ${inProgress.map(row).join('')}
+        </div>
+      ` : ''}
+
+      ${notStarted.length ? `
+        <div class="dashboard-section">
+          <h3>🆕 Ainda não comecei</h3>
+          ${notStarted.map(row).join('')}
+        </div>
+      ` : ''}
+    `;
+    $('#dashboardContent').innerHTML = html;
+    $$('#dashboardContent .country-missing-row').forEach(r => {
+      r.addEventListener('click', () => openCountryModal(r.dataset.code));
+    });
+  }
+
   // ---------- TABS ----------
   $$('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -470,6 +585,7 @@
       $$('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
       $$('.tab-pane').forEach(p => p.hidden = (p.dataset.pane !== tab));
       if (tab === 'collection') renderCollection();
+      if (tab === 'dashboard') renderDashboard();
       if (tab === 'countries') { renderCountries(); renderWorldMap(); }
       if (tab === 'schedule') renderSchedule();
       window.scrollTo({ top: 0, behavior: 'smooth' });
