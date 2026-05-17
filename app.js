@@ -1250,34 +1250,23 @@
   }
 
   // ---------- DASHBOARD ----------
-  async function renderFamilySection() {
-    if (!supabaseClient) return '';
-    const profiles = await loadFamilyProfiles();
-    if (profiles.length === 0) return '';
-    const rows = profiles.map(p => {
-      const counts = p.counts || {};
-      let owned = 0;
-      Object.keys(counts).forEach(k => { if (counts[k] > 0) owned++; });
-      const total = 980;
-      const pct = (owned / total * 100).toFixed(1);
-      const dup = Object.keys(counts).reduce((acc, k) => acc + Math.max(0, counts[k] - 1), 0);
-      const isMe = p.name === profileName;
-      return `
-        <div class="family-row ${isMe ? 'me' : ''}" data-name="${p.name}">
-          <div class="family-avatar">${p.name.charAt(0).toUpperCase()}</div>
-          <div class="family-info">
-            <div class="family-name">${p.name}${isMe ? ' (eu)' : ''}</div>
-            <div class="family-progress-bar"><div style="width:${pct}%"></div></div>
-            <div class="family-meta">${owned}/${total} · ${pct}% · ${dup} repetidas</div>
-          </div>
-          <div class="family-action">${isMe ? '' : '👀'}</div>
-        </div>
-      `;
-    }).join('');
+  function buildFamilyRow(p) {
+    const counts = p.counts || {};
+    let owned = 0;
+    Object.keys(counts).forEach(k => { if (counts[k] > 0) owned++; });
+    const total = 980;
+    const pct = (owned / total * 100).toFixed(1);
+    const dup = Object.keys(counts).reduce((acc, k) => acc + Math.max(0, counts[k] - 1), 0);
+    const isMe = p.name === profileName;
     return `
-      <div class="dashboard-section">
-        <h3>👨‍👩‍👧 Família (${profiles.length})</h3>
-        <div class="family-list">${rows}</div>
+      <div class="family-row ${isMe ? 'me' : ''}" data-name="${p.name}">
+        <div class="family-avatar">${p.name.charAt(0).toUpperCase()}</div>
+        <div class="family-info">
+          <div class="family-name">${p.name}${isMe ? ' (eu)' : ''}</div>
+          <div class="family-progress-bar"><div style="width:${pct}%"></div></div>
+          <div class="family-meta">${owned}/${total} · ${pct}% · ${dup} repetidas</div>
+        </div>
+        <div class="family-action">${isMe ? '' : '👀'}</div>
       </div>
     `;
   }
@@ -1363,45 +1352,42 @@
         </div>
       ` : ''}
     `;
-    $('#dashboardContent').innerHTML = html + '<div id="familyContainer"></div>';
+    // Bloco fixo da família SEMPRE no final (carrega async)
+    const familyBlock = `
+      <div class="dashboard-section" id="familySection">
+        <h3>👨‍👩‍👧 Família <button id="refreshFamily" class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-left:8px">🔄 Atualizar</button></h3>
+        <div class="family-list" id="familyList">
+          <div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px">Carregando família...</div>
+        </div>
+      </div>
+    `;
+    $('#dashboardContent').innerHTML = html + familyBlock;
     $$('#dashboardContent .country-missing-row').forEach(r => {
       r.addEventListener('click', () => openCountryModal(r.dataset.code));
     });
-    // Carrega família async - vai no FINAL
+    $('#refreshFamily').addEventListener('click', loadAndRenderFamily);
     loadAndRenderFamily();
   }
 
   async function loadAndRenderFamily() {
-    const container = $('#familyContainer');
-    if (!container) return;
+    const listEl = $('#familyList');
+    if (!listEl) return;
     if (!supabaseClient) {
-      container.innerHTML = `
-        <div class="dashboard-section">
-          <h3>👨‍👩‍👧 Família</h3>
-          <div style="padding:16px;background:#fff3cd;border:1px solid #ffe07a;border-radius:10px;color:#856404;font-size:13px">
-            📴 Sem conexão com a nuvem. Recarregue a página com internet pra ver a família.
-          </div>
+      listEl.innerHTML = `
+        <div style="padding:16px;background:#fff3cd;border:1px solid #ffe07a;border-radius:10px;color:#856404;font-size:13px;text-align:center">
+          📴 Sem conexão com a nuvem. Verifique sua internet.
         </div>
       `;
       return;
     }
-    container.innerHTML = `
-      <div class="dashboard-section">
-        <h3>👨‍👩‍👧 Família <button id="refreshFamily" class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-left:8px">🔄 Atualizar</button></h3>
-        <div id="familyList" style="font-size:13px;color:var(--c-muted);text-align:center;padding:20px">Carregando família...</div>
-      </div>
-    `;
-    $('#refreshFamily').addEventListener('click', loadAndRenderFamily);
-
-    const familyHtml = await renderFamilySection();
-    const listEl = $('#familyList');
-    if (!listEl) return;
-    if (!familyHtml) {
-      listEl.innerHTML = '<div style="padding:20px;text-align:center">Nenhum membro da família ainda. Convida o pessoal pra criar perfil!</div>';
+    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px">Carregando família...</div>';
+    const profiles = await loadFamilyProfiles();
+    if (!profiles || profiles.length === 0) {
+      listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--c-muted);font-size:13px">Nenhum perfil encontrado. Família, criem perfis no mesmo link!</div>';
       return;
     }
-    listEl.outerHTML = familyHtml.replace('<div class="dashboard-section">', '<div>').replace(/<\/div>\s*$/, '');
-    $$('#familyContainer .family-row').forEach(r => {
+    listEl.innerHTML = profiles.map(buildFamilyRow).join('');
+    listEl.querySelectorAll('.family-row').forEach(r => {
       if (r.classList.contains('me')) return;
       r.addEventListener('click', async () => {
         const familyName = r.dataset.name;
