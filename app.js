@@ -1299,18 +1299,23 @@
     let owned = 0;
     Object.keys(counts).forEach(k => { if (counts[k] > 0) owned++; });
     const total = 980;
-    const pct = (owned / total * 100).toFixed(1);
+    const pct = (owned / total * 100).toFixed(0);
     const dup = Object.keys(counts).reduce((acc, k) => acc + Math.max(0, counts[k] - 1), 0);
     const isMe = p.name === profileName;
     return `
-      <div class="family-row ${isMe ? 'me' : ''}" data-name="${p.name}">
-        <div class="family-avatar">${p.name.charAt(0).toUpperCase()}</div>
-        <div class="family-info">
-          <div class="family-name">${p.name}${isMe ? ' (eu)' : ''}</div>
-          <div class="family-progress-bar"><div style="width:${pct}%"></div></div>
-          <div class="family-meta">${owned}/${total} · ${pct}% · ${dup} repetidas</div>
+      <div class="family-card ${isMe ? 'me' : ''}" data-name="${p.name}">
+        <div class="family-card-top">
+          <div class="family-avatar">${p.name.charAt(0).toUpperCase()}</div>
+          <div class="family-name-block">
+            <div class="family-name">${p.name}${isMe ? ' 👤' : ''}</div>
+            <div class="family-pct">${pct}%</div>
+          </div>
         </div>
-        <div class="family-action">${isMe ? '' : '👀'}</div>
+        <div class="family-progress-bar"><div style="width:${pct}%"></div></div>
+        <div class="family-meta">
+          <span>${owned}/${total}</span>
+          ${dup > 0 ? `<span>🔁 ${dup}</span>` : ''}
+        </div>
       </div>
     `;
   }
