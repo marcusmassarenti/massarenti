@@ -25,17 +25,22 @@
   function loadData() {
     try {
       const raw = localStorage.getItem(storageKey);
-      if (!raw) return { counts: {}, sectionsCollapsed: {}, scores: {}, follows: [] };
+      if (!raw) return { counts: {}, sectionsCollapsed: {}, scores: {} };
       const parsed = JSON.parse(raw);
       return {
         counts: parsed.counts || {},
         sectionsCollapsed: parsed.sectionsCollapsed || {},
-        scores: parsed.scores || {},
-        follows: parsed.follows || []
+        scores: parsed.scores || {}
       };
     } catch (e) {
-      return { counts: {}, sectionsCollapsed: {}, scores: {}, follows: [] };
+      return { counts: {}, sectionsCollapsed: {}, scores: {} };
     }
+  }
+  // Grupo atualmente selecionado (salvo localmente)
+  let selectedGroupCode = localStorage.getItem('caua_selectedGroup') || '';
+  function setSelectedGroup(code) {
+    selectedGroupCode = code || '';
+    localStorage.setItem('caua_selectedGroup', selectedGroupCode);
   }
 
   // Salva local SEMPRE imediato. Sincroniza com nuvem com debounce curto.
@@ -62,7 +67,6 @@
         .update({
           counts: state.counts,
           scores: state.scores,
-          follows: state.follows || [],
           updated_at: new Date().toISOString()
         })
         .eq('name', profileName);
@@ -119,7 +123,6 @@
           // Nuvem é mais nova → usa
           state.counts = data.counts || {};
           state.scores = data.scores || {};
-          state.follows = data.follows || [];
           localStorage.setItem(storageKey, JSON.stringify(state));
           localStorage.setItem(storageKey + '_updated', data.updated_at || new Date().toISOString());
           setCloudStatus('ok', 'Carregado da nuvem');
@@ -142,16 +145,94 @@
     return false;
   }
 
-  async function loadFamilyProfiles() {
+  async function loadFamilyProfiles(names) {
     if (!supabaseClient) return [];
     try {
-      const { data, error } = await supabaseClient
+      let query = supabaseClient
         .from('profiles')
-        .select('name, counts, scores, updated_at')
-        .order('name');
+        .select('name, counts, scores, updated_at');
+      if (names && names.length > 0) query = query.in('name', names);
+      const { data, error } = await query.order('name');
       if (error) { console.warn(error); return []; }
       return data || [];
     } catch (e) { console.warn(e); return []; }
+  }
+
+  // ===== GRUPOS =====
+  function generateGroupCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem caracteres confusos
+    let code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+  async function loadMyGroups() {
+    if (!supabaseClient) return [];
+    try {
+      const { data: memberships } = await supabaseClient
+        .from('group_members')
+        .select('group_code')
+        .eq('profile_name', profileName);
+      if (!memberships || memberships.length === 0) return [];
+      const codes = memberships.map(m => m.group_code);
+      const { data: groups } = await supabaseClient
+        .from('groups')
+        .select('*')
+        .in('code', codes);
+      return groups || [];
+    } catch (e) { console.warn(e); return []; }
+  }
+  async function loadGroupMembers(groupCode) {
+    if (!supabaseClient) return [];
+    try {
+      const { data: members } = await supabaseClient
+        .from('group_members')
+        .select('profile_name')
+        .eq('group_code', groupCode);
+      if (!members) return [];
+      const names = members.map(m => m.profile_name);
+      return await loadFamilyProfiles(names);
+    } catch (e) { console.warn(e); return []; }
+  }
+  async function createGroup(name) {
+    if (!supabaseClient) return null;
+    const trimmed = (name || '').trim();
+    if (!trimmed) return null;
+    // Tenta criar com código único
+    for (let i = 0; i < 5; i++) {
+      const code = generateGroupCode();
+      const { error: groupErr } = await supabaseClient
+        .from('groups')
+        .insert({ code, name: trimmed, created_by: profileName });
+      if (!groupErr) {
+        // Adiciona o criador como membro
+        await supabaseClient.from('group_members').insert({ group_code: code, profile_name: profileName });
+        return { code, name: trimmed };
+      }
+    }
+    return null;
+  }
+  async function joinGroup(code) {
+    if (!supabaseClient) return { ok: false, error: 'Sem conexão' };
+    const trimmed = (code || '').trim().toUpperCase();
+    if (!trimmed) return { ok: false, error: 'Código vazio' };
+    const { data: g } = await supabaseClient.from('groups').select('*').eq('code', trimmed).maybeSingle();
+    if (!g) return { ok: false, error: 'Grupo não encontrado. Confira o código.' };
+    const { error } = await supabaseClient
+      .from('group_members')
+      .insert({ group_code: trimmed, profile_name: profileName });
+    if (error && !String(error.message).toLowerCase().includes('duplicate')) {
+      return { ok: false, error: error.message };
+    }
+    return { ok: true, group: g };
+  }
+  async function leaveGroup(code) {
+    if (!supabaseClient) return false;
+    const { error } = await supabaseClient
+      .from('group_members')
+      .delete()
+      .eq('group_code', code)
+      .eq('profile_name', profileName);
+    return !error;
   }
   function loadTheme() {
     try { return JSON.parse(localStorage.getItem(themeKey) || '{}'); }
@@ -1405,16 +1486,17 @@
         </div>
       ` : ''}
     `;
-    // Bloco fixo da minha lista SEMPRE no TOPO (carrega async)
+    // Bloco fixo de grupos SEMPRE no TOPO (carrega async)
     const familyBlock = `
       <div class="dashboard-section" id="familySection">
-        <h3>👨‍👩‍👧 Minha lista
-          <button id="addFollow" class="btn-primary" style="font-size:11px;padding:4px 10px;margin-left:8px">+ Adicionar</button>
-          <button id="refreshFamily" class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-left:4px">🔄</button>
-        </h3>
-        <div class="family-list" id="familyList">
-          <div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px">Carregando...</div>
+        <div class="groups-bar">
+          <div class="groups-tabs" id="groupsTabs">
+            <div style="font-size:12px;color:var(--c-muted);padding:8px">Carregando grupos...</div>
+          </div>
+          <button id="manageGroups" class="btn-primary" style="font-size:11px;padding:6px 12px;white-space:nowrap">+ Grupo</button>
         </div>
+        <div id="groupInfo"></div>
+        <div class="family-list" id="familyList"></div>
       </div>
     `;
     // Limpa tudo antes pra evitar qualquer resíduo de render anterior
@@ -1424,85 +1506,114 @@
     $$('#dashboardContent .country-missing-row').forEach(r => {
       r.addEventListener('click', () => openCountryModal(r.dataset.code));
     });
-    $('#refreshFamily').addEventListener('click', loadAndRenderFamily);
-    $('#addFollow').addEventListener('click', openAddFollowDialog);
-    loadAndRenderFamily();
+    $('#manageGroups').addEventListener('click', openGroupsModal);
+    loadAndRenderGroups();
   }
 
-  async function loadAndRenderFamily() {
+  async function loadAndRenderGroups() {
+    const tabsEl = $('#groupsTabs');
     const listEl = $('#familyList');
-    if (!listEl) return;
+    const infoEl = $('#groupInfo');
+    if (!tabsEl || !listEl) return;
     if (!supabaseClient) {
-      listEl.innerHTML = `
-        <div style="padding:16px;background:#fff3cd;border:1px solid #ffe07a;border-radius:10px;color:#856404;font-size:13px;text-align:center">
-          📴 Sem conexão com a nuvem.
-        </div>
-      `;
+      tabsEl.innerHTML = '<div style="font-size:12px;color:var(--c-muted);padding:6px">📴 Sem nuvem</div>';
+      listEl.innerHTML = '';
       return;
     }
-    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px">Carregando...</div>';
-    const allProfiles = await loadFamilyProfiles();
-    const follows = state.follows || [];
-    const visibleProfiles = allProfiles.filter(p => p.name === profileName || follows.includes(p.name));
-
-    if (visibleProfiles.length <= 1) {
-      // Só o "eu" → renderiza + msg
-      listEl.innerHTML = visibleProfiles.map(buildFamilyRow).join('') +
-        '<div style="padding:20px;text-align:center;color:var(--c-muted);font-size:12px;grid-column:1/-1">Sua lista está vazia. Clique em <strong>+ Adicionar</strong> pra acompanhar família e amigos.</div>';
-    } else {
-      listEl.innerHTML = visibleProfiles.map(buildFamilyRow).join('');
+    const groups = await loadMyGroups();
+    if (groups.length === 0) {
+      tabsEl.innerHTML = '<div style="font-size:12px;color:var(--c-muted);padding:8px">Nenhum grupo. Crie um ou entre num com código.</div>';
+      infoEl.innerHTML = '';
+      listEl.innerHTML = '';
+      return;
     }
+    // Seleciona um grupo (se não tiver, primeiro)
+    if (!selectedGroupCode || !groups.find(g => g.code === selectedGroupCode)) {
+      setSelectedGroup(groups[0].code);
+    }
+    tabsEl.innerHTML = groups.map(g => `
+      <button class="group-tab ${g.code === selectedGroupCode ? 'active' : ''}" data-code="${g.code}">
+        ${g.name}
+      </button>
+    `).join('');
+    tabsEl.querySelectorAll('.group-tab').forEach(b => {
+      b.addEventListener('click', () => {
+        setSelectedGroup(b.dataset.code);
+        loadAndRenderGroups();
+      });
+    });
+    const current = groups.find(g => g.code === selectedGroupCode);
+    infoEl.innerHTML = `
+      <div class="group-info-bar">
+        <span class="group-info-label">Código:</span>
+        <code class="group-info-code">${current.code}</code>
+        <button class="btn-secondary group-info-copy" data-code="${current.code}" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
+        <button class="btn-secondary group-info-leave" data-code="${current.code}" style="font-size:11px;padding:3px 8px;margin-left:auto">🚪 Sair</button>
+      </div>
+    `;
+    infoEl.querySelector('.group-info-copy').addEventListener('click', (e) => {
+      navigator.clipboard.writeText(e.currentTarget.dataset.code);
+      e.currentTarget.textContent = '✓ Copiado!';
+      setTimeout(() => { e.currentTarget.textContent = '📋 Copiar'; }, 1500);
+    });
+    infoEl.querySelector('.group-info-leave').addEventListener('click', async (e) => {
+      const code = e.currentTarget.dataset.code;
+      if (!confirm(`Sair do grupo "${current.name}"?`)) return;
+      await leaveGroup(code);
+      setSelectedGroup('');
+      loadAndRenderGroups();
+    });
 
+    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px;grid-column:1/-1">Carregando membros...</div>';
+    const members = await loadGroupMembers(selectedGroupCode);
+    if (members.length === 0) {
+      listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--c-muted);font-size:13px;grid-column:1/-1">Sem membros ainda.</div>';
+      return;
+    }
+    listEl.innerHTML = members.map(buildFamilyRow).join('');
     listEl.querySelectorAll('.family-card').forEach(r => {
       if (r.classList.contains('me')) return;
-      r.addEventListener('click', async (e) => {
-        if (e.target.closest('.family-remove')) return;
+      r.addEventListener('click', async () => {
         const familyName = r.dataset.name;
         const code = await generateFamilyViewCode(familyName);
         if (code) window.location.href = `app.html?view=${code}`;
       });
     });
-    listEl.querySelectorAll('.family-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const name = btn.dataset.name;
-        if (!confirm('Remover ' + name + ' da sua lista?')) return;
-        state.follows = (state.follows || []).filter(f => f !== name);
-        saveData();
-        loadAndRenderFamily();
-      });
-    });
   }
 
-  async function openAddFollowDialog() {
-    if (!supabaseClient) {
-      alert('Sem conexão com a nuvem.');
-      return;
+  function openGroupsModal() {
+    if (!supabaseClient) { alert('Sem conexão com a nuvem.'); return; }
+    const action = prompt(
+      'O que você quer fazer?\n\n' +
+      '1 = Criar um grupo novo\n' +
+      '2 = Entrar em grupo com código\n\n' +
+      'Digite 1 ou 2:'
+    );
+    if (action === '1') {
+      const name = prompt('Nome do grupo (ex: "Família Massarenti", "Amigos da Escola"):');
+      if (!name) return;
+      createGroup(name).then(g => {
+        if (g) {
+          setSelectedGroup(g.code);
+          loadAndRenderGroups();
+          alert(`✅ Grupo "${g.name}" criado!\n\nCódigo: ${g.code}\n\nCompartilhe esse código com a família/amigos pra eles entrarem.`);
+        } else {
+          alert('Erro ao criar grupo. Tente de novo.');
+        }
+      });
+    } else if (action === '2') {
+      const code = prompt('Digite o código do grupo (6 letras/números):');
+      if (!code) return;
+      joinGroup(code).then(res => {
+        if (res.ok) {
+          setSelectedGroup(res.group.code);
+          loadAndRenderGroups();
+          alert(`✅ Você entrou no grupo "${res.group.name}"!`);
+        } else {
+          alert('❌ ' + res.error);
+        }
+      });
     }
-    const name = prompt('Digite o nome exato da pessoa que você quer acompanhar (igual ao nome de perfil dela):');
-    if (!name) return;
-    const trimmed = name.trim();
-    if (trimmed === profileName) {
-      alert('Você não precisa adicionar a si mesmo — já aparece sempre.');
-      return;
-    }
-    if ((state.follows || []).includes(trimmed)) {
-      alert('Essa pessoa já está na sua lista.');
-      return;
-    }
-    // Verifica se o perfil existe
-    const { data, error } = await supabaseClient
-      .from('profiles')
-      .select('name')
-      .eq('name', trimmed)
-      .maybeSingle();
-    if (error || !data) {
-      alert(`Perfil "${trimmed}" não encontrado. Confira se o nome está exato (com maiúsculas/acentos).`);
-      return;
-    }
-    state.follows = [...(state.follows || []), trimmed];
-    saveData();
-    loadAndRenderFamily();
   }
 
   async function generateFamilyViewCode(familyName) {
