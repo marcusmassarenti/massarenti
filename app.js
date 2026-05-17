@@ -1171,6 +1171,19 @@
     return new Date(`${m.date}T${m.time}:00-03:00`);
   }
 
+  // Bandeira do país onde fica cada estádio
+  const VENUE_COUNTRY = {
+    AZT: '🇲🇽', GDL: '🇲🇽', MTY: '🇲🇽',
+    TOR: '🇨🇦', VAN: '🇨🇦',
+    NYC: '🇺🇸', LAX: '🇺🇸', DAL: '🇺🇸', ATL: '🇺🇸', SEA: '🇺🇸',
+    MIA: '🇺🇸', PHI: '🇺🇸', HOU: '🇺🇸', SFO: '🇺🇸', KAN: '🇺🇸', BOS: '🇺🇸'
+  };
+  function venueWithFlag(m) {
+    if (!m.venue) return '';
+    const flag = VENUE_COUNTRY[m.venueCode] || '';
+    return flag ? `${flag} ${m.venue}` : m.venue;
+  }
+
   function teamHTML(resolvedTeam, fallbackLabel) {
     if (resolvedTeam && resolvedTeam.code) {
       return `<span class="match-team"><span class="flag-mini">${resolvedTeam.flag}</span>${resolvedTeam.name}</span>`;
@@ -1347,7 +1360,7 @@
         <div class="match-meta">
           <div class="match-phase">${m.round || m.phase}</div>
           ${m.group ? `<div class="match-group">Grupo ${m.group}</div>` : ''}
-          <div class="match-venue">${m.venue || ''}</div>
+          <div class="match-venue">${venueWithFlag(m)}</div>
         </div>
       </div>
     `;
@@ -1642,7 +1655,7 @@
           </div>
           <div class="brazil-match">
             <div class="brazil-teams">🇧🇷 Brasil ${score ? scoreHtml : '<span style="color:var(--c-muted)">×</span>'} ${opponent.flag} ${opponent.name}</div>
-            <div class="brazil-venue">${m.time} · ${m.venue || ''}</div>
+            <div class="brazil-venue">${m.time} · ${venueWithFlag(m)}</div>
           </div>
           <div class="brazil-action">📝</div>
         </div>
@@ -1793,7 +1806,7 @@
       <div class="qs-info">
         <div class="qs-phase">${m.round || m.phase}${m.group ? ' · Grupo ' + m.group : ''}</div>
         <div class="qs-date">${d.getDate()}/${months[d.getMonth()]} · ${m.time} Brasília</div>
-        <div class="qs-venue">${m.venue || ''}</div>
+        <div class="qs-venue">${venueWithFlag(m)}</div>
       </div>
       <div class="qs-score-row">
         <div class="qs-team">
