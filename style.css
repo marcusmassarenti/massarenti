@@ -624,6 +624,26 @@ input, select { font-family: inherit; font-size: 16px; }
 }
 .login-flow-hint strong { color: var(--c-red); }
 .profiles-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.profiles-helper { font-size: 11px; color: var(--c-muted); margin-bottom: 8px; line-height: 1.4; }
+.profile-chip-wrap { position: relative; display: inline-block; }
+.profile-chip-remove {
+  position: absolute;
+  top: -4px; right: -4px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--c-muted);
+  color: #fff;
+  border: 1.5px solid #fff;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 2;
+}
+.profile-chip-remove:hover { background: var(--c-red); }
 .profile-chip {
   display: flex;
   align-items: center;

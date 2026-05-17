@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="stylesheet" href="style.css?v=13">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -95,7 +95,8 @@
       <h1>Bem-vindo ao álbum!</h1>
 
       <div class="profiles-section" id="profilesSection" hidden>
-        <h2>👋 Já tenho conta — clica no seu nome</h2>
+        <h2>👋 Bem-vindo de volta! Toca no seu nome</h2>
+        <p class="profiles-helper">Aparecem só os perfis já usados <strong>neste celular</strong>. Outros membros entram digitando o nome.</p>
         <div id="profilesList" class="profiles-list"></div>
         <div class="divider-or"><span>ou</span></div>
       </div>
@@ -167,28 +168,31 @@
       }
     } catch (e) { console.warn('Supabase indisponível, modo local', e); }
 
-    async function loadProfilesFromCloud() {
-      if (!supabaseClient) return null;
-      try {
-        const { data, error } = await supabaseClient.from('profiles').select('name');
-        if (error) throw error;
-        return (data || []).map(d => d.name);
-      } catch (e) {
-        console.warn('Erro ao listar perfis:', e);
-        return null;
-      }
+    // Lista de perfis JÁ USADOS NESTE CELULAR (privacidade)
+    function getLocalProfiles() {
+      try { return JSON.parse(localStorage.getItem('caua_profiles') || '{}'); }
+      catch (e) { return {}; }
+    }
+    function saveLocalProfile(name) {
+      const p = getLocalProfiles();
+      p[name] = { lastLogin: Date.now() };
+      localStorage.setItem('caua_profiles', JSON.stringify(p));
+    }
+    function removeLocalProfile(name) {
+      const p = getLocalProfiles();
+      delete p[name];
+      localStorage.setItem('caua_profiles', JSON.stringify(p));
     }
 
-    async function renderProfiles() {
-      profilesList.innerHTML = '<div style="font-size:11px;opacity:.6">Carregando...</div>';
-      const names = await loadProfilesFromCloud();
-      if (!names || names.length === 0) {
-        profilesSection.hidden = true;
-        return;
-      }
+    function renderProfiles() {
+      const profiles = getLocalProfiles();
+      const names = Object.keys(profiles).sort();
+      if (names.length === 0) { profilesSection.hidden = true; return; }
       profilesSection.hidden = false;
       profilesList.innerHTML = '';
       names.forEach(n => {
+        const wrap = document.createElement('div');
+        wrap.className = 'profile-chip-wrap';
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'profile-chip';
@@ -197,7 +201,20 @@
           nameInput.value = n;
           pinInput.focus();
         });
-        profilesList.appendChild(btn);
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'profile-chip-remove';
+        removeBtn.title = 'Esquecer este perfil neste celular';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (!confirm('Esquecer ' + n + ' neste celular? (A conta continua existindo, só não aparece mais aqui)')) return;
+          removeLocalProfile(n);
+          renderProfiles();
+        });
+        wrap.appendChild(btn);
+        wrap.appendChild(removeBtn);
+        profilesList.appendChild(wrap);
       });
     }
     renderProfiles();
@@ -244,24 +261,24 @@
               return;
             }
           }
+          saveLocalProfile(name);
           localStorage.setItem('caua_currentProfile', name);
           localStorage.setItem('caua_currentPin', pin);
           window.location.href = 'app.html';
         } else {
           // Modo local (offline / Supabase indisponível)
-          const profiles = JSON.parse(localStorage.getItem('caua_profiles') || '{}');
-          if (profiles[name]) {
-            if (profiles[name].pin !== pin) {
-              errorBox.textContent = 'PIN incorreto.';
-              errorBox.hidden = false;
-              submitBtn.textContent = originalText;
-              submitBtn.disabled = false;
-              return;
-            }
-          } else {
-            profiles[name] = { pin };
-            localStorage.setItem('caua_profiles', JSON.stringify(profiles));
+          // Modo local - salva PIN local (sem Supabase pra validar)
+          const offProfiles = JSON.parse(localStorage.getItem('caua_offline_pins') || '{}');
+          if (offProfiles[name] && offProfiles[name] !== pin) {
+            errorBox.textContent = 'PIN incorreto (modo offline).';
+            errorBox.hidden = false;
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            return;
           }
+          offProfiles[name] = pin;
+          localStorage.setItem('caua_offline_pins', JSON.stringify(offProfiles));
+          saveLocalProfile(name);
           localStorage.setItem('caua_currentProfile', name);
           localStorage.setItem('caua_currentPin', pin);
           window.location.href = 'app.html';
