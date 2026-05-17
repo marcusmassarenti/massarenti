@@ -2326,7 +2326,11 @@
       $$('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
       $$('.tab-pane').forEach(p => p.hidden = (p.dataset.pane !== tab));
       if (tab === 'collection') renderCollection();
-      if (tab === 'dashboard') renderDashboard();
+      if (tab === 'dashboard') {
+        renderDashboard();
+        // Lembrete de PIX também ao voltar pra Painel (pra quem ainda não pagou)
+        showPixReminderIfNeeded();
+      }
       if (tab === 'countries') { renderCountries(); renderWorldMap(); }
       if (tab === 'schedule') renderSchedule();
       if (tab === 'bracket') renderBracket();
@@ -2755,7 +2759,7 @@
     document.getElementById('changelogOk').onclick = closeIt;
   }
 
-  // Lembrete de PIX (pra quem não pagou ainda, exceto o admin)
+  // Lembrete de PIX (sempre que o usuário entrar/abrir o app, exceto o admin)
   async function showPixReminderIfNeeded() {
     if (!supabaseClient || viewMode || isAdminUser) return;
     try {
@@ -2765,13 +2769,11 @@
         .eq('name', profileName)
         .maybeSingle();
       if (data && data.paid === true) return; // já pagou
-      // Mostra o lembrete (mas só 1x por sessão pra não encher)
-      if (sessionStorage.getItem('caua_pix_seen')) return;
-      sessionStorage.setItem('caua_pix_seen', '1');
+      // Mostra o lembrete a cada vez que o usuário entrar
       setTimeout(() => {
         const modal = document.getElementById('pixReminderModal');
         if (modal) modal.hidden = false;
-      }, 1200);
+      }, 1500);
     } catch (e) { /* ignora */ }
   }
   // Liga os botões do modal PIX
