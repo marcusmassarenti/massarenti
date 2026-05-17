@@ -1195,7 +1195,10 @@
     const now = new Date();
     const nextBox = $('#nextMatch');
     if (currentPhase === 'all' && !currentCountryFilter) {
-      const upcoming = window.SCHEDULE.find(m => getMatchDateObj(m) >= now && !getScore(m.id));
+      // Próximo jogo = não jogado E no futuro próximo (ou em andamento)
+      const upcoming = window.SCHEDULE
+        .filter(m => !getScore(m.id))
+        .find(m => getMatchDateObj(m) >= new Date(now.getTime() - 2 * 60 * 60 * 1000));
       if (upcoming) {
         nextBox.style.display = '';
         nextBox.innerHTML = `<div class="next-match-label">⏭ PRÓXIMO JOGO</div>` + matchCardHTML(upcoming);
@@ -1546,22 +1549,31 @@
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    let games = window.SCHEDULE.filter(m => m.date === todayStr);
-    let title;
-    if (games.length > 0) {
+    const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+    // 1) Jogos de hoje ainda não terminados (não jogados ainda OU em andamento)
+    const todayUnplayed = window.SCHEDULE.filter(m => {
+      if (m.date !== todayStr) return false;
+      if (state.scores[m.id]) return false; // já tem placar
+      return true;
+    });
+
+    let games, title;
+    if (todayUnplayed.length > 0) {
+      games = todayUnplayed;
       title = `⚽ Jogos de hoje (${games.length})`;
     } else {
-      // Sem jogos hoje - busca próximos
+      // Não tem jogos hoje pendentes - busca próximo dia com jogos
       const upcoming = window.SCHEDULE.filter(m => {
         const d = new Date(`${m.date}T${m.time}:00-03:00`);
-        return d > now;
-      }).slice(0, 3);
+        return d > now && !state.scores[m.id];
+      });
       if (upcoming.length === 0) return '';
-      games = upcoming;
-      const nextD = new Date(`${games[0].date}T${games[0].time}:00-03:00`);
-      const sameDay = upcoming.filter(m => m.date === games[0].date);
-      games = sameDay;
-      title = `⏭ Próximos jogos · ${nextD.getDate()}/${['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][nextD.getMonth()]}`;
+      upcoming.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+      const firstDate = upcoming[0].date;
+      games = upcoming.filter(m => m.date === firstDate);
+      const nextD = new Date(`${firstDate}T00:00:00-03:00`);
+      title = `⏭ Próximos jogos · ${nextD.getDate()}/${months[nextD.getMonth()]}`;
     }
     games.sort((a, b) => a.time.localeCompare(b.time));
     const rows = games.map(m => {

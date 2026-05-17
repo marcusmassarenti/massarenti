@@ -1884,8 +1884,9 @@ main { padding: 12px 12px 8px; }
   margin-bottom: 8px;
   box-shadow: var(--shadow-sm);
   display: grid;
-  grid-template-columns: 56px 1fr auto;
-  gap: 10px;
+  grid-template-columns: 50px 1fr;
+  grid-template-rows: auto auto;
+  gap: 8px 10px;
   align-items: stretch;
 }
 .match-card.played { border-color: var(--c-success); border-width: 1.5px; }
@@ -1899,7 +1900,7 @@ main { padding: 12px 12px 8px; }
 .match-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 .match-team-side {
   flex: 1;
@@ -1907,11 +1908,41 @@ main { padding: 12px 12px 8px; }
   align-items: center;
   gap: 6px;
   font-weight: 800;
-  font-size: 13px;
+  font-size: 14px;
   min-width: 0;
-  white-space: nowrap;
+  line-height: 1.2;
+}
+.match-team-side .flag-mini { font-size: 18px; flex-shrink: 0; }
+.match-team-side > span:last-child {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.match-meta {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--c-border);
+  text-align: left;
+}
+.match-venue {
+  font-size: 10px;
+  color: var(--c-muted);
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+.match-group {
+  font-size: 10px;
+  color: var(--c-ink);
+  font-weight: 800;
+  background: var(--c-bg-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 .score-input {
   width: 52px;
