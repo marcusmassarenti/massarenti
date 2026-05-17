@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=24">
+  <link rel="stylesheet" href="style.css?v=25">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -100,7 +100,6 @@
       </div>
     </div>
 
-    <button type="button" id="hardReloadBtn" class="hard-reload-btn">🔄 Tela travada? Toca aqui pra recarregar limpo</button>
     <form id="loginForm" class="login-card" autocomplete="off">
       <h1>Bem-vindo ao álbum!</h1>
 
@@ -132,12 +131,13 @@
 
       <p class="login-hint">💾 Seu PIN é privado. Cada um tem o seu pra ninguém mexer no álbum dos outros.</p>
     </form>
+    <button type="button" id="hardReloadBtn" class="hard-reload-btn">🔄 Tela travada? Toca aqui pra recarregar limpo</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=24"></script>
-  <script src="data/countries.js?v=24"></script>
-  <script src="data/stickers.js?v=24"></script>
+  <script src="data/supabase-config.js?v=25"></script>
+  <script src="data/countries.js?v=25"></script>
+  <script src="data/stickers.js?v=25"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

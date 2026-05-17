@@ -115,18 +115,20 @@ input, select { font-family: inherit; font-size: 16px; }
   z-index: 1;
 }
 .hard-reload-btn {
-  background: rgba(0,0,0,.5);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,.3);
+  background: rgba(0,0,0,.3);
+  color: rgba(255,255,255,.7);
+  border: 1px solid rgba(255,255,255,.2);
   padding: 6px 12px;
   border-radius: 8px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
   cursor: pointer;
   text-align: center;
   width: 100%;
+  opacity: .7;
+  margin-top: 4px;
 }
-.hard-reload-btn:hover { background: rgba(0,0,0,.7); }
+.hard-reload-btn:hover { opacity: 1; background: rgba(0,0,0,.5); }
 .install-banner {
   background: linear-gradient(135deg, var(--c-ink) 0%, #333 100%);
   color: #fff;
