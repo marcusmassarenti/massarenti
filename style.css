@@ -749,6 +749,7 @@ input, select { font-family: inherit; font-size: 16px; }
     radial-gradient(circle at 100% 100%, rgba(84, 169, 109, .2) 0%, transparent 30%),
     #fbf9f5;
   padding-bottom: 70px;
+  min-height: auto !important; /* overriding body min-height 100vh - footer hugs content */
 }
 .app-header {
   background: #fff;
@@ -2355,6 +2356,43 @@ main { padding: 12px 12px 8px; }
   margin-top: 12px;
   font-weight: 700;
   letter-spacing: .3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.youtube-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FF0000;
+  color: #fff !important;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  box-shadow: 0 3px 10px rgba(255,0,0,.4);
+  transition: transform .15s, box-shadow .15s;
+  border: 2px solid rgba(255,255,255,.3);
+}
+.youtube-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(255,0,0,.5);
+}
+.youtube-link:active { transform: scale(.96); }
+.yt-icon {
+  background: #fff;
+  color: #FF0000;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 900;
+  padding-left: 1px;
 }
 .app-footer strong {
   background: linear-gradient(90deg, var(--p-red), var(--p-orange), var(--p-yellow), var(--p-green), var(--p-blue), var(--p-purple));
@@ -2370,6 +2408,9 @@ main { padding: 12px 12px 8px; }
   padding: 14px 12px 12px;
   margin: 8px 12px 0;
   background: transparent;
+}
+.app-footer.in-app .youtube-link {
+  border-color: rgba(0,0,0,.1);
 }
 
 /* === FAQ === */
