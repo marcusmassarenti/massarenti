@@ -49,6 +49,7 @@
 
   async function syncToCloud() {
     if (!supabaseClient || viewMode) return;
+    setCloudStatus('syncing', 'Salvando na nuvem...');
     try {
       const { error } = await supabaseClient
         .from('profiles')
@@ -58,9 +59,16 @@
           updated_at: new Date().toISOString()
         })
         .eq('name', profileName);
-      if (error) console.warn('Sync error:', error);
-      else console.log('☁️ Sincronizado');
-    } catch (e) { console.warn('Sync failed:', e); }
+      if (error) {
+        console.warn('Sync error:', error);
+        setCloudStatus('error', 'Erro ao salvar: ' + error.message);
+      } else {
+        setCloudStatus('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('pt-BR'));
+      }
+    } catch (e) {
+      console.warn('Sync failed:', e);
+      setCloudStatus('error', 'Erro: ' + (e.message || 'desconhecido'));
+    }
   }
 
   async function loadFromCloud() {
@@ -71,14 +79,19 @@
         .select('*')
         .eq('name', profileName)
         .maybeSingle();
-      if (error) { console.warn(error); return false; }
+      if (error) { console.warn(error); setCloudStatus('error', 'Erro: ' + error.message); return false; }
       if (data) {
         state.counts = data.counts || {};
         state.scores = data.scores || {};
         localStorage.setItem(storageKey, JSON.stringify(state));
+        setCloudStatus('ok', 'Sincronizado');
         return true;
       }
-    } catch (e) { console.warn(e); }
+      setCloudStatus('ok', 'Conectado');
+    } catch (e) {
+      console.warn(e);
+      setCloudStatus('error', 'Sem conexão: ' + (e.message || 'erro'));
+    }
     return false;
   }
 
@@ -167,6 +180,25 @@
   // Header
   $('#headerName').textContent = viewMode ? `Vendo: ${viewedName}` : profileName;
   $('#headerAvatar').textContent = (viewMode ? viewedName : profileName).charAt(0).toUpperCase();
+
+  // Indicador da nuvem
+  function setCloudStatus(status, msg) {
+    const ind = $('#cloudStatus');
+    if (!ind) return;
+    ind.dataset.status = status;
+    ind.title = msg || '';
+    if (status === 'ok') ind.textContent = '☁️';
+    else if (status === 'syncing') ind.textContent = '⏳';
+    else if (status === 'offline') ind.textContent = '📴';
+    else if (status === 'error') ind.textContent = '⚠️';
+  }
+  if (!$('#cloudStatus')) {
+    const ind = document.createElement('span');
+    ind.id = 'cloudStatus';
+    ind.className = 'cloud-status';
+    $('.header-right').insertBefore(ind, $('.header-right').firstChild);
+  }
+  setCloudStatus(supabaseClient ? 'syncing' : 'offline', supabaseClient ? 'Conectando à nuvem...' : 'Sem nuvem (só local)');
 
   // Banner de view mode
   if (viewMode) {
@@ -1331,24 +1363,51 @@
         </div>
       ` : ''}
     `;
-    $('#dashboardContent').innerHTML = html;
+    $('#dashboardContent').innerHTML = html + '<div id="familyContainer"></div>';
     $$('#dashboardContent .country-missing-row').forEach(r => {
       r.addEventListener('click', () => openCountryModal(r.dataset.code));
     });
-    // Carrega família async
-    renderFamilySection().then(familyHtml => {
-      if (familyHtml) {
-        $('#dashboardContent').insertAdjacentHTML('afterbegin', familyHtml);
-        $$('#dashboardContent .family-row').forEach(r => {
-          if (r.classList.contains('me')) return;
-          r.addEventListener('click', async () => {
-            const familyName = r.dataset.name;
-            // Abre álbum desse membro em view mode
-            const code = await generateFamilyViewCode(familyName);
-            if (code) window.location.href = `app.html?view=${code}`;
-          });
-        });
-      }
+    // Carrega família async - vai no FINAL
+    loadAndRenderFamily();
+  }
+
+  async function loadAndRenderFamily() {
+    const container = $('#familyContainer');
+    if (!container) return;
+    if (!supabaseClient) {
+      container.innerHTML = `
+        <div class="dashboard-section">
+          <h3>👨‍👩‍👧 Família</h3>
+          <div style="padding:16px;background:#fff3cd;border:1px solid #ffe07a;border-radius:10px;color:#856404;font-size:13px">
+            📴 Sem conexão com a nuvem. Recarregue a página com internet pra ver a família.
+          </div>
+        </div>
+      `;
+      return;
+    }
+    container.innerHTML = `
+      <div class="dashboard-section">
+        <h3>👨‍👩‍👧 Família <button id="refreshFamily" class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-left:8px">🔄 Atualizar</button></h3>
+        <div id="familyList" style="font-size:13px;color:var(--c-muted);text-align:center;padding:20px">Carregando família...</div>
+      </div>
+    `;
+    $('#refreshFamily').addEventListener('click', loadAndRenderFamily);
+
+    const familyHtml = await renderFamilySection();
+    const listEl = $('#familyList');
+    if (!listEl) return;
+    if (!familyHtml) {
+      listEl.innerHTML = '<div style="padding:20px;text-align:center">Nenhum membro da família ainda. Convida o pessoal pra criar perfil!</div>';
+      return;
+    }
+    listEl.outerHTML = familyHtml.replace('<div class="dashboard-section">', '<div>').replace(/<\/div>\s*$/, '');
+    $$('#familyContainer .family-row').forEach(r => {
+      if (r.classList.contains('me')) return;
+      r.addEventListener('click', async () => {
+        const familyName = r.dataset.name;
+        const code = await generateFamilyViewCode(familyName);
+        if (code) window.location.href = `app.html?view=${code}`;
+      });
     });
   }
 
