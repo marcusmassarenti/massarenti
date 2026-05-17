@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -302,7 +302,7 @@
     });
 
     // ===== INSTALAÇÃO DO APP (PWA) =====
-    (function setupInstallBanner() {
+    try { (function setupInstallBanner() {
       const banner = document.getElementById('installBanner');
       const installBtn = document.getElementById('installBtn');
       const dismissBtn = document.getElementById('installDismiss');
@@ -384,6 +384,11 @@
       window.addEventListener('appinstalled', () => {
         banner.hidden = true;
       });
-    })();
+    })(); } catch (e) {
+      console.error('Banner de instalar com erro:', e);
+      const b = document.getElementById('installBanner');
+      if (b) b.hidden = true;
+    }
+  </script>
 </body>
 </html>
