@@ -2012,10 +2012,26 @@
     if (!chip) return;
     $$('.map-toggle .chip').forEach(c => c.classList.toggle('active', c === chip));
     const view = chip.dataset.view;
-    $('#countriesGrid').hidden = (view !== 'grid');
-    $('#worldMapWrap').hidden = (view !== 'map');
-    $('#worldMapLegend').hidden = (view !== 'map');
-    if (view === 'map') renderWorldMap();
+    const grid = $('#countriesGrid');
+    const mapWrap = $('#worldMapWrap');
+    const legend = $('#worldMapLegend');
+    // Força display direto (não depende de CSS [hidden])
+    if (view === 'grid') {
+      grid.style.display = 'grid';
+      grid.hidden = false;
+      mapWrap.style.display = 'none';
+      mapWrap.hidden = true;
+      legend.style.display = 'none';
+      legend.hidden = true;
+    } else {
+      grid.style.display = 'none';
+      grid.hidden = true;
+      mapWrap.style.display = '';
+      mapWrap.hidden = false;
+      legend.style.display = '';
+      legend.hidden = false;
+      renderWorldMap();
+    }
   });
 
   // Mapa tela cheia
