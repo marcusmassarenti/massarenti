@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=28">
+  <link rel="stylesheet" href="style.css?v=29">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -131,14 +131,15 @@
 
       <p class="login-hint">💾 Seu PIN é privado. Cada um tem o seu pra ninguém mexer no álbum dos outros.</p>
     </form>
-    <button type="button" id="hardReloadBtn" class="hard-reload-btn">🔄 Tela travada? Toca aqui pra recarregar limpo</button>
-    <footer class="app-footer">⚽ Desenvolvido por <strong>Cauã Massarenti</strong> · 2026 🏆</footer>
+    <footer class="app-footer">⚽ Desenvolvido por <strong>Cauã Massarenti</strong> · 2026 🏆<br>
+      <button type="button" id="hardReloadBtn" class="hard-reload-link">Tela travada? Toca aqui</button>
+    </footer>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=28"></script>
-  <script src="data/countries.js?v=28"></script>
-  <script src="data/stickers.js?v=28"></script>
+  <script src="data/supabase-config.js?v=29"></script>
+  <script src="data/countries.js?v=29"></script>
+  <script src="data/stickers.js?v=29"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -207,6 +208,22 @@
       }
     } catch (e) { console.warn('Supabase indisponível, modo local', e); }
 
+    // Hash do PIN antes de salvar/comparar (segurança básica)
+    async function hashPin(pin) {
+      if (!window.crypto || !crypto.subtle) return pin; // fallback raríssimo
+      const enc = new TextEncoder().encode('caua-album-2026:' + pin);
+      const buf = await crypto.subtle.digest('SHA-256', enc);
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    async function pinMatches(stored, entered) {
+      if (!stored) return false;
+      // Legacy: PIN de 4 caracteres (texto puro) - aceita e marca pra upgrade
+      if (stored.length === 4) return stored === entered;
+      // Novo: hash SHA-256 (64 chars hex)
+      const h = await hashPin(entered);
+      return stored === h;
+    }
+
     // Lista de perfis JÁ USADOS NESTE CELULAR (privacidade)
     function getLocalProfiles() {
       try { return JSON.parse(localStorage.getItem('caua_profiles') || '{}'); }
@@ -266,13 +283,17 @@
     async function checkNameExists(name) {
       if (!supabaseClient || !name) return null;
       try {
-        const { data, error } = await supabaseClient
+        // Timeout de 3s pra evitar "Verificando..." eterno em rede ruim
+        const timeoutP = new Promise(res => setTimeout(() => res({ timeout: true }), 3000));
+        const queryP = supabaseClient
           .from('profiles')
           .select('name')
           .eq('name', name)
           .maybeSingle();
-        if (error) return null;
-        return !!data;
+        const result = await Promise.race([queryP, timeoutP]);
+        if (result.timeout) return null;
+        if (result.error) return null;
+        return !!result.data;
       } catch (e) { return null; }
     }
     function updateSubmitButtonText() {
@@ -328,20 +349,28 @@
             .maybeSingle();
 
           if (fetchErr) throw fetchErr;
+          const hashedPin = await hashPin(pin);
 
           if (!existing) {
-            // Novo perfil - cria
+            // Novo perfil - salva PIN hasheado
             const { error: insertErr } = await supabaseClient
               .from('profiles')
-              .insert({ name, pin, counts: {}, scores: {} });
+              .insert({ name, pin: hashedPin, counts: {}, scores: {} });
             if (insertErr) throw insertErr;
           } else {
-            if (existing.pin !== pin) {
+            const ok = await pinMatches(existing.pin, pin);
+            if (!ok) {
               errorBox.textContent = 'PIN incorreto para este perfil.';
               errorBox.hidden = false;
               submitBtn.textContent = originalText;
               submitBtn.disabled = false;
               return;
+            }
+            // Migração: se PIN estiver em texto puro (4 chars), atualiza pra hash
+            if (existing.pin && existing.pin.length === 4) {
+              try {
+                await supabaseClient.from('profiles').update({ pin: hashedPin }).eq('name', name);
+              } catch (e) { /* não crítico */ }
             }
           }
           saveLocalProfile(name);
@@ -400,9 +429,11 @@
       const isFirefox = /Firefox\//i.test(ua) && !isFirefoxIOS;
       let deferredPrompt = null;
 
-      // Mostra o banner UMA ÚNICA VEZ - marca como visto imediatamente
+      // Mostra o banner; só marca como visto quando usuário interagir
       banner.hidden = false;
-      localStorage.setItem('caua_installSeen', String(Date.now()));
+      function markSeen() {
+        localStorage.setItem('caua_installSeen', String(Date.now()));
+      }
 
       // Chromium-based (Chrome, Edge, Brave, Samsung) - captura evento nativo
       window.addEventListener('beforeinstallprompt', (e) => {
@@ -498,10 +529,13 @@
 
       dismissBtn.addEventListener('click', () => {
         banner.hidden = true;
+        markSeen();
       });
+      installBtn.addEventListener('click', markSeen, { capture: true });
 
       window.addEventListener('appinstalled', () => {
         banner.hidden = true;
+        markSeen();
       });
     })(); } catch (e) {
       console.error('Banner de instalar com erro:', e);

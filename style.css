@@ -114,21 +114,19 @@ input, select { font-family: inherit; font-size: 16px; }
   position: relative;
   z-index: 1;
 }
-.hard-reload-btn {
-  background: rgba(0,0,0,.3);
-  color: rgba(255,255,255,.7);
-  border: 1px solid rgba(255,255,255,.2);
+.hard-reload-link {
+  background: none;
+  color: rgba(255,255,255,.45);
+  border: none;
   padding: 6px 12px;
-  border-radius: 8px;
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   text-align: center;
-  width: 100%;
-  opacity: .7;
+  text-decoration: underline;
   margin-top: 4px;
 }
-.hard-reload-btn:hover { opacity: 1; background: rgba(0,0,0,.5); }
+.hard-reload-link:hover { color: rgba(255,255,255,.8); }
 .install-banner {
   background: linear-gradient(135deg, var(--c-ink) 0%, #333 100%);
   color: #fff;
@@ -864,13 +862,16 @@ main { padding: 12px 12px 100px; }
 .chip {
   background: #fff;
   border: 1.5px solid var(--c-border);
-  padding: 7px 14px;
+  padding: 10px 16px;
   border-radius: 30px;
   font-weight: 800;
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
   transition: all .15s;
   color: var(--c-ink);
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
 }
 .chip:hover { background: var(--c-bg-soft); }
 .chip.active {
@@ -1020,13 +1021,13 @@ main { padding: 12px 12px 100px; }
 .dup-minus {
   position: absolute;
   top: 2px; right: 2px;
-  width: 30px; height: 30px;
+  width: 36px; height: 36px;
   background: var(--c-red);
   color: #fff;
   border-radius: 50%;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
-  line-height: 20px;
+  line-height: 22px;
   padding: 0;
   border: 2px solid #fff;
   display: flex;
@@ -1413,9 +1414,9 @@ main { padding: 12px 12px 100px; }
 }
 .tab-icon { font-size: 22px; line-height: 1; }
 .tab-label {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: .5px;
+  letter-spacing: .3px;
 }
 .tab-btn.active { color: var(--c-ink); }
 .tab-btn.active .tab-icon { transform: scale(1.15); }
@@ -1821,13 +1822,13 @@ main { padding: 12px 12px 100px; }
 .sticker-remove {
   position: absolute;
   top: 2px; left: 2px;
-  width: 30px; height: 30px;
+  width: 36px; height: 36px;
   background: #6b7280;
   color: #fff;
   border-radius: 50%;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
-  line-height: 20px;
+  line-height: 22px;
   padding: 0;
   border: 2px solid #fff;
   display: flex;
@@ -2249,24 +2250,8 @@ main { padding: 12px 12px 100px; }
 }
 .podium-banner strong { font-weight: 900; }
 .family-remove {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--c-bg-soft);
-  color: var(--c-muted);
-  border: 1px solid var(--c-border);
-  font-size: 11px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-  cursor: pointer;
+  display: none; /* não usado em grupos (admin aprova/recusa) */
 }
-.family-remove:hover { background: var(--c-red); color: #fff; border-color: var(--c-red); }
 .family-card:not(.me):active { transform: scale(.97); }
 .family-card.me {
   background: linear-gradient(160deg, rgba(227,178,60,.12), #fff);
@@ -2447,6 +2432,56 @@ main { padding: 12px 12px 100px; }
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* === TOAST === */
+#toastHost {
+  position: fixed;
+  bottom: 90px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  z-index: 500;
+  pointer-events: none;
+}
+.toast {
+  background: #111;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 6px 20px rgba(0,0,0,.3);
+  max-width: 380px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .2s, transform .2s;
+  pointer-events: auto;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-success { background: linear-gradient(135deg, #10b981, #059669); }
+.toast-error { background: linear-gradient(135deg, var(--c-red), #8a0a20); }
+.toast-info { background: #111; }
+
+/* === BOTÃO FLUTUANTE VIEW MODE === */
+.view-back-btn {
+  position: fixed;
+  bottom: 92px;
+  right: 14px;
+  background: var(--c-gold);
+  color: var(--c-ink);
+  font-weight: 900;
+  font-size: 13px;
+  padding: 10px 16px;
+  border-radius: 30px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  z-index: 90;
+  border: 2px solid #111;
+}
+.view-back-btn:active { transform: scale(.96); }
 
 /* === CONFETE === */
 #confetti {

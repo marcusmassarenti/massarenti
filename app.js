@@ -381,6 +381,25 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
 
+  // ---------- TOAST (notificação não-bloqueante) ----------
+  function showToast(msg, type = 'info', duration = 2500) {
+    let host = document.getElementById('toastHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'toastHost';
+      document.body.appendChild(host);
+    }
+    const t = document.createElement('div');
+    t.className = 'toast toast-' + type;
+    t.textContent = msg;
+    host.appendChild(t);
+    setTimeout(() => t.classList.add('show'), 10);
+    setTimeout(() => {
+      t.classList.remove('show');
+      setTimeout(() => t.remove(), 300);
+    }, duration);
+  }
+
   // Header
   $('#headerName').textContent = viewMode ? `Vendo: ${viewedName}` : profileName;
   $('#headerAvatar').textContent = (viewMode ? viewedName : profileName).charAt(0).toUpperCase();
@@ -404,15 +423,20 @@
   }
   setCloudStatus(supabaseClient ? 'syncing' : 'offline', supabaseClient ? 'Conectando à nuvem...' : 'Sem nuvem (só local)');
 
-  // Banner de view mode
+  // Banner de view mode + botão flutuante de "voltar"
   if (viewMode) {
     const banner = document.createElement('div');
     banner.className = 'view-banner';
     banner.innerHTML = `
-      👀 Você está vendo o álbum de <strong>${viewedName}</strong> (somente leitura) ·
-      <a href="app.html">Voltar ao meu álbum</a>
+      👀 Vendo álbum de <strong>${viewedName}</strong> · só leitura
     `;
     document.body.insertBefore(banner, document.body.firstChild);
+    // Botão flutuante "voltar ao meu álbum"
+    const back = document.createElement('a');
+    back.href = 'app.html';
+    back.className = 'view-back-btn';
+    back.innerHTML = '← Voltar ao meu álbum';
+    document.body.appendChild(back);
   }
 
   // ---------- THEME ----------
@@ -664,33 +688,9 @@
     }
 
     if (viewMode) return el; // view mode: sem interação
-    let pressTimer = null;
-    let longPressed = false;
-    const startPress = (e) => {
-      longPressed = false;
-      pressTimer = setTimeout(() => {
-        longPressed = true;
-        // Long-press: decrementa
-        const cur = ownedCount(s.number);
-        if (cur > 0) {
-          if (cur === 1) delete state.counts[s.number];
-          else state.counts[s.number] = cur - 1;
-          saveData();
-          renderCollection();
-          if (navigator.vibrate) navigator.vibrate(40);
-        }
-      }, 600);
-    };
-    const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
-    el.addEventListener('mousedown', startPress);
-    el.addEventListener('touchstart', startPress, { passive: true });
-    el.addEventListener('mouseup', cancelPress);
-    el.addEventListener('mouseleave', cancelPress);
-    el.addEventListener('touchend', cancelPress);
-    el.addEventListener('touchcancel', cancelPress);
 
     el.addEventListener('click', (e) => {
-      if (longPressed) { longPressed = false; return; }
+      // Botões ✗ e − já tem stopPropagation; aqui é só o tap principal
       incrementSticker(s, el, e);
     });
     el.addEventListener('contextmenu', (e) => {
@@ -1327,11 +1327,11 @@
         <div class="match-body">
           <div class="match-row">
             <span class="match-team-side"><span class="flag-mini">${homeFlag}</span>${homeName}</span>
-            <input type="number" min="0" max="99" class="score-input score-home" value="${played ? score.home : ''}" placeholder="-" ${hasTeams ? '' : 'disabled'} aria-label="Placar mandante">
+            <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="99" class="score-input score-home" value="${played ? score.home : ''}" placeholder="-" ${hasTeams ? '' : 'disabled'} aria-label="Placar mandante">
           </div>
           <div class="match-row">
             <span class="match-team-side"><span class="flag-mini">${awayFlag}</span>${awayName}</span>
-            <input type="number" min="0" max="99" class="score-input score-away" value="${played ? score.away : ''}" placeholder="-" ${hasTeams ? '' : 'disabled'} aria-label="Placar visitante">
+            <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="99" class="score-input score-away" value="${played ? score.away : ''}" placeholder="-" ${hasTeams ? '' : 'disabled'} aria-label="Placar visitante">
           </div>
           ${isKO && isDraw && hasTeams ? `
             <div class="pen-row">
@@ -1911,7 +1911,8 @@
       btn.addEventListener('click', async () => {
         btn.disabled = true; btn.textContent = '...';
         const res = await requestJoinGroup(btn.dataset.request);
-        if (!res.ok) { alert('Erro: ' + res.error); return; }
+        if (!res.ok) { showToast('Erro: ' + res.error, 'error'); return; }
+        showToast('📨 Pedido enviado! Aguarde aprovação do admin.', 'success', 3500);
         await refreshGroupsModal();
         loadAndRenderGroups();
       });
@@ -1933,10 +1934,10 @@
       if (g) {
         $('#newGroupName').value = '';
         setSelectedGroup(g.code);
-        alert(`✅ Grupo "${g.name}" criado!\nVocê é o admin. Outros usuários podem pedir entrada e você aprova.`);
+        showToast(`✅ Grupo "${g.name}" criado! Você é o admin.`, 'success', 3500);
         await refreshGroupsModal();
         loadAndRenderGroups();
-      } else { alert('Erro ao criar grupo'); }
+      } else { showToast('Erro ao criar grupo', 'error'); }
     });
   }
   if ($('#closeGroupsModal')) {
@@ -2282,14 +2283,16 @@
     e.target.value = '';
   });
 
-  // Reset
+  // Reset (zera figurinhas E placares)
   $('#resetBtn').addEventListener('click', () => {
-    if (confirm('Tem certeza que quer zerar TODAS as figurinhas de ' + profileName + '? Esta ação não pode ser desfeita.')) {
+    if (confirm('Tem certeza que quer ZERAR tudo de ' + profileName + '?\n\nIsso apaga:\n• Todas as figurinhas coladas\n• Todos os placares dos jogos\n\nA conta continua. Não dá pra desfazer!')) {
       state.counts = {};
+      state.scores = {};
       saveData();
       renderCollection();
       if (!$('#countryModal').hidden) renderCountryModalContent();
       $('#settingsModal').hidden = true;
+      showToast('🔄 Tudo zerado. Boa nova jornada!', 'info', 3000);
     }
   });
 
