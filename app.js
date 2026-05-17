@@ -1503,6 +1503,24 @@
     `;
   }
 
+  function buildCompactRow(p) {
+    const counts = p.counts || {};
+    let owned = 0;
+    Object.keys(counts).forEach(k => { if (counts[k] > 0) owned++; });
+    const total = 980;
+    const pct = (owned / total * 100).toFixed(0);
+    const isMe = p.name === profileName;
+    return `
+      <div class="family-compact-row ${isMe ? 'me' : ''}" data-name="${p.name}">
+        <span class="fcr-pos">${p.position}º</span>
+        <span class="fcr-avatar">${p.name.charAt(0).toUpperCase()}</span>
+        <span class="fcr-name">${p.name}${isMe ? ' 👤' : ''}</span>
+        <span class="fcr-count">${owned}/${total}</span>
+        <span class="fcr-pct">${pct}%</span>
+      </div>
+    `;
+  }
+
   function rankProfilesByProgress(profiles) {
     // Ordena por quantidade de figurinhas únicas coladas (desc)
     const ranked = [...profiles].sort((a, b) => {
@@ -1984,11 +2002,29 @@
         🏆 <strong>${champion.name}</strong> está liderando com ${champOwned}/980 figurinhas!
       </div>
     ` : '';
-    listEl.innerHTML = podiumBanner + ranked.map(buildFamilyRow).join('');
-    listEl.querySelectorAll('.family-card').forEach(r => {
+    // Top 3 (ou top 2 se forem só 2): cards grandes com medalha
+    // Resto: lista compacta colapsável
+    const podium = ranked.slice(0, 3);
+    const rest = ranked.slice(3);
+    const meInRest = rest.find(p => p.name === profileName);
+    const meCard = meInRest && !podium.find(p => p.name === profileName)
+      ? `<div class="my-pos-card" data-name="${profileName}">${buildCompactRow(meInRest)}</div>`
+      : '';
+    const podiumHtml = podium.map(buildFamilyRow).join('');
+    const restHtml = rest.length > 0 ? `
+      <details class="family-rest" ${rest.length <= 3 ? 'open' : ''}>
+        <summary>Ver os outros ${rest.length} ${rest.length === 1 ? 'membro' : 'membros'} ▾</summary>
+        <div class="family-rest-list">
+          ${rest.map(buildCompactRow).join('')}
+        </div>
+      </details>
+    ` : '';
+    listEl.innerHTML = podiumBanner + podiumHtml + meCard + restHtml;
+    listEl.querySelectorAll('.family-card, .family-compact-row, .my-pos-card').forEach(r => {
       if (r.classList.contains('me')) return;
       r.addEventListener('click', async () => {
         const familyName = r.dataset.name;
+        if (!familyName) return;
         const code = await generateFamilyViewCode(familyName);
         if (code) window.location.href = `app.html?view=${code}`;
       });

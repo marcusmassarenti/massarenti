@@ -2380,6 +2380,98 @@ main { padding: 12px 12px 8px; }
   font-weight: 700;
 }
 
+/* === LISTA COMPACTA (4º em diante) === */
+.family-rest {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.family-rest summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--c-muted);
+  list-style: none;
+  text-align: center;
+  user-select: none;
+  padding: 4px 0;
+}
+.family-rest summary::-webkit-details-marker { display: none; }
+.family-rest[open] summary { color: var(--c-ink); }
+.family-rest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+.family-compact-row {
+  display: grid;
+  grid-template-columns: 28px 28px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.family-compact-row.me { background: linear-gradient(90deg, rgba(227,178,60,.15), transparent); }
+.family-compact-row:not(.me):active { background: var(--c-bg-soft); }
+.fcr-pos {
+  font-weight: 900;
+  font-size: 11px;
+  color: var(--c-muted);
+  text-align: center;
+}
+.fcr-avatar {
+  width: 26px; height: 26px;
+  background: var(--c-ink);
+  color: var(--c-gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 12px;
+}
+.fcr-name {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fcr-count {
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--c-muted);
+  font-variant-numeric: tabular-nums;
+}
+.fcr-pct {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+  text-align: right;
+  color: var(--c-ink);
+  background: var(--c-bg-soft);
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 42px;
+}
+
+/* "Você está em Nº" - card destacado se usuário não tá no pódio */
+.my-pos-card {
+  grid-column: 1 / -1;
+  border: 2px solid var(--c-gold);
+  background: linear-gradient(90deg, rgba(227,178,60,.12), #fff);
+  border-radius: 10px;
+  padding: 6px 8px;
+  margin-top: 4px;
+}
+.my-pos-card .family-compact-row { background: transparent !important; cursor: default; }
+
 /* === VIEW MODE (visualizando álbum de outra pessoa) === */
 .view-banner {
   background: linear-gradient(90deg, var(--p-purple), var(--p-blue));
