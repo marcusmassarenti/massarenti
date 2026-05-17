@@ -1405,7 +1405,10 @@
         </div>
       </div>
     `;
-    $('#dashboardContent').innerHTML = familyBlock + html;
+    // Limpa tudo antes pra evitar qualquer resíduo de render anterior
+    const dashEl = $('#dashboardContent');
+    dashEl.innerHTML = '';
+    dashEl.innerHTML = familyBlock + html;
     $$('#dashboardContent .country-missing-row').forEach(r => {
       r.addEventListener('click', () => openCountryModal(r.dataset.code));
     });
