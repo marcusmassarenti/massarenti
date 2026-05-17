@@ -2331,22 +2331,33 @@
     });
   }
 
-  // Painel admin (só aparece pra Cauã - case insensitive, sem/com acento)
-  const isAdmin = profileName && profileName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === 'caua';
-  console.log('[admin] profileName:', profileName, '| isAdmin:', isAdmin);
-  if (isAdmin && $('#adminGroup')) {
-    $('#adminGroup').hidden = false;
-    const btn = $('#viewAllProfilesBtn');
-    if (btn) {
-      btn.addEventListener('click', (e) => {
+  // Painel admin (só aparece pra Cauã)
+  const adminNames = ['Cauã', 'Caua', 'caua', 'cauã', 'CAUÃ', 'CAUA'];
+  const isAdminUser = adminNames.includes(profileName);
+  console.log('[admin] profileName=[' + profileName + '] isAdmin=', isAdminUser);
+  if (isAdminUser) {
+    const adminGroup = document.getElementById('adminGroup');
+    const viewBtn = document.getElementById('viewAllProfilesBtn');
+    console.log('[admin] adminGroup=', !!adminGroup, 'viewBtn=', !!viewBtn);
+    if (adminGroup) adminGroup.hidden = false;
+    if (viewBtn) {
+      viewBtn.onclick = function (e) {
         e.preventDefault();
-        console.log('[admin] abrindo painel...');
+        e.stopPropagation();
+        console.log('[admin] CLICOU em ver todos os usuários');
+        // Fecha o modal de configurações antes pra não cobrir o admin
+        const settings = document.getElementById('settingsModal');
+        if (settings) settings.hidden = true;
         openAllProfilesModal();
-      });
+        return false;
+      };
     }
   }
-  if ($('#closeAllProfiles')) {
-    $('#closeAllProfiles').addEventListener('click', () => $('#allProfilesModal').hidden = true);
+  const closeAP = document.getElementById('closeAllProfiles');
+  if (closeAP) {
+    closeAP.onclick = function () {
+      document.getElementById('allProfilesModal').hidden = true;
+    };
   }
 
   async function openAllProfilesModal() {

@@ -2676,6 +2676,7 @@ main { padding: 12px 12px 8px; }
 }
 
 /* === LISTA ADMIN (todos os perfis) === */
+#allProfilesModal { z-index: 250; }
 .all-profiles-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
