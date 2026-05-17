@@ -475,20 +475,34 @@
     if (view === 'map') renderWorldMap();
   });
 
-  // ---------- MODAIS ----------
-  $('#closeCountryModal').addEventListener('click', () => $('#countryModal').hidden = true);
-  $('#countryModal').addEventListener('click', (e) => {
-    if (e.target.id === 'countryModal') $('#countryModal').hidden = true;
+  // ---------- MODAIS (com delegação global pra evitar bugs) ----------
+  function closeAllModals() {
+    document.querySelectorAll('.modal').forEach(m => m.hidden = true);
+  }
+  // Click delegation - funciona pra qualquer modal/botão de fechar
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.modal-close')) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAllModals();
+      return;
+    }
+    // Click no fundo escuro fecha o modal
+    if (e.target.classList && e.target.classList.contains('modal')) {
+      closeAllModals();
+    }
   });
-  $('#closeSettingsModal').addEventListener('click', () => $('#settingsModal').hidden = true);
-  $('#settingsModal').addEventListener('click', (e) => {
-    if (e.target.id === 'settingsModal') $('#settingsModal').hidden = true;
+  // Touch também (pra mobile, alguns navegadores)
+  document.addEventListener('touchend', (e) => {
+    if (e.target.closest('.modal-close')) {
+      e.preventDefault();
+      closeAllModals();
+    }
   });
   // ESC fecha qualquer modal aberto
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      $('#settingsModal').hidden = true;
-      $('#countryModal').hidden = true;
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      closeAllModals();
     }
   });
 
