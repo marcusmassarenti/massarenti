@@ -3,28 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0a2463">
+  <meta name="theme-color" content="#ffffff">
   <title>Álbum do Cauã - Copa 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="login-body">
   <div class="login-container">
     <div class="album-cover">
-      <div class="cover-shine"></div>
-      <div class="cover-top">
-        <div class="cover-badge">FIFA</div>
-        <div class="cover-host">USA · CAN · MEX</div>
+      <div class="cover-leaves">
+        <div class="leaf-col left">
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+        </div>
+        <div class="leaf-col right">
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+          <span class="leaf"></span>
+          <span class="leaf shift"></span>
+        </div>
       </div>
-      <div class="cover-title">
-        <div class="cover-line1">Álbum do</div>
-        <div class="cover-line2">Cauã</div>
-        <div class="cover-line3">Copa 2026</div>
+      <div class="cover-inner">
+        <div class="cover-top-text">OFFICIAL STICKER<br>COLLECTION</div>
+        <div class="cover-26">
+          <span class="digit-2">2</span><span class="trophy">🏆</span><span class="digit-6">6</span>
+        </div>
+        <div class="cover-fifa">FIFA</div>
+        <div class="cover-wc">WORLD CUP<br>2026</div>
+        <div class="cover-sticker-album">STICKER ALBUM · ÁLBUM DE CROMOS</div>
+        <div class="cover-panini">PANINI</div>
       </div>
-      <div class="cover-trophy">🏆</div>
-      <div class="cover-stickers">980 figurinhas</div>
+      <div class="cover-name-badge">Cauã</div>
     </div>
 
     <form id="loginForm" class="login-card" autocomplete="off">
@@ -54,7 +83,6 @@
   <script src="data/countries.js"></script>
   <script src="data/stickers.js"></script>
   <script>
-    // Login logic
     const form = document.getElementById('loginForm');
     const nameInput = document.getElementById('loginName');
     const pinInput = document.getElementById('loginPin');
