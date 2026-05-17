@@ -2675,6 +2675,60 @@ main { padding: 12px 12px 8px; }
   -webkit-text-fill-color: transparent;
 }
 
+/* === LISTA ADMIN (todos os perfis) === */
+.all-profiles-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.ap-stat-box {
+  background: var(--c-ink);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 6px;
+  text-align: center;
+}
+.ap-stat-value {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 24px;
+  color: var(--c-gold);
+  line-height: 1;
+}
+.ap-stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-top: 4px;
+  opacity: .85;
+  font-weight: 700;
+}
+.ap-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+.ap-row.me { border-color: var(--c-gold); background: linear-gradient(90deg, rgba(227,178,60,.1), #fff); }
+.ap-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--c-ink);
+  color: var(--c-gold);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.ap-info { flex: 1; min-width: 0; }
+.ap-name { font-weight: 900; font-size: 13px; }
+.ap-meta { font-size: 11px; color: var(--c-muted); font-weight: 700; margin-top: 2px; }
+
 /* === WELCOME MODAL === */
 .welcome-content { max-width: 480px; }
 .welcome-content h2 {

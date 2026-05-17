@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&family=Press+Start+2P&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=42">
+  <link rel="stylesheet" href="style.css?v=43">
 </head>
 <body class="app-body">
   <header class="app-header">
@@ -132,6 +132,16 @@
       <span class="tab-label">Chave</span>
     </button>
   </nav>
+
+  <!-- Modal: lista de todos os perfis (admin) -->
+  <div id="allProfilesModal" class="modal" hidden>
+    <div class="modal-content">
+      <button class="modal-close" id="closeAllProfiles">✕</button>
+      <h2>👥 Usuários cadastrados</h2>
+      <div id="allProfilesStats" class="all-profiles-stats"></div>
+      <div id="allProfilesList">Carregando...</div>
+    </div>
+  </div>
 
   <!-- Modal boas-vindas (primeira vez) -->
   <div id="welcomeModal" class="modal" hidden>
@@ -335,6 +345,12 @@
         <div id="shareResult" hidden style="margin-top:10px"></div>
       </div>
 
+      <div class="setting-group" id="adminGroup" hidden>
+        <h3>🔒 Admin</h3>
+        <p style="font-size:12px;color:var(--c-muted);margin-bottom:8px">Lista de todos os perfis cadastrados no app.</p>
+        <button class="btn-secondary" id="viewAllProfilesBtn">👥 Ver todos os usuários</button>
+      </div>
+
       <div class="setting-group">
         <h3>Conta</h3>
         <div class="account-info">
@@ -357,12 +373,12 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=42"></script>
-  <script src="data/countries.js?v=42"></script>
-  <script src="data/stickers.js?v=42"></script>
-  <script src="data/schedule.js?v=42"></script>
-  <script src="data/world-map.js?v=42"></script>
-  <script src="app.js?v=42"></script>
+  <script src="data/supabase-config.js?v=43"></script>
+  <script src="data/countries.js?v=43"></script>
+  <script src="data/stickers.js?v=43"></script>
+  <script src="data/schedule.js?v=43"></script>
+  <script src="data/world-map.js?v=43"></script>
+  <script src="app.js?v=43"></script>
   <script>
     // Service Worker - auto-atualiza quando tem versão nova
     if ('serviceWorker' in navigator) {

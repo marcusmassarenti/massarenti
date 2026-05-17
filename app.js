@@ -2330,6 +2330,75 @@
       $('#faqModal').hidden = false;
     });
   }
+
+  // Painel admin (só aparece pra Cauã)
+  const ADMIN_PROFILES = ['Cauã', 'Caua', 'caua', 'cauã'];
+  if (ADMIN_PROFILES.includes(profileName) && $('#adminGroup')) {
+    $('#adminGroup').hidden = false;
+    $('#viewAllProfilesBtn').addEventListener('click', openAllProfilesModal);
+  }
+  if ($('#closeAllProfiles')) {
+    $('#closeAllProfiles').addEventListener('click', () => $('#allProfilesModal').hidden = true);
+  }
+
+  async function openAllProfilesModal() {
+    $('#allProfilesModal').hidden = false;
+    $('#allProfilesList').innerHTML = 'Carregando perfis...';
+    $('#allProfilesStats').innerHTML = '';
+    if (!supabaseClient) {
+      $('#allProfilesList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--c-muted)">📴 Sem conexão</div>';
+      return;
+    }
+    try {
+      const { data: profiles, error } = await supabaseClient
+        .from('profiles')
+        .select('name, counts, scores, updated_at')
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
+      const total = profiles.length;
+      let totalStickers = 0;
+      let totalScores = 0;
+      profiles.forEach(p => {
+        const owned = Object.values(p.counts || {}).filter(v => v > 0).length;
+        totalStickers += owned;
+        totalScores += Object.keys(p.scores || {}).length;
+      });
+      $('#allProfilesStats').innerHTML = `
+        <div class="ap-stat-box">
+          <div class="ap-stat-value">${total}</div>
+          <div class="ap-stat-label">cadastros</div>
+        </div>
+        <div class="ap-stat-box">
+          <div class="ap-stat-value">${totalStickers}</div>
+          <div class="ap-stat-label">figurinhas coladas</div>
+        </div>
+        <div class="ap-stat-box">
+          <div class="ap-stat-value">${totalScores}</div>
+          <div class="ap-stat-label">placares</div>
+        </div>
+      `;
+      $('#allProfilesList').innerHTML = profiles.map(p => {
+        const owned = Object.values(p.counts || {}).filter(v => v > 0).length;
+        const pct = (owned / 980 * 100).toFixed(0);
+        const dup = Object.values(p.counts || {}).reduce((a, v) => a + Math.max(0, v - 1), 0);
+        const d = new Date(p.updated_at);
+        const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) +
+          ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const isMe = p.name === profileName;
+        return `
+          <div class="ap-row ${isMe ? 'me' : ''}">
+            <div class="ap-avatar">${p.name.charAt(0).toUpperCase()}</div>
+            <div class="ap-info">
+              <div class="ap-name">${p.name}${isMe ? ' 👤' : ''}</div>
+              <div class="ap-meta">${owned}/980 · ${pct}%${dup ? ' · 🔁 ' + dup : ''} · última atividade ${dateStr}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      $('#allProfilesList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--c-red)">Erro: ' + e.message + '</div>';
+    }
+  }
   $('#logoutBtn').addEventListener('click', () => {
     if (confirm('Sair do perfil de ' + profileName + '?')) {
       localStorage.removeItem('caua_currentProfile');
