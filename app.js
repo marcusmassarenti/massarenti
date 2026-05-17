@@ -834,41 +834,83 @@
     filtered.forEach(m => {
       list.insertAdjacentHTML('beforeend', matchCardHTML(m));
     });
-    // Liga os inputs de placar
+    attachScheduleListeners(list);
+  }
+
+  function attachScheduleListeners(list) {
     list.querySelectorAll('.score-input').forEach(inp => {
-      inp.addEventListener('change', onScoreChange);
-      inp.addEventListener('blur', onScoreChange);
+      inp.addEventListener('input', onScoreInput);
+      inp.addEventListener('blur', onScoreBlur);
     });
     list.querySelectorAll('.pen-toggle').forEach(btn => {
       btn.addEventListener('click', onPenaltyToggle);
     });
   }
 
-  function onScoreChange(e) {
+  // Salva no localStorage a cada digitada, mas SEM re-renderizar a tela (preserva foco)
+  function onScoreInput(e) {
     const card = e.target.closest('.match-card');
     if (!card) return;
     const id = parseInt(card.dataset.matchId, 10);
     const home = card.querySelector('.score-home').value;
     const away = card.querySelector('.score-away').value;
-    if (home === '' && away === '') {
-      delete state.scores[id];
-    } else if (home !== '' && away !== '') {
+    if (home !== '' && away !== '') {
       const h = parseInt(home, 10);
       const a = parseInt(away, 10);
       if (isNaN(h) || isNaN(a)) return;
       const prev = state.scores[id] || {};
       state.scores[id] = { home: h, away: a };
       if (h === a && prev.penaltyWinner) state.scores[id].penaltyWinner = prev.penaltyWinner;
+      saveData();
+      card.classList.add('played');
+      updateCardAfterScore(card, id);
+    } else if (home === '' && away === '') {
+      if (state.scores[id]) {
+        delete state.scores[id];
+        saveData();
+        card.classList.remove('played');
+        updateCardAfterScore(card, id);
+      }
     }
-    saveData();
-    renderSchedule();
+  }
+
+  function onScoreBlur(e) {
+    // Quando o usuário sai do campo, garantimos que o card mostra status correto
+    const card = e.target.closest('.match-card');
+    if (!card) return;
+    const id = parseInt(card.dataset.matchId, 10);
+    updateCardAfterScore(card, id);
+  }
+
+  function updateCardAfterScore(card, id) {
+    const m = window.SCHEDULE.find(x => x.id === id);
+    if (!m) return;
+    const score = getScore(id);
+    const isKO = m.phase !== 'Grupos';
+    // Mostra/esconde linha de pênaltis
+    let penRow = card.querySelector('.pen-row');
+    if (isKO && score && score.home === score.away && m.resolvedHome && m.resolvedAway) {
+      if (!penRow) {
+        penRow = document.createElement('div');
+        penRow.className = 'pen-row';
+        card.querySelector('.match-body').appendChild(penRow);
+      }
+      penRow.innerHTML = `
+        Empate → quem ganhou nos pênaltis?
+        <button class="pen-toggle ${score.penaltyWinner === 'home' ? 'active' : ''}" data-side="home">${m.resolvedHome.flag} ${m.resolvedHome.code}</button>
+        <button class="pen-toggle ${score.penaltyWinner === 'away' ? 'active' : ''}" data-side="away">${m.resolvedAway.flag} ${m.resolvedAway.code}</button>
+      `;
+      penRow.querySelectorAll('.pen-toggle').forEach(btn => btn.addEventListener('click', onPenaltyToggle));
+    } else if (penRow) {
+      penRow.remove();
+    }
   }
 
   function onPenaltyToggle(e) {
     const card = e.target.closest('.match-card');
     if (!card) return;
     const id = parseInt(card.dataset.matchId, 10);
-    const side = e.target.dataset.side; // 'home' ou 'away'
+    const side = e.target.dataset.side;
     if (!state.scores[id]) return;
     if (state.scores[id].penaltyWinner === side) {
       delete state.scores[id].penaltyWinner;
@@ -876,7 +918,10 @@
       state.scores[id].penaltyWinner = side;
     }
     saveData();
-    renderSchedule();
+    // Atualiza só os botões de pênalti, sem re-renderizar tudo
+    card.querySelectorAll('.pen-toggle').forEach(b => {
+      b.classList.toggle('active', b.dataset.side === state.scores[id].penaltyWinner);
+    });
   }
 
   function matchCardHTML(m) {
@@ -982,8 +1027,8 @@
 
     // Chave do mata-mata
     function teamSlot(team, fallback) {
-      if (team) return `<span class="bk-team"><span class="bk-flag">${team.flag}</span>${team.name}</span>`;
-      return `<span class="bk-team bk-empty">${fallback || '?'}</span>`;
+      if (team) return `<span class="bk-team"><span class="bk-flag">${team.flag}</span><span class="bk-name">${team.name}</span></span>`;
+      return `<span class="bk-team bk-empty"><span class="bk-flag">❓</span><span class="bk-name">${fallback || '?'}</span></span>`;
     }
     function bracketMatch(matchId) {
       const m = window.SCHEDULE.find(x => x.id === matchId);
@@ -991,11 +1036,15 @@
       const score = getScore(matchId);
       const hWon = score && (score.home > score.away || score.penaltyWinner === 'home');
       const aWon = score && (score.away > score.home || score.penaltyWinner === 'away');
+      const d = getMatchDateObj(m);
+      const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+      const dateStr = `${d.getDate()}/${months[d.getMonth()]} ${m.time}`;
       return `
         <div class="bk-match">
           <div class="bk-id">Jogo ${matchId}</div>
           <div class="bk-side ${hWon ? 'win' : ''}">${teamSlot(m.resolvedHome, m.homeLabel)}<span class="bk-score">${score ? score.home : '–'}</span></div>
           <div class="bk-side ${aWon ? 'win' : ''}">${teamSlot(m.resolvedAway, m.awayLabel)}<span class="bk-score">${score ? score.away : '–'}</span></div>
+          <div class="bk-date">${dateStr}</div>
         </div>
       `;
     }
