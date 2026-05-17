@@ -1512,8 +1512,10 @@
     const cupEnd = new Date('2026-07-19T18:00:00-03:00');
     const now = new Date();
     if (now < cupStart) {
-      const diffMs = cupStart - now;
-      const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      // Conta dia-a-dia (ignora horas pra não dar +1 falso)
+      const startDay = new Date(2026, 5, 11); // mes 5 = junho (0-indexado)
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const days = Math.round((startDay - today) / (1000 * 60 * 60 * 24));
       return `
         <div class="countdown-card">
           <div class="countdown-label">⏳ FALTAM</div>
