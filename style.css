@@ -120,42 +120,43 @@ input, select { font-family: inherit; font-size: 16px; }
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  overflow: hidden;
 }
 .cover-leaves .leaf-col {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 90px;
+  top: -8px;
+  bottom: -8px;
+  width: 100px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 4px 0;
-  gap: 2px;
 }
 .cover-leaves .leaf-col.left { left: 0; }
 .cover-leaves .leaf-col.right { right: 0; transform: scaleX(-1); }
 .cover-leaves .leaf {
-  width: 70px;
-  height: 64px;
-  border-radius: 0 70% 70% 70%;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 78px;
+  border-radius: 0 90% 90% 90%;
+  margin-left: 4px;
+  margin-bottom: -10px;
   transform-origin: center;
-  margin-left: 6px;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,.05));
 }
 .cover-leaves .leaf.shift { margin-left: 22px; }
-/* Múltiplas cores aleatórias do padrão Panini */
-.cover-leaves .leaf:nth-child(1) { background: var(--p-red); transform: rotate(-12deg); }
-.cover-leaves .leaf:nth-child(2) { background: var(--p-orange); transform: rotate(8deg); }
-.cover-leaves .leaf:nth-child(3) { background: var(--p-yellow); transform: rotate(-5deg); }
-.cover-leaves .leaf:nth-child(4) { background: var(--p-green); transform: rotate(10deg); }
-.cover-leaves .leaf:nth-child(5) { background: var(--p-teal); transform: rotate(-8deg); }
-.cover-leaves .leaf:nth-child(6) { background: var(--p-blue); transform: rotate(6deg); }
-.cover-leaves .leaf:nth-child(7) { background: var(--p-purple); transform: rotate(-10deg); }
-.cover-leaves .leaf:nth-child(8) { background: var(--p-pink); transform: rotate(7deg); }
-.cover-leaves .leaf:nth-child(9) { background: var(--p-rose); transform: rotate(-6deg); }
-.cover-leaves .leaf:nth-child(10) { background: #d9d9e8; transform: rotate(9deg); }
-.cover-leaves .leaf:nth-child(11) { background: #cfe5d6; transform: rotate(-7deg); }
-.cover-leaves .leaf:nth-child(12) { background: #f4d1a8; transform: rotate(5deg); }
+/* 14 cores intercaladas (cobrem todo o lado) */
+.cover-leaves .leaf:nth-child(1)  { background: var(--p-red);    transform: rotate(-10deg); }
+.cover-leaves .leaf:nth-child(2)  { background: var(--p-orange); transform: rotate(6deg); }
+.cover-leaves .leaf:nth-child(3)  { background: var(--p-yellow); transform: rotate(-7deg); }
+.cover-leaves .leaf:nth-child(4)  { background: var(--p-pink);   transform: rotate(8deg); }
+.cover-leaves .leaf:nth-child(5)  { background: var(--p-green);  transform: rotate(-6deg); }
+.cover-leaves .leaf:nth-child(6)  { background: #d9d9e8;         transform: rotate(7deg); }
+.cover-leaves .leaf:nth-child(7)  { background: var(--p-blue);   transform: rotate(-9deg); }
+.cover-leaves .leaf:nth-child(8)  { background: var(--p-purple); transform: rotate(5deg); }
+.cover-leaves .leaf:nth-child(9)  { background: var(--p-rose);   transform: rotate(-8deg); }
+.cover-leaves .leaf:nth-child(10) { background: #f4d1a8;         transform: rotate(6deg); }
+.cover-leaves .leaf:nth-child(11) { background: var(--p-teal);   transform: rotate(-10deg); }
+.cover-leaves .leaf:nth-child(12) { background: #cfe5d6;         transform: rotate(7deg); }
+.cover-leaves .leaf:nth-child(13) { background: var(--p-red);    transform: rotate(-5deg); }
+.cover-leaves .leaf:nth-child(14) { background: var(--p-yellow); transform: rotate(8deg); }
 .cover-inner {
   position: relative;
   z-index: 1;
@@ -164,7 +165,8 @@ input, select { font-family: inherit; font-size: 16px; }
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 24px 90px 18px;
+  padding: 22px 100px 18px;
+  gap: 6px;
 }
 .cover-top-text {
   font-family: 'Nunito', sans-serif;
@@ -190,12 +192,50 @@ input, select { font-family: inherit; font-size: 16px; }
 }
 .cover-26 .digit-2 { display: inline-block; }
 .cover-26 .trophy {
-  font-size: .85em;
-  margin: 0 -8px;
   display: inline-block;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,.2));
+  width: 0.95em;
+  height: 1.25em;
+  margin: 0 -0.15em;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
+}
+.cover-26 .trophy svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .cover-26 .digit-6 { display: inline-block; }
+.cover-host-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 14px;
+  justify-content: center;
+}
+.host-dot {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #ddd;
+  display: inline-block;
+  font-size: 16px;
+  text-align: center;
+  line-height: 26px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
+.host-can { background: linear-gradient(180deg, #fff 50%, #d80027 50%); position: relative; }
+.host-can::after { content: '🍁'; position: absolute; inset: 0; font-size: 14px; line-height: 26px; }
+.host-usa { background: linear-gradient(180deg, #b22234 0%, #b22234 50%, #fff 50%, #fff 100%); position: relative; }
+.host-usa::after { content: '⭐'; position: absolute; inset: 0; font-size: 12px; line-height: 26px; color: #fff; }
+.host-mex { background: linear-gradient(90deg, #006847 33%, #fff 33%, #fff 66%, #ce1126 66%); position: relative; }
+.host-mex::after { content: '🦅'; position: absolute; inset: 0; font-size: 13px; line-height: 26px; }
+.cover-mascot-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 14px;
+  font-size: 28px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.15));
+}
 .cover-fifa {
   font-family: 'Nunito', sans-serif;
   font-weight: 900;
@@ -213,7 +253,7 @@ input, select { font-family: inherit; font-size: 16px; }
 }
 .cover-sticker-album {
   margin-top: auto;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-size: 9px;
   letter-spacing: 1px;
   color: #555;
@@ -235,14 +275,29 @@ input, select { font-family: inherit; font-size: 16px; }
   position: absolute;
   bottom: 14px;
   right: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+}
+.cover-avatar-img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--c-gold);
+  box-shadow: 0 3px 10px rgba(0,0,0,.25);
+  background: #fff;
+}
+.cover-avatar-label {
   background: #111;
   color: var(--c-gold);
   font-family: var(--font-display);
   letter-spacing: 2px;
-  padding: 4px 12px;
+  padding: 3px 12px;
   border-radius: 20px;
-  font-size: 14px;
-  z-index: 2;
+  font-size: 13px;
 }
 
 .login-card {

@@ -15,45 +15,86 @@
     <div class="album-cover">
       <div class="cover-leaves">
         <div class="leaf-col left">
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
         </div>
         <div class="leaf-col right">
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
-          <span class="leaf"></span>
-          <span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
+          <span class="leaf"></span><span class="leaf shift"></span>
         </div>
       </div>
       <div class="cover-inner">
         <div class="cover-top-text">OFFICIAL STICKER<br>COLLECTION</div>
         <div class="cover-26">
-          <span class="digit-2">2</span><span class="trophy">🏆</span><span class="digit-6">6</span>
+          <span class="digit-2">2</span>
+          <span class="trophy">
+            <svg viewBox="0 0 120 180" xmlns="http://www.w3.org/2000/svg" aria-label="Troféu Copa do Mundo FIFA">
+              <defs>
+                <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#fff2a8"/>
+                  <stop offset="35%" stop-color="#ecc34a"/>
+                  <stop offset="65%" stop-color="#b58423"/>
+                  <stop offset="100%" stop-color="#d9a836"/>
+                </linearGradient>
+                <linearGradient id="goldDark" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#c89422"/>
+                  <stop offset="100%" stop-color="#8b5e15"/>
+                </linearGradient>
+                <radialGradient id="globe" cx="40%" cy="38%">
+                  <stop offset="0%" stop-color="#fff2a8"/>
+                  <stop offset="60%" stop-color="#e1b13e"/>
+                  <stop offset="100%" stop-color="#8b5e15"/>
+                </radialGradient>
+              </defs>
+              <!-- Globo no topo -->
+              <ellipse cx="60" cy="36" rx="26" ry="28" fill="url(#globe)"/>
+              <!-- Linhas do globo (continentes estilizados) -->
+              <path d="M 38,32 Q 50,28 60,30 Q 72,34 82,30 M 36,42 Q 50,46 60,44 Q 72,42 84,44 M 60,12 Q 58,30 60,46 Q 62,58 60,62" stroke="#8b5e15" stroke-width="1.2" fill="none" opacity=".6"/>
+              <!-- Anel embaixo do globo -->
+              <ellipse cx="60" cy="62" rx="22" ry="4" fill="url(#goldDark)"/>
+              <!-- Corpo: duas figuras humanas estilizadas erguendo o globo -->
+              <path d="M 38,64 Q 28,80 32,98 Q 36,114 44,128 L 50,140 L 70,140 L 76,128 Q 84,114 88,98 Q 92,80 82,64 Q 75,78 60,82 Q 45,78 38,64 Z" fill="url(#gold)" stroke="#8b5e15" stroke-width="1"/>
+              <!-- Detalhe central das figuras -->
+              <path d="M 56,80 Q 60,90 64,80 M 52,100 Q 60,108 68,100" stroke="#8b5e15" stroke-width="1" fill="none" opacity=".5"/>
+              <!-- Base dourada -->
+              <rect x="40" y="138" width="40" height="10" rx="2" fill="url(#gold)" stroke="#8b5e15" stroke-width="1"/>
+              <!-- Base preta/malaquita -->
+              <rect x="34" y="148" width="52" height="14" rx="2" fill="#2a3328"/>
+              <rect x="34" y="148" width="52" height="3" fill="#4a5648"/>
+              <ellipse cx="60" cy="164" rx="28" ry="4" fill="#1a1f1c"/>
+            </svg>
+          </span>
+          <span class="digit-6">6</span>
         </div>
         <div class="cover-fifa">FIFA</div>
         <div class="cover-wc">WORLD CUP<br>2026</div>
+        <div class="cover-host-row">
+          <span class="host-flag">🇺🇸</span>
+          <span class="host-flag">🇨🇦</span>
+          <span class="host-flag">🇲🇽</span>
+        </div>
+        <div class="cover-mascot-row">
+          <span title="Maple">🦌</span>
+          <span title="Zayu">🐆</span>
+          <span title="Clutch">🦅</span>
+        </div>
         <div class="cover-sticker-album">STICKER ALBUM · ÁLBUM DE CROMOS</div>
         <div class="cover-panini">PANINI</div>
       </div>
-      <div class="cover-name-badge">Cauã</div>
+      <div class="cover-name-badge">
+        <img src="assets/caua.jpg" alt="Cauã" class="cover-avatar-img" onerror="this.style.display='none'">
+        <span class="cover-avatar-label">Cauã</span>
+      </div>
     </div>
 
     <form id="loginForm" class="login-card" autocomplete="off">
