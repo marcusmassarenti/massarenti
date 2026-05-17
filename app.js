@@ -215,8 +215,9 @@
   }
   async function requestJoinGroup(code) {
     if (!supabaseClient) return { ok: false, error: 'Sem conexão' };
+    // Entra direto no grupo (sem aprovação)
     const { error } = await supabaseClient
-      .from('group_requests')
+      .from('group_members')
       .insert({ group_code: code, profile_name: profileName });
     if (error && !String(error.message).toLowerCase().includes('duplicate')) {
       return { ok: false, error: error.message };
@@ -224,13 +225,8 @@
     return { ok: true };
   }
   async function cancelJoinRequest(code) {
-    if (!supabaseClient) return false;
-    const { error } = await supabaseClient
-      .from('group_requests')
-      .delete()
-      .eq('group_code', code)
-      .eq('profile_name', profileName);
-    return !error;
+    // Mantido pra compatibilidade — agora apenas sai do grupo
+    return leaveGroup(code);
   }
   async function approveRequest(groupCode, name) {
     if (!supabaseClient) return false;
@@ -1954,39 +1950,7 @@
       loadAndRenderGroups();
     });
 
-    // Se admin, carrega pedidos pendentes
-    if (isAdmin) {
-      const pending = await loadPendingRequests(selectedGroupCode);
-      if (pending.length > 0) {
-        const pendingEl = $('#pendingRequests');
-        pendingEl.innerHTML = `
-          <div class="pending-requests-box">
-            <div class="pending-title">📨 ${pending.length} pedido${pending.length>1?'s':''} pendente${pending.length>1?'s':''}</div>
-            ${pending.map(r => `
-              <div class="pending-row">
-                <span class="pending-name">👤 ${r.profile_name}</span>
-                <button class="btn-primary" data-approve="${r.profile_name}" style="font-size:11px;padding:3px 8px">✓ Aceitar</button>
-                <button class="btn-secondary" data-deny="${r.profile_name}" style="font-size:11px;padding:3px 8px">✗ Recusar</button>
-              </div>
-            `).join('')}
-          </div>
-        `;
-        pendingEl.querySelectorAll('[data-approve]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            btn.disabled = true;
-            await approveRequest(selectedGroupCode, btn.dataset.approve);
-            loadAndRenderGroups();
-          });
-        });
-        pendingEl.querySelectorAll('[data-deny]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            btn.disabled = true;
-            await denyRequest(selectedGroupCode, btn.dataset.deny);
-            loadAndRenderGroups();
-          });
-        });
-      }
-    }
+    // (Aprovação por admin removida — grupos são abertos pra entrar)
 
     listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px;grid-column:1/-1">Carregando membros...</div>';
     const members = await loadGroupMembers(selectedGroupCode);
@@ -2060,11 +2024,9 @@
       const isAdmin = g.created_by === profileName;
       let action;
       if (isMember) {
-        action = `<span class="group-badge member">✓ Você está no grupo${isAdmin ? ' (admin)' : ''}</span>`;
-      } else if (isPending) {
-        action = `<button class="btn-secondary" data-cancel="${g.code}" style="font-size:11px;padding:5px 10px">⏳ Cancelar pedido</button>`;
+        action = `<span class="group-badge member">✓ No grupo${isAdmin ? ' (criador)' : ''}</span>`;
       } else {
-        action = `<button class="btn-primary" data-request="${g.code}" style="font-size:11px;padding:5px 10px">📨 Pedir entrada</button>`;
+        action = `<button class="btn-primary" data-request="${g.code}" style="font-size:11px;padding:5px 10px">✚ Entrar</button>`;
       }
       return `
         <div class="group-list-item">
@@ -2081,7 +2043,7 @@
         btn.disabled = true; btn.textContent = '...';
         const res = await requestJoinGroup(btn.dataset.request);
         if (!res.ok) { showToast('Erro: ' + res.error, 'error'); return; }
-        showToast('📨 Pedido enviado! Aguarde aprovação do admin.', 'success', 3500);
+        showToast('✅ Você entrou no grupo!', 'success', 2500);
         await refreshGroupsModal();
         loadAndRenderGroups();
       });
@@ -2442,9 +2404,64 @@
     }
   });
 
+  // Boas-vindas pra novos usuários (primeira vez no dispositivo)
+  async function showWelcomeIfNeeded() {
+    const welcomedKey = `caua_welcomed_${profileName}`;
+    if (localStorage.getItem(welcomedKey)) return;
+    if (!supabaseClient || viewMode) return;
+    // Espera um pouco pra evitar conflito com outros modais
+    setTimeout(async () => {
+      const [myGroups, allGroups] = await Promise.all([loadMyGroups(), loadAllGroups()]);
+      const myCodes = new Set(myGroups.map(g => g.code));
+      const available = allGroups.filter(g => !myCodes.has(g.code));
+      // Só mostra se tem grupos disponíveis pra entrar
+      if (available.length === 0) {
+        localStorage.setItem(welcomedKey, '1');
+        return;
+      }
+      const counts = await Promise.all(available.map(g => loadMemberCount(g.code)));
+      const listEl = $('#welcomeGroupsList');
+      if (!listEl) return;
+      listEl.innerHTML = available.map((g, i) => `
+        <div class="welcome-group-card" data-code="${g.code}">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:900;font-size:14px">${g.name}</div>
+            <div style="font-size:11px;color:var(--c-muted);font-weight:700">${counts[i]} ${counts[i] === 1 ? 'membro' : 'membros'}</div>
+          </div>
+          <button class="btn-primary" data-join="${g.code}">✚ Entrar</button>
+        </div>
+      `).join('');
+      listEl.querySelectorAll('[data-join]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          btn.textContent = '...';
+          const res = await requestJoinGroup(btn.dataset.join);
+          if (res.ok) {
+            const card = btn.closest('.welcome-group-card');
+            card.classList.add('joined');
+            btn.textContent = '✓';
+          } else {
+            btn.disabled = false;
+            btn.textContent = '✚ Entrar';
+            showToast('Erro: ' + res.error, 'error');
+          }
+        });
+      });
+      $('#welcomeModal').hidden = false;
+      const closeWelcome = () => {
+        localStorage.setItem(welcomedKey, '1');
+        $('#welcomeModal').hidden = true;
+        renderDashboard();
+      };
+      $('#closeWelcomeModal').onclick = closeWelcome;
+      $('#welcomeSkip').onclick = closeWelcome;
+    }, 800);
+  }
+
   // ---------- INIT ----------
   fillCountryFilter();
   renderDashboard();
+  showWelcomeIfNeeded();
 
   // Atualiza o painel a cada 60s pra contagem regressiva e jogos do dia ficarem frescos
   setInterval(() => {

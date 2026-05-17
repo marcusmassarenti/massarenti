@@ -2675,6 +2675,38 @@ main { padding: 12px 12px 8px; }
   -webkit-text-fill-color: transparent;
 }
 
+/* === WELCOME MODAL === */
+.welcome-content { max-width: 480px; }
+.welcome-content h2 {
+  font-size: 22px;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.welcome-group-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #fff;
+  border: 1.5px solid var(--c-border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  transition: border-color .15s, background .15s;
+}
+.welcome-group-card.joined {
+  border-color: var(--c-success);
+  background: linear-gradient(90deg, rgba(84,169,109,.15), #fff);
+}
+.welcome-group-card button {
+  font-size: 12px;
+  padding: 6px 12px;
+  flex-shrink: 0;
+}
+.welcome-group-card.joined button {
+  background: var(--c-success);
+  cursor: default;
+}
+
 /* === QUICK SCORE MODAL === */
 .today-row, .brazil-row { cursor: pointer; transition: background .15s; }
 .today-row:active, .brazil-row:active { transform: scale(.98); }
