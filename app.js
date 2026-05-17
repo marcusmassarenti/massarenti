@@ -2331,10 +2331,11 @@
     });
   }
 
-  // Painel admin (só aparece pra Cauã)
-  const adminNames = ['Cauã', 'Caua', 'caua', 'cauã', 'CAUÃ', 'CAUA'];
-  const isAdminUser = adminNames.includes(profileName);
-  console.log('[admin] profileName=[' + profileName + '] isAdmin=', isAdminUser);
+  // Painel admin - aceita qualquer variação de "Cauã" (case-insensitive, com ou sem acento)
+  const normalizedName = (profileName || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const isAdminUser = normalizedName.includes('caua');
+  console.log('[admin] profileName=[' + profileName + '] normalized=[' + normalizedName + '] isAdmin=', isAdminUser);
   if (isAdminUser) {
     const adminGroup = document.getElementById('adminGroup');
     const viewBtn = document.getElementById('viewAllProfilesBtn');
@@ -2428,59 +2429,7 @@
     }
   });
 
-  // Color swatches
-  const COLORS = ['#0a2463', '#c8102e', '#10b981', '#ff6b35', '#7b2cbf', '#000', '#ffd700'];
-  const colorBox = $('#colorOptions');
-  COLORS.forEach(c => {
-    const sw = document.createElement('div');
-    sw.className = 'color-swatch' + (c === theme.color ? ' active' : '');
-    sw.style.background = c;
-    sw.addEventListener('click', () => {
-      theme.color = c;
-      saveTheme();
-      applyTheme();
-      $$('.color-swatch').forEach(s => s.classList.toggle('active', s === sw));
-    });
-    colorBox.appendChild(sw);
-  });
 
-  $('#fontSelect').value = theme.font;
-  $('#fontSelect').addEventListener('change', (e) => {
-    theme.font = e.target.value;
-    saveTheme();
-    applyTheme();
-  });
-
-  // Compartilhar álbum (gera link)
-  if ($('#shareBtn')) {
-    $('#shareBtn').addEventListener('click', () => {
-      const code = encodeAlbumState();
-      const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, 'app.html');
-      const url = `${base}?view=${code}`;
-      const result = $('#shareResult');
-      result.hidden = false;
-      result.innerHTML = `
-        <p style="font-size:12px;font-weight:700;margin-bottom:6px">Link copiado! Cole no WhatsApp ou no navegador da família 👇</p>
-        <textarea readonly style="width:100%;height:60px;padding:6px;font-size:11px;font-family:monospace;border:1px solid var(--c-border);border-radius:6px">${url}</textarea>
-        <button class="btn-secondary" id="copyShareLink" style="margin-top:6px;width:100%">📋 Copiar link</button>
-      `;
-      const ta = result.querySelector('textarea');
-      ta.select();
-      try {
-        navigator.clipboard.writeText(url);
-      } catch (e) {}
-      $('#copyShareLink').addEventListener('click', () => {
-        ta.select();
-        try {
-          navigator.clipboard.writeText(url);
-          $('#copyShareLink').textContent = '✓ Copiado!';
-          setTimeout(() => { $('#copyShareLink').textContent = '📋 Copiar link'; }, 2000);
-        } catch (e) {
-          document.execCommand('copy');
-        }
-      });
-    });
-  }
 
   // Reset (zera figurinhas E placares)
   $('#resetBtn').addEventListener('click', () => {

@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&family=Press+Start+2P&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=46">
 </head>
 <body class="app-body">
   <header class="app-header">
@@ -325,25 +325,6 @@
       <button class="modal-close" id="closeSettingsModal">✕</button>
       <h2>Configurações</h2>
 
-      <div class="setting-group">
-        <h3>Tema</h3>
-        <label>Cor principal</label>
-        <div class="color-options" id="colorOptions"></div>
-        <label>Fonte do título</label>
-        <select id="fontSelect">
-          <option value="'Bebas Neue', sans-serif">Bebas Neue (padrão)</option>
-          <option value="'Fredoka', sans-serif">Fredoka (arredondada)</option>
-          <option value="'Press Start 2P', monospace">Pixel (game)</option>
-          <option value="'Nunito', sans-serif">Nunito (clean)</option>
-        </select>
-      </div>
-
-      <div class="setting-group">
-        <h3>👨‍👩‍👧 Compartilhar com a família</h3>
-        <p style="font-size:12px;color:var(--c-muted);margin-bottom:8px">Gera um link pra família ver seu álbum (sem mexer).</p>
-        <button class="btn-primary" id="shareBtn">🔗 Gerar link de visualização</button>
-        <div id="shareResult" hidden style="margin-top:10px"></div>
-      </div>
 
       <div class="setting-group" id="adminGroup" hidden>
         <h3>🔒 Admin</h3>
@@ -373,12 +354,12 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=45"></script>
-  <script src="data/countries.js?v=45"></script>
-  <script src="data/stickers.js?v=45"></script>
-  <script src="data/schedule.js?v=45"></script>
-  <script src="data/world-map.js?v=45"></script>
-  <script src="app.js?v=45"></script>
+  <script src="data/supabase-config.js?v=46"></script>
+  <script src="data/countries.js?v=46"></script>
+  <script src="data/stickers.js?v=46"></script>
+  <script src="data/schedule.js?v=46"></script>
+  <script src="data/world-map.js?v=46"></script>
+  <script src="app.js?v=46"></script>
   <script>
     // Service Worker - auto-atualiza quando tem versão nova
     if ('serviceWorker' in navigator) {
