@@ -132,6 +132,23 @@
     </button>
   </nav>
 
+  <!-- Modal de grupos -->
+  <div id="groupsModal" class="modal" hidden>
+    <div class="modal-content">
+      <button class="modal-close" id="closeGroupsModal">✕</button>
+      <h2>👨‍👩‍👧 Grupos</h2>
+      <div class="setting-group">
+        <h3>➕ Criar novo grupo</h3>
+        <input type="text" id="newGroupName" placeholder="Ex: Família Massarenti" maxlength="40" style="width:100%;padding:10px;border:1.5px solid var(--c-border);border-radius:8px;margin-bottom:8px">
+        <button class="btn-primary" id="createGroupBtn" style="width:100%">Criar grupo</button>
+      </div>
+      <div class="setting-group">
+        <h3>🌐 Grupos disponíveis</h3>
+        <div id="allGroupsList" style="display:flex;flex-direction:column;gap:6px">Carregando...</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal mapa em tela cheia -->
   <div id="mapFullscreenModal" class="modal map-fullscreen-modal" hidden>
     <div class="modal-content map-fullscreen-content">
@@ -208,12 +225,12 @@
   <div id="confetti"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=7"></script>
-  <script src="data/countries.js?v=7"></script>
-  <script src="data/stickers.js?v=7"></script>
-  <script src="data/schedule.js?v=7"></script>
-  <script src="data/world-map.js?v=7"></script>
-  <script src="app.js?v=7"></script>
+  <script src="data/supabase-config.js?v=8"></script>
+  <script src="data/countries.js?v=8"></script>
+  <script src="data/stickers.js?v=8"></script>
+  <script src="data/schedule.js?v=8"></script>
+  <script src="data/world-map.js?v=8"></script>
+  <script src="app.js?v=8"></script>
   <script>
     // Service Worker - auto-atualiza quando tem versão nova
     if ('serviceWorker' in navigator) {

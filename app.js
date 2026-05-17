@@ -181,6 +181,82 @@
       return groups || [];
     } catch (e) { console.warn(e); return []; }
   }
+  async function loadAllGroups() {
+    if (!supabaseClient) return [];
+    try {
+      const { data } = await supabaseClient.from('groups').select('*').order('created_at');
+      return data || [];
+    } catch (e) { console.warn(e); return []; }
+  }
+  async function loadGroupRequestsByMe() {
+    if (!supabaseClient) return [];
+    const { data } = await supabaseClient
+      .from('group_requests')
+      .select('group_code')
+      .eq('profile_name', profileName);
+    return (data || []).map(r => r.group_code);
+  }
+  async function loadPendingRequests(groupCode) {
+    if (!supabaseClient) return [];
+    const { data } = await supabaseClient
+      .from('group_requests')
+      .select('profile_name, requested_at')
+      .eq('group_code', groupCode)
+      .order('requested_at');
+    return data || [];
+  }
+  async function loadMemberCount(groupCode) {
+    if (!supabaseClient) return 0;
+    const { count } = await supabaseClient
+      .from('group_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_code', groupCode);
+    return count || 0;
+  }
+  async function requestJoinGroup(code) {
+    if (!supabaseClient) return { ok: false, error: 'Sem conexão' };
+    const { error } = await supabaseClient
+      .from('group_requests')
+      .insert({ group_code: code, profile_name: profileName });
+    if (error && !String(error.message).toLowerCase().includes('duplicate')) {
+      return { ok: false, error: error.message };
+    }
+    return { ok: true };
+  }
+  async function cancelJoinRequest(code) {
+    if (!supabaseClient) return false;
+    const { error } = await supabaseClient
+      .from('group_requests')
+      .delete()
+      .eq('group_code', code)
+      .eq('profile_name', profileName);
+    return !error;
+  }
+  async function approveRequest(groupCode, name) {
+    if (!supabaseClient) return false;
+    // Adiciona como membro + remove da request
+    const { error: e1 } = await supabaseClient
+      .from('group_members')
+      .insert({ group_code: groupCode, profile_name: name });
+    if (e1 && !String(e1.message).toLowerCase().includes('duplicate')) {
+      console.warn(e1); return false;
+    }
+    await supabaseClient
+      .from('group_requests')
+      .delete()
+      .eq('group_code', groupCode)
+      .eq('profile_name', name);
+    return true;
+  }
+  async function denyRequest(groupCode, name) {
+    if (!supabaseClient) return false;
+    const { error } = await supabaseClient
+      .from('group_requests')
+      .delete()
+      .eq('group_code', groupCode)
+      .eq('profile_name', name);
+    return !error;
+  }
   async function loadGroupMembers(groupCode) {
     if (!supabaseClient) return [];
     try {
@@ -1543,19 +1619,15 @@
       });
     });
     const current = groups.find(g => g.code === selectedGroupCode);
+    const isAdmin = current.created_by === profileName;
     infoEl.innerHTML = `
       <div class="group-info-bar">
-        <span class="group-info-label">Código:</span>
-        <code class="group-info-code">${current.code}</code>
-        <button class="btn-secondary group-info-copy" data-code="${current.code}" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
+        <span class="group-info-name">${current.name}</span>
+        ${isAdmin ? '<span class="group-admin-badge">👑 admin</span>' : ''}
         <button class="btn-secondary group-info-leave" data-code="${current.code}" style="font-size:11px;padding:3px 8px;margin-left:auto">🚪 Sair</button>
       </div>
+      <div id="pendingRequests"></div>
     `;
-    infoEl.querySelector('.group-info-copy').addEventListener('click', (e) => {
-      navigator.clipboard.writeText(e.currentTarget.dataset.code);
-      e.currentTarget.textContent = '✓ Copiado!';
-      setTimeout(() => { e.currentTarget.textContent = '📋 Copiar'; }, 1500);
-    });
     infoEl.querySelector('.group-info-leave').addEventListener('click', async (e) => {
       const code = e.currentTarget.dataset.code;
       if (!confirm(`Sair do grupo "${current.name}"?`)) return;
@@ -1563,6 +1635,40 @@
       setSelectedGroup('');
       loadAndRenderGroups();
     });
+
+    // Se admin, carrega pedidos pendentes
+    if (isAdmin) {
+      const pending = await loadPendingRequests(selectedGroupCode);
+      if (pending.length > 0) {
+        const pendingEl = $('#pendingRequests');
+        pendingEl.innerHTML = `
+          <div class="pending-requests-box">
+            <div class="pending-title">📨 ${pending.length} pedido${pending.length>1?'s':''} pendente${pending.length>1?'s':''}</div>
+            ${pending.map(r => `
+              <div class="pending-row">
+                <span class="pending-name">👤 ${r.profile_name}</span>
+                <button class="btn-primary" data-approve="${r.profile_name}" style="font-size:11px;padding:3px 8px">✓ Aceitar</button>
+                <button class="btn-secondary" data-deny="${r.profile_name}" style="font-size:11px;padding:3px 8px">✗ Recusar</button>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        pendingEl.querySelectorAll('[data-approve]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            await approveRequest(selectedGroupCode, btn.dataset.approve);
+            loadAndRenderGroups();
+          });
+        });
+        pendingEl.querySelectorAll('[data-deny]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            await denyRequest(selectedGroupCode, btn.dataset.deny);
+            loadAndRenderGroups();
+          });
+        });
+      }
+    }
 
     listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--c-muted);font-size:13px;grid-column:1/-1">Carregando membros...</div>';
     const members = await loadGroupMembers(selectedGroupCode);
@@ -1581,39 +1687,85 @@
     });
   }
 
-  function openGroupsModal() {
+  async function openGroupsModal() {
     if (!supabaseClient) { alert('Sem conexão com a nuvem.'); return; }
-    const action = prompt(
-      'O que você quer fazer?\n\n' +
-      '1 = Criar um grupo novo\n' +
-      '2 = Entrar em grupo com código\n\n' +
-      'Digite 1 ou 2:'
-    );
-    if (action === '1') {
-      const name = prompt('Nome do grupo (ex: "Família Massarenti", "Amigos da Escola"):');
-      if (!name) return;
-      createGroup(name).then(g => {
-        if (g) {
-          setSelectedGroup(g.code);
-          loadAndRenderGroups();
-          alert(`✅ Grupo "${g.name}" criado!\n\nCódigo: ${g.code}\n\nCompartilhe esse código com a família/amigos pra eles entrarem.`);
-        } else {
-          alert('Erro ao criar grupo. Tente de novo.');
-        }
-      });
-    } else if (action === '2') {
-      const code = prompt('Digite o código do grupo (6 letras/números):');
-      if (!code) return;
-      joinGroup(code).then(res => {
-        if (res.ok) {
-          setSelectedGroup(res.group.code);
-          loadAndRenderGroups();
-          alert(`✅ Você entrou no grupo "${res.group.name}"!`);
-        } else {
-          alert('❌ ' + res.error);
-        }
-      });
+    $('#groupsModal').hidden = false;
+    await refreshGroupsModal();
+  }
+  async function refreshGroupsModal() {
+    const listEl = $('#allGroupsList');
+    if (!listEl) return;
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--c-muted);padding:8px">Carregando...</div>';
+    const [allGroups, myGroups, myRequests] = await Promise.all([
+      loadAllGroups(),
+      loadMyGroups(),
+      loadGroupRequestsByMe()
+    ]);
+    const myCodes = new Set(myGroups.map(g => g.code));
+    const myReqs = new Set(myRequests);
+    if (allGroups.length === 0) {
+      listEl.innerHTML = '<div style="font-size:12px;color:var(--c-muted);padding:16px;text-align:center">Nenhum grupo criado ainda. Cria o primeiro acima!</div>';
+      return;
     }
+    // Conta membros de cada
+    const counts = await Promise.all(allGroups.map(g => loadMemberCount(g.code)));
+    listEl.innerHTML = allGroups.map((g, i) => {
+      const memberCount = counts[i];
+      const isMember = myCodes.has(g.code);
+      const isPending = myReqs.has(g.code);
+      const isAdmin = g.created_by === profileName;
+      let action;
+      if (isMember) {
+        action = `<span class="group-badge member">✓ Você está no grupo${isAdmin ? ' (admin)' : ''}</span>`;
+      } else if (isPending) {
+        action = `<button class="btn-secondary" data-cancel="${g.code}" style="font-size:11px;padding:5px 10px">⏳ Cancelar pedido</button>`;
+      } else {
+        action = `<button class="btn-primary" data-request="${g.code}" style="font-size:11px;padding:5px 10px">📨 Pedir entrada</button>`;
+      }
+      return `
+        <div class="group-list-item">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:900;font-size:14px">${g.name}</div>
+            <div style="font-size:11px;color:var(--c-muted);font-weight:700">${memberCount} membro${memberCount !== 1 ? 's' : ''} · admin: ${g.created_by || '?'}</div>
+          </div>
+          ${action}
+        </div>
+      `;
+    }).join('');
+    listEl.querySelectorAll('[data-request]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = '...';
+        const res = await requestJoinGroup(btn.dataset.request);
+        if (!res.ok) { alert('Erro: ' + res.error); return; }
+        await refreshGroupsModal();
+        loadAndRenderGroups();
+      });
+    });
+    listEl.querySelectorAll('[data-cancel]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = '...';
+        await cancelJoinRequest(btn.dataset.cancel);
+        await refreshGroupsModal();
+      });
+    });
+  }
+  // Liga botões do modal
+  if ($('#createGroupBtn')) {
+    $('#createGroupBtn').addEventListener('click', async () => {
+      const name = $('#newGroupName').value.trim();
+      if (!name) { alert('Digite um nome'); return; }
+      const g = await createGroup(name);
+      if (g) {
+        $('#newGroupName').value = '';
+        setSelectedGroup(g.code);
+        alert(`✅ Grupo "${g.name}" criado!\nVocê é o admin. Outros usuários podem pedir entrada e você aprova.`);
+        await refreshGroupsModal();
+        loadAndRenderGroups();
+      } else { alert('Erro ao criar grupo'); }
+    });
+  }
+  if ($('#closeGroupsModal')) {
+    $('#closeGroupsModal').addEventListener('click', () => $('#groupsModal').hidden = true);
   }
 
   async function generateFamilyViewCode(familyName) {
