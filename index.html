@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=19">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -317,44 +317,61 @@
       const dismissedAt = parseInt(localStorage.getItem('caua_installDismissed') || '0', 10);
       if (dismissedAt && (Date.now() - dismissedAt) < 7 * 24 * 60 * 60 * 1000) return;
 
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const ua = navigator.userAgent;
+      const isIOS = /iPhone|iPad|iPod/i.test(ua);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+      const isEdge = /Edg\//i.test(ua);
+      const isFirefox = /Firefox\//i.test(ua);
       let deferredPrompt = null;
 
-      // Android Chrome - evento nativo
+      // Mostra o banner pra qualquer navegador (a não ser que já esteja instalado/dispensado)
+      banner.hidden = false;
+
+      // Chromium-based (Chrome, Edge, Brave, Samsung) - captura evento nativo
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        banner.hidden = false;
       });
-
-      // iOS Safari - mostra banner com instruções manuais
-      if (isIOS && isSafari) {
-        banner.hidden = false;
-      }
 
       installBtn.addEventListener('click', async () => {
         if (deferredPrompt) {
-          // Android: dispara prompt nativo
+          // Prompt nativo (Chrome, Edge, Brave...)
           deferredPrompt.prompt();
           const { outcome } = await deferredPrompt.userChoice;
           if (outcome === 'accepted') banner.hidden = true;
           deferredPrompt = null;
-        } else if (isIOS) {
-          // iOS: abre modal com instruções
+          return;
+        }
+        // Fallback: instruções específicas por navegador
+        if (isIOS) {
           alert(
-            '📱 Pra instalar no iPhone:\n\n' +
-            '1. Toca no botão de Compartilhar (📤 quadradinho com setinha pra cima)\n' +
+            '📱 Pra instalar no iPhone (Safari):\n\n' +
+            '1. Toca no botão de Compartilhar (📤 quadradinho com setinha pra cima — barra de baixo)\n' +
             '2. Rola até "Adicionar à Tela de Início"\n' +
             '3. Toca em "Adicionar"\n\n' +
             'Pronto! O ícone fica na sua tela inicial 🎉'
           );
+        } else if (isEdge) {
+          alert(
+            '💻 Pra instalar no Edge:\n\n' +
+            '1. Toca no ⋯ (três pontinhos no topo direito)\n' +
+            '2. Vai em "Apps" → "Instalar este site como aplicativo"\n' +
+            '3. Confirma o nome → "Instalar"\n\n' +
+            'O app fica no menu Iniciar e na barra de tarefas 🎉'
+          );
+        } else if (isFirefox) {
+          alert(
+            '🦊 Pra instalar no Firefox:\n\n' +
+            'O Firefox não tem instalação nativa de PWA.\n\n' +
+            'Sugestão: usa o Chrome ou Edge pra instalar.'
+          );
         } else {
           alert(
-            '📱 Pra instalar no celular/computador:\n\n' +
+            '📲 Pra instalar:\n\n' +
             '1. Abre o menu do navegador (⋮ ou ≡)\n' +
-            '2. Procura "Instalar app" ou "Adicionar à tela inicial"\n' +
-            '3. Confirma e pronto!'
+            '2. Procura "Instalar app" / "Adicionar à tela inicial"\n' +
+            '3. Confirma e pronto!\n\n' +
+            'Se não achar, recarrega a página e tenta de novo.'
           );
         }
       });
