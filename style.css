@@ -512,6 +512,27 @@ input, select { font-family: inherit; font-size: 16px; }
 }
 .login-card input:focus { border-color: var(--c-ink); }
 .login-card input::placeholder { color: #aaa; }
+.pin-wrapper { position: relative; }
+.pin-wrapper input { width: 100%; padding-right: 48px; }
+.pin-toggle-eye {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background .15s;
+}
+.pin-toggle-eye:hover { background: var(--c-bg-soft); }
+.pin-toggle-eye:active { transform: translateY(-50%) scale(.9); }
 
 .btn-primary {
   background: var(--c-ink);
