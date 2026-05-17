@@ -1494,6 +1494,128 @@ main { padding: 12px 12px 100px; }
   font-weight: 700;
 }
 
+/* === COUNTDOWN === */
+.countdown-card {
+  background: linear-gradient(135deg, var(--p-red) 0%, var(--p-orange) 50%, var(--p-yellow) 100%);
+  color: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(212,68,74,.3);
+  position: relative;
+  overflow: hidden;
+}
+.countdown-card.live { background: linear-gradient(135deg, var(--c-red) 0%, #8a0a20 100%); animation: pulse-live 2s ease-in-out infinite; }
+.countdown-card.ended { background: linear-gradient(135deg, var(--c-ink) 0%, #333 100%); }
+@keyframes pulse-live { 0%,100% { box-shadow: 0 4px 14px rgba(212,68,74,.3); } 50% { box-shadow: 0 4px 24px rgba(212,68,74,.6); } }
+.countdown-label {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 2px;
+  opacity: .95;
+}
+.countdown-days {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 60px;
+  line-height: 1;
+  letter-spacing: -3px;
+  margin: 4px 0;
+  text-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.countdown-sub {
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.countdown-date {
+  font-size: 11px;
+  background: rgba(0,0,0,.25);
+  padding: 6px 10px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-top: 6px;
+  font-weight: 700;
+}
+
+/* === JOGOS DO BRASIL === */
+.brazil-block {
+  background: linear-gradient(135deg, #FFD700 0%, #009C3B 50%, #002776 100%);
+  padding: 2px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 10px rgba(0,156,59,.2);
+}
+.brazil-block h3 {
+  background: linear-gradient(90deg, #FFD700, transparent);
+  margin: 0 !important;
+  padding: 8px 14px;
+  color: #002776;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  border-radius: 12px 12px 0 0;
+  background: #FFD700;
+}
+.brazil-list {
+  background: #fff;
+  border-radius: 0 0 12px 12px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.brazil-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(255,215,0,.08), transparent);
+  border-left: 3px solid #009C3B;
+}
+.brazil-row.past { opacity: .65; }
+.brazil-date {
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 38px;
+  border-right: 1.5px solid var(--c-border);
+  padding-right: 8px;
+}
+.brazil-day {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 20px;
+  color: #002776;
+  line-height: 1;
+}
+.brazil-month {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  font-weight: 800;
+}
+.brazil-match { flex: 1; min-width: 0; }
+.brazil-teams {
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.2;
+}
+.brazil-venue {
+  font-size: 10px;
+  color: var(--c-muted);
+  font-weight: 700;
+  margin-top: 2px;
+}
+.brazil-score {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  padding: 0 4px;
+}
+
 /* === DASHBOARD === */
 .dashboard-stats {
   display: grid;

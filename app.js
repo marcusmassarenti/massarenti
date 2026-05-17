@@ -1507,12 +1507,91 @@
     return ranked;
   }
 
+  function buildCountdownHtml() {
+    const cupStart = new Date('2026-06-11T17:00:00-03:00');
+    const cupEnd = new Date('2026-07-19T18:00:00-03:00');
+    const now = new Date();
+    if (now < cupStart) {
+      const diffMs = cupStart - now;
+      const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      return `
+        <div class="countdown-card">
+          <div class="countdown-label">⏳ FALTAM</div>
+          <div class="countdown-days">${days}</div>
+          <div class="countdown-sub">dia${days !== 1 ? 's' : ''} pra Copa começar!</div>
+          <div class="countdown-date">🇲🇽 México x África do Sul · 11/jun · 17h Brasília</div>
+        </div>
+      `;
+    } else if (now < cupEnd) {
+      return `
+        <div class="countdown-card live">
+          <div class="countdown-label">🔴 ACONTECENDO AGORA</div>
+          <div class="countdown-days">⚽</div>
+          <div class="countdown-sub">A Copa do Mundo 2026 está rolando!</div>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="countdown-card ended">
+          <div class="countdown-label">🏆 COPA ENCERRADA</div>
+          <div class="countdown-days">FIM</div>
+        </div>
+      `;
+    }
+  }
+
+  function buildBrazilGamesHtml() {
+    const brazilGames = window.SCHEDULE.filter(m =>
+      m.homeCode === 'BRA' || m.awayCode === 'BRA'
+    ).slice(0, 6); // até 6 jogos (3 grupos + até 3 mata-mata)
+    if (brazilGames.length === 0) return '';
+    const now = new Date();
+    const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const rows = brazilGames.map(m => {
+      const d = new Date(`${m.date}T${m.time}:00-03:00`);
+      const isPast = d < now;
+      const score = state.scores[m.id];
+      const opponent = m.homeCode === 'BRA'
+        ? (m.resolvedAway || (m.awayCode ? { code: m.awayCode, flag: countryByCode[m.awayCode].flag, name: countryByCode[m.awayCode].name } : null))
+        : (m.resolvedHome || (m.homeCode ? { code: m.homeCode, flag: countryByCode[m.homeCode].flag, name: countryByCode[m.homeCode].name } : null));
+      if (!opponent) return '';
+      const isHome = m.homeCode === 'BRA';
+      let scoreHtml = '';
+      if (score) {
+        const braScore = isHome ? score.home : score.away;
+        const oppScore = isHome ? score.away : score.home;
+        const winColor = braScore > oppScore ? 'var(--c-success)' : braScore < oppScore ? 'var(--c-red)' : 'var(--c-gold-dark)';
+        scoreHtml = `<span class="brazil-score" style="color:${winColor}">${braScore} × ${oppScore}</span>`;
+      }
+      return `
+        <div class="brazil-row ${isPast ? 'past' : ''}">
+          <div class="brazil-date">
+            <div class="brazil-day">${d.getDate()}</div>
+            <div class="brazil-month">${months[d.getMonth()]}</div>
+          </div>
+          <div class="brazil-match">
+            <div class="brazil-teams">🇧🇷 Brasil ${score ? scoreHtml : '<span style="color:var(--c-muted)">×</span>'} ${opponent.flag} ${opponent.name}</div>
+            <div class="brazil-venue">${m.time} · ${m.venue || ''}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="brazil-block">
+        <h3>🇧🇷 Jogos do Brasil</h3>
+        <div class="brazil-list">${rows}</div>
+      </div>
+    `;
+  }
+
   function renderDashboard() {
     const owned = totalOwned();
     const total = window.STICKERS_TOTAL;
     const dup = totalDuplicates();
     const missing = total - owned;
     const pct = (owned / total * 100).toFixed(1);
+    const countdownHtml = buildCountdownHtml();
+    const brazilHtml = buildBrazilGamesHtml();
 
     // por país
     const byCountry = window.COUNTRIES.map(c => {
@@ -1544,6 +1623,8 @@
     `;
 
     const html = `
+      ${countdownHtml}
+      ${brazilHtml}
       <div class="dashboard-stats">
         <div class="stat-card big">
           <div class="stat-value">${pct}%</div>
@@ -2149,7 +2230,7 @@
 
   // ---------- INIT ----------
   fillCountryFilter();
-  renderCollection();
+  renderDashboard();
 
   // Carrega do Supabase na inicialização (se disponível) e re-renderiza
   if (supabaseClient && !viewMode) {
