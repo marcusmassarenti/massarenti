@@ -1,5 +1,5 @@
 // Service Worker: network-first pra sempre buscar versão nova
-const CACHE_NAME = 'caua-album-v8';
+const CACHE_NAME = 'caua-album-v9';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

@@ -142,55 +142,60 @@ input, select { font-family: inherit; font-size: 16px; }
 
 /* === MOBILE COMPACTO (sem rolar) - SÓ celular, não PC === */
 @media (max-width: 820px) {
-  .login-body { padding: 12px; align-items: flex-start; padding-top: max(12px, env(safe-area-inset-top)); }
-  .login-container { max-width: 380px; gap: 14px; }
+  .login-body { padding: 12px !important; align-items: flex-start !important; padding-top: max(12px, env(safe-area-inset-top)) !important; }
+  .login-container { max-width: 380px !important; gap: 14px !important; }
 
   /* No mobile: capa fica MUITO simples, só foto + nome */
   .album-cover {
-    aspect-ratio: auto;
-    max-height: none;
-    min-height: 0;
-    background: linear-gradient(135deg, var(--p-red) 0%, var(--p-orange) 25%, var(--p-yellow) 50%, var(--p-green) 75%, var(--p-blue) 100%);
-    padding: 14px;
-    border-radius: 16px;
+    aspect-ratio: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    background: linear-gradient(135deg, var(--p-red) 0%, var(--p-orange) 25%, var(--p-yellow) 50%, var(--p-green) 75%, var(--p-blue) 100%) !important;
+    padding: 14px !important;
+    border-radius: 16px !important;
+    height: auto !important;
   }
-  .cover-leaves { display: none; } /* esconde folhas no mobile - ficam ruins em telas pequenas */
+  .cover-leaves { display: none !important; }
   .cover-inner {
-    padding: 0;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    text-align: left;
-    background: rgba(255,255,255,.92);
-    border-radius: 12px;
-    padding: 10px 14px;
+    padding: 10px 14px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    text-align: left !important;
+    background: rgba(255,255,255,.95) !important;
+    border-radius: 12px !important;
+    height: auto !important;
   }
-  .cover-top-text { display: none; }
-  .cover-26 { display: none; } /* esconde 26+troféu no mobile - tá no header do form */
-  .cover-fifa { display: none; }
+  .cover-top-text { display: none !important; }
+  .cover-26 { display: none !important; }
+  .cover-fifa { display: none !important; }
   .cover-photo-hero {
-    width: 60px; height: 60px;
-    padding: 3px;
-    margin: 0;
+    width: 60px !important;
+    height: 60px !important;
+    padding: 3px !important;
+    margin: 0 !important;
     flex-shrink: 0;
-    animation: none;
+    animation: none !important;
   }
-  .cover-photo-img { border-width: 2px; animation: none; }
+  .cover-photo-img {
+    border-width: 2px !important;
+    animation: none !important;
+  }
   .cover-name-big {
-    font-size: 22px;
-    margin-top: 0;
+    font-size: 22px !important;
+    margin-top: 0 !important;
     letter-spacing: 1px;
-    line-height: 1;
+    line-height: 1 !important;
     flex: 1;
   }
   .cover-host-row {
-    font-size: 16px;
-    gap: 4px;
-    margin: 0;
+    font-size: 16px !important;
+    gap: 4px !important;
+    margin: 0 !important;
     flex-shrink: 0;
   }
-  .cover-sticker-album { display: none; }
-  .cover-panini { display: none; }
+  .cover-sticker-album { display: none !important; }
+  .cover-panini { display: none !important; }
 
   .login-card { padding: 16px; gap: 12px; }
   .login-card h1 { font-size: 18px; }
