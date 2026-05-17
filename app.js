@@ -1491,7 +1491,136 @@
     `;
   }
 
-  // ---------- DASHBOARD ----------
+  // ---------- EXPORTAR FALTAS (PDF + WhatsApp) ----------
+  // Gera lista compactada: "1, 3, 5-9, 12" em vez de "1, 3, 5, 6, 7, 8, 9, 12"
+  function compactNumbers(nums) {
+    if (!nums.length) return '';
+    const sorted = [...nums].sort((a, b) => a - b);
+    const parts = [];
+    let start = sorted[0], prev = sorted[0];
+    for (let i = 1; i <= sorted.length; i++) {
+      const n = sorted[i];
+      if (n !== prev + 1) {
+        parts.push(start === prev ? String(start).padStart(2, '0') : `${String(start).padStart(2, '0')}-${String(prev).padStart(2, '0')}`);
+        start = n;
+      }
+      prev = n;
+    }
+    return parts.join(', ');
+  }
+
+  function getMissingByCountry() {
+    const groups = [];
+    SECTION_ORDER.forEach(secKey => {
+      const sec = sectionsMap[secKey];
+      if (!sec) return;
+      const missing = sec.items.filter(s => !isOwned(s.number)).map(s => s.localNumber);
+      if (missing.length === 0) return;
+      const country = countryByCode[secKey];
+      const flag = country ? country.flag : (secKey === 'cocacola' ? '🥤' : '🏆');
+      const name = country ? country.name : sec.name;
+      const code = sec.items[0].code;
+      groups.push({ flag, name, code, missing, total: sec.items.length });
+    });
+    return groups;
+  }
+
+  function exportMissingWhatsApp() {
+    const groups = getMissingByCountry();
+    const owned = totalOwned();
+    const total = window.STICKERS_TOTAL;
+    const missing = total - owned;
+    let txt = `📋 *FIGURINHAS QUE FALTAM*\n`;
+    txt += `_${profileName} · Álbum Copa 2026_\n\n`;
+    txt += `Faltam *${missing}* de ${total} (${(owned/total*100).toFixed(0)}% completo)\n\n`;
+    if (groups.length === 0) {
+      txt += `🎉 *ÁLBUM COMPLETO!* Não falta nada!`;
+    } else {
+      groups.forEach(g => {
+        txt += `${g.flag} *${g.name}* (${g.missing.length}/${g.total}):\n${compactNumbers(g.missing)}\n\n`;
+      });
+    }
+    txt += `💬 Tem repetida pra trocar? Me chama!\n`;
+    txt += `🔗 https://copa.massarenti.me`;
+    const url = `https://wa.me/?text=${encodeURIComponent(txt)}`;
+    window.open(url, '_blank');
+  }
+
+  function exportMissingPDF() {
+    const jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!jsPDFCtor) { showToast('PDF não carregou. Recarregue a página.', 'error'); return; }
+    const doc = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = 210, pageH = 297;
+    const margin = 8;
+    const colWidth = (pageW - margin * 3) / 2; // 2 colunas
+    const groups = getMissingByCountry();
+    const owned = totalOwned();
+    const total = window.STICKERS_TOTAL;
+    const missing = total - owned;
+
+    // Título
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Álbum Copa 2026 - ${profileName}`, pageW / 2, margin + 6, { align: 'center' });
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Faltam ${missing} de ${total} figurinhas (${(owned/total*100).toFixed(0)}% completo)`, pageW / 2, margin + 12, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} · copa.massarenti.me`, pageW / 2, margin + 17, { align: 'center' });
+    doc.setTextColor(0);
+
+    if (groups.length === 0) {
+      doc.setFontSize(22);
+      doc.text('🏆 ÁLBUM COMPLETO!', pageW / 2, pageH / 2, { align: 'center' });
+      doc.save(`figurinhas-faltam-${profileName}.pdf`);
+      return;
+    }
+
+    // Layout em 2 colunas, fonte pequena pra caber tudo
+    doc.setFontSize(8);
+    let x = margin, y = margin + 24;
+    let col = 0;
+    const colX = [margin, margin + colWidth + margin];
+    const lineH = 3.5;
+    const groupGap = 2;
+    const maxY = pageH - margin - 6;
+    // Estima altura disponível por coluna
+    groups.forEach(g => {
+      const compactStr = compactNumbers(g.missing);
+      // Calcula linhas necessárias
+      const titleLine = `${g.code} ${g.name} (${g.missing.length}/${g.total}):`;
+      const valueLines = doc.splitTextToSize(compactStr, colWidth);
+      const totalLines = 1 + valueLines.length;
+      const blockH = totalLines * lineH + groupGap;
+      // Se não cabe na coluna atual, pula
+      if (y + blockH > maxY) {
+        col++;
+        if (col >= 2) {
+          // Reduz fonte e recomeça (best-effort one page)
+          doc.setFontSize(7);
+          col = 0; y = margin + 24;
+          x = colX[0];
+        } else {
+          y = margin + 24;
+          x = colX[col];
+        }
+      }
+      doc.setFont(undefined, 'bold');
+      doc.text(titleLine, x, y);
+      y += lineH;
+      doc.setFont(undefined, 'normal');
+      valueLines.forEach(l => { doc.text(l, x, y); y += lineH; });
+      y += groupGap;
+    });
+
+    // Rodapé
+    doc.setFontSize(7);
+    doc.setTextColor(140);
+    doc.text('Quer ajudar com trocas? Compartilhe este PDF com sua família/amigos · copa.massarenti.me', pageW / 2, pageH - 4, { align: 'center' });
+
+    doc.save(`figurinhas-faltam-${profileName}.pdf`);
+  }
   function buildFamilyRow(p) {
     const counts = p.counts || {};
     let owned = 0;
@@ -1928,6 +2057,10 @@
       ${countdownHtml}
       ${todayHtml}
       ${brazilHtml}
+      <div class="share-bar">
+        <button class="btn-secondary share-btn" id="exportPdfBtn">📄 PDF dos que faltam</button>
+        <button class="btn-secondary share-btn share-wa" id="exportWaBtn">💬 Mandar no WhatsApp</button>
+      </div>
       <div class="dashboard-stats">
         <div class="stat-card big">
           <div class="stat-value">${pct}%</div>
@@ -1999,6 +2132,10 @@
     });
     $('#manageGroups').addEventListener('click', openGroupsModal);
     loadAndRenderGroups();
+
+    // Liga botões de export
+    if ($('#exportPdfBtn')) $('#exportPdfBtn').addEventListener('click', exportMissingPDF);
+    if ($('#exportWaBtn')) $('#exportWaBtn').addEventListener('click', exportMissingWhatsApp);
 
     // Liga cliques nos jogos do dashboard pra abrir o modal de placar rápido
     $$('#dashboardContent .today-row, #dashboardContent .brazil-row').forEach(row => {
