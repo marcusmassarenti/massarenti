@@ -683,6 +683,7 @@ main { padding: 12px 12px 100px; }
   animation: fadeIn .2s ease;
   padding-bottom: env(safe-area-inset-bottom);
 }
+.modal[hidden] { display: none !important; }
 @media (min-width: 600px) {
   .modal { align-items: center; }
 }
