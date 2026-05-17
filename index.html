@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=35">
+  <link rel="stylesheet" href="style.css?v=36">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -110,9 +110,10 @@
         <div class="divider-or"><span>ou</span></div>
       </div>
 
-      <div class="login-flow-hint">
-        <strong>🆕 Primeira vez aqui?</strong> Escolha um <strong>nome</strong> (igual usar em jogos) e um <strong>PIN de 4 dígitos</strong>. O sistema cria sua conta automaticamente.
-      </div>
+      <details class="login-flow-hint" id="loginFlowHint">
+        <summary>🆕 Primeira vez aqui? <span class="hint-toggle">toca pra ver como funciona</span></summary>
+        <p>Escolha um <strong>nome</strong> (igual usar em jogos) e um <strong>PIN de 4 dígitos</strong> só seu. O sistema cria sua conta automaticamente. Pra entrar de novo depois, é só usar o mesmo nome+PIN.</p>
+      </details>
 
       <label>
         <span>Nome do colecionador</span>
@@ -142,9 +143,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=35"></script>
-  <script src="data/countries.js?v=35"></script>
-  <script src="data/stickers.js?v=35"></script>
+  <script src="data/supabase-config.js?v=36"></script>
+  <script src="data/countries.js?v=36"></script>
+  <script src="data/stickers.js?v=36"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -248,7 +249,15 @@
     function renderProfiles() {
       const profiles = getLocalProfiles();
       const names = Object.keys(profiles).sort();
-      if (names.length === 0) { profilesSection.hidden = true; return; }
+      const flowHint = document.getElementById('loginFlowHint');
+      if (names.length === 0) {
+        profilesSection.hidden = true;
+        // Sem perfil salvo → primeira visita, abre a explicação aberta por padrão
+        if (flowHint) flowHint.open = true;
+        return;
+      }
+      // Tem perfil salvo → esconde a explicação (não é primeira vez)
+      if (flowHint) flowHint.hidden = true;
       profilesSection.hidden = false;
       profilesList.innerHTML = '';
       names.forEach(n => {

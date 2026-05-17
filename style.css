@@ -689,12 +689,41 @@ input, select { font-family: inherit; font-size: 16px; }
   background: linear-gradient(135deg, #fff8d6, #fffbeb);
   border: 1.5px solid var(--c-gold);
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-size: 12px;
   line-height: 1.4;
   color: var(--c-ink);
 }
 .login-flow-hint strong { color: var(--c-red); }
+.login-flow-hint summary {
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+  position: relative;
+  padding-right: 18px;
+  user-select: none;
+}
+.login-flow-hint summary::-webkit-details-marker { display: none; }
+.login-flow-hint summary::after {
+  content: '▾';
+  position: absolute;
+  right: 0;
+  top: 0;
+  color: var(--c-muted);
+  transition: transform .2s;
+}
+.login-flow-hint[open] summary::after { transform: rotate(180deg); }
+.login-flow-hint .hint-toggle {
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--c-muted);
+  margin-left: 6px;
+}
+.login-flow-hint[open] .hint-toggle { display: none; }
+.login-flow-hint p {
+  margin-top: 8px;
+  font-size: 12px;
+}
 .profiles-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .profiles-helper { font-size: 11px; color: var(--c-muted); margin-bottom: 8px; line-height: 1.4; }
 .profile-chip-wrap { position: relative; display: inline-block; }
