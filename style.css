@@ -1684,6 +1684,49 @@ main { padding: 12px 12px 8px; }
   font-weight: 700;
 }
 
+/* === TODAY BAR (dia + clima) === */
+.today-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+}
+.today-bar-day {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--c-ink);
+  line-height: 1.1;
+  text-transform: capitalize;
+}
+.today-bar-date-text {
+  font-size: 12px;
+  color: var(--c-muted);
+  font-weight: 700;
+  margin-top: 1px;
+}
+.today-bar-weather {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #e0f2ff, #f0e6ff);
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+.weather-icon { font-size: 22px; line-height: 1; }
+.weather-temp {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--c-ink);
+}
+
 /* === COUNTDOWN === */
 .countdown-card {
   background: linear-gradient(135deg, var(--p-red) 0%, var(--p-orange) 50%, var(--p-yellow) 100%);

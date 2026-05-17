@@ -1543,6 +1543,85 @@
     return ranked;
   }
 
+  function buildDateBarHtml() {
+    const now = new Date();
+    const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const dayName = days[now.getDay()];
+    const dateStr = `${now.getDate()} de ${months[now.getMonth()]}`;
+    return `
+      <div class="today-bar" id="todayBar">
+        <div class="today-bar-date">
+          <div class="today-bar-day">${dayName}</div>
+          <div class="today-bar-date-text">${dateStr}</div>
+        </div>
+        <div class="today-bar-weather" id="todayBarWeather">
+          <span class="weather-icon">⏳</span>
+          <span class="weather-temp">--°</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Códigos de tempo da Open-Meteo → emoji
+  const WEATHER_ICONS = {
+    0: '☀️', 1: '🌤', 2: '⛅', 3: '☁️',
+    45: '🌫', 48: '🌫',
+    51: '🌦', 53: '🌦', 55: '🌦', 56: '🌨', 57: '🌨',
+    61: '🌧', 63: '🌧', 65: '🌧', 66: '🌨', 67: '🌨',
+    71: '❄️', 73: '❄️', 75: '❄️', 77: '❄️',
+    80: '🌦', 81: '🌧', 82: '⛈',
+    85: '❄️', 86: '❄️',
+    95: '⛈', 96: '⛈', 99: '⛈'
+  };
+  let _weatherCache = null;
+  async function getWeather() {
+    // Cache local de 30min pra não pedir toda hora
+    try {
+      const cached = JSON.parse(localStorage.getItem('caua_weather') || 'null');
+      if (cached && Date.now() - cached.ts < 30 * 60 * 1000) {
+        _weatherCache = cached;
+        return cached;
+      }
+    } catch (e) {}
+    if (!navigator.geolocation) return null;
+    return new Promise(resolve => {
+      navigator.geolocation.getCurrentPosition(async pos => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const r = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&timezone=auto`
+          );
+          const data = await r.json();
+          const w = {
+            temp: Math.round(data.current.temperature_2m),
+            code: data.current.weather_code,
+            ts: Date.now()
+          };
+          localStorage.setItem('caua_weather', JSON.stringify(w));
+          _weatherCache = w;
+          resolve(w);
+        } catch (e) { resolve(null); }
+      }, () => resolve(null), { timeout: 6000, maximumAge: 30 * 60 * 1000 });
+    });
+  }
+  async function updateWeatherDisplay() {
+    const el = $('#todayBarWeather');
+    if (!el) return;
+    const w = await getWeather();
+    if (!w) {
+      el.innerHTML = '<span style="font-size:11px;color:var(--c-muted)">📍 toca pra ver clima</span>';
+      el.onclick = () => {
+        localStorage.removeItem('caua_weather');
+        updateWeatherDisplay();
+      };
+      return;
+    }
+    const icon = WEATHER_ICONS[w.code] || '🌡';
+    el.innerHTML = `<span class="weather-icon">${icon}</span><span class="weather-temp">${w.temp}°</span>`;
+    el.onclick = null;
+  }
+
   function buildCountdownHtml() {
     const cupStart = new Date('2026-06-11T17:00:00-03:00');
     const cupEnd = new Date('2026-07-19T18:00:00-03:00');
@@ -1729,6 +1808,7 @@
     `;
 
     const html = `
+      ${buildDateBarHtml()}
       ${countdownHtml}
       ${todayHtml}
       ${brazilHtml}
@@ -1806,6 +1886,8 @@
         if (id) openQuickScoreModal(id);
       });
     });
+    // Atualiza clima (assíncrono)
+    updateWeatherDisplay();
   }
 
   function openQuickScoreModal(matchId) {
