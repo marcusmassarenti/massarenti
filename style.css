@@ -895,11 +895,32 @@ input, select { font-family: inherit; font-size: 16px; }
   line-height: 1;
   color: var(--c-ink);
 }
-.header-progress {
+.header-info { min-width: 0; flex: 1; }
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
   font-size: 11px;
   color: var(--c-muted);
-  margin-top: 3px;
   font-weight: 700;
+  flex-wrap: wrap;
+}
+.header-meta > span {
+  white-space: nowrap;
+}
+.header-meta > span + span::before {
+  content: '·';
+  margin-right: 6px;
+  color: var(--c-border);
+}
+.header-date { color: var(--c-ink); }
+.header-weather {
+  color: var(--c-ink);
+  font-weight: 800;
+}
+.header-progress {
+  color: var(--c-muted);
 }
 .header-right { display: flex; gap: 6px; }
 .icon-btn {
@@ -1682,49 +1703,6 @@ main { padding: 12px 12px 8px; }
   margin-bottom: 10px;
   font-size: 14px;
   font-weight: 700;
-}
-
-/* === TODAY BAR (dia + clima) === */
-.today-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  border: 1px solid var(--c-border);
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin-bottom: 10px;
-  box-shadow: var(--shadow-sm);
-}
-.today-bar-day {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: 16px;
-  color: var(--c-ink);
-  line-height: 1.1;
-  text-transform: capitalize;
-}
-.today-bar-date-text {
-  font-size: 12px;
-  color: var(--c-muted);
-  font-weight: 700;
-  margin-top: 1px;
-}
-.today-bar-weather {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: linear-gradient(135deg, #e0f2ff, #f0e6ff);
-  padding: 6px 12px;
-  border-radius: 20px;
-  cursor: pointer;
-}
-.weather-icon { font-size: 22px; line-height: 1; }
-.weather-temp {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: 16px;
-  color: var(--c-ink);
 }
 
 /* === COUNTDOWN === */

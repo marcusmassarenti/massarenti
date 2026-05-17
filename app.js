@@ -1543,24 +1543,12 @@
     return ranked;
   }
 
-  function buildDateBarHtml() {
+  function updateHeaderDate() {
     const now = new Date();
-    const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-    const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-    const dayName = days[now.getDay()];
-    const dateStr = `${now.getDate()} de ${months[now.getMonth()]}`;
-    return `
-      <div class="today-bar" id="todayBar">
-        <div class="today-bar-date">
-          <div class="today-bar-day">${dayName}</div>
-          <div class="today-bar-date-text">${dateStr}</div>
-        </div>
-        <div class="today-bar-weather" id="todayBarWeather">
-          <span class="weather-icon">⏳</span>
-          <span class="weather-temp">--°</span>
-        </div>
-      </div>
-    `;
+    const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const el = $('#headerDate');
+    if (el) el.textContent = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
   }
 
   // Códigos de tempo da Open-Meteo → emoji
@@ -1606,11 +1594,13 @@
     });
   }
   async function updateWeatherDisplay() {
-    const el = $('#todayBarWeather');
+    const el = $('#headerWeather');
     if (!el) return;
     const w = await getWeather();
     if (!w) {
-      el.innerHTML = '<span style="font-size:11px;color:var(--c-muted)">📍 toca pra ver clima</span>';
+      el.textContent = '📍';
+      el.style.cursor = 'pointer';
+      el.title = 'Toca pra permitir localização e ver clima';
       el.onclick = () => {
         localStorage.removeItem('caua_weather');
         updateWeatherDisplay();
@@ -1618,7 +1608,8 @@
       return;
     }
     const icon = WEATHER_ICONS[w.code] || '🌡';
-    el.innerHTML = `<span class="weather-icon">${icon}</span><span class="weather-temp">${w.temp}°</span>`;
+    el.textContent = `${icon} ${w.temp}°`;
+    el.style.cursor = '';
     el.onclick = null;
   }
 
@@ -1807,8 +1798,8 @@
       </div>
     `;
 
+    updateHeaderDate();
     const html = `
-      ${buildDateBarHtml()}
       ${countdownHtml}
       ${todayHtml}
       ${brazilHtml}
