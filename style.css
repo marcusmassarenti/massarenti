@@ -139,6 +139,57 @@ input, select { font-family: inherit; font-size: 16px; }
   box-shadow: var(--shadow-lg);
   border: 1px solid #eee;
 }
+
+/* === MOBILE COMPACTO (sem rolar) === */
+@media (max-height: 820px) {
+  .login-body { padding: 10px; align-items: flex-start; padding-top: max(10px, env(safe-area-inset-top)); }
+  .login-container { max-width: 380px; gap: 10px; }
+  .album-cover {
+    aspect-ratio: auto;
+    max-height: 240px;
+    min-height: 200px;
+  }
+  .cover-leaves .leaf-col { width: 60px; }
+  .cover-leaves .leaf { width: 50px; }
+  .cover-leaves .leaf.shift { margin-left: 14px; }
+  .cover-inner {
+    padding: 8px 70px 6px;
+    gap: 2px;
+  }
+  .cover-top-text { font-size: 10px; margin-top: 0; }
+  .cover-26 { font-size: clamp(50px, 15vw, 75px); margin-top: 2px; letter-spacing: -3px; }
+  .cover-fifa { font-size: 13px; }
+  .cover-photo-hero {
+    width: 80px; height: 80px;
+    padding: 4px;
+    margin: 2px auto;
+  }
+  .cover-photo-img { border-width: 2px; }
+  .cover-name-big { font-size: 18px; margin-top: 0; }
+  .cover-host-row { font-size: 16px; gap: 6px; margin-top: 2px; }
+  .cover-sticker-album { display: none; }
+  .cover-panini {
+    font-size: 14px;
+    padding: 2px 10px 1px;
+    border-width: 2px;
+    margin-top: 2px;
+  }
+  .login-card { padding: 14px; gap: 10px; }
+  .login-card h1 { font-size: 18px; }
+  .login-card input { padding: 9px 12px; font-size: 15px; }
+  .btn-primary { padding: 11px; font-size: 15px; }
+  .login-hint { font-size: 11px; }
+  .profile-chip { padding: 4px 10px 4px 4px; font-size: 12px; }
+  .profile-avatar { width: 24px; height: 24px; font-size: 12px; }
+}
+
+@media (max-height: 700px) {
+  .album-cover { max-height: 180px; min-height: 160px; }
+  .cover-26 { font-size: 50px; }
+  .cover-photo-hero { width: 64px; height: 64px; }
+  .cover-name-big { font-size: 16px; }
+  .login-hint { display: none; }
+}
 .cover-leaves {
   position: absolute;
   inset: 0;
