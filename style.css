@@ -46,6 +46,56 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 body { font-family: var(--font-body); }
+
+/* === AJUSTES POR FONTE === */
+/* Pixel (Press Start 2P) - cada caractere é largo, precisa diminuir */
+body[data-font="pixel"] { font-size: 12px; line-height: 1.5; }
+body[data-font="pixel"] .header-name { font-size: 13px; letter-spacing: 0; }
+body[data-font="pixel"] .header-progress { font-size: 9px; }
+body[data-font="pixel"] .countdown-label { font-size: 9px; letter-spacing: 1px; }
+body[data-font="pixel"] .countdown-days { font-size: 38px; letter-spacing: 0; }
+body[data-font="pixel"] .countdown-sub { font-size: 11px; }
+body[data-font="pixel"] .countdown-date { font-size: 9px; padding: 4px 8px; }
+body[data-font="pixel"] .stat-value { font-size: 18px; }
+body[data-font="pixel"] .stat-card.big .stat-value { font-size: 26px; }
+body[data-font="pixel"] .stat-label { font-size: 8px; }
+body[data-font="pixel"] h2 { font-size: 16px; }
+body[data-font="pixel"] h3 { font-size: 13px; }
+body[data-font="pixel"] .modal-content h2 { font-size: 16px; }
+body[data-font="pixel"] .login-card h1 { font-size: 16px; }
+body[data-font="pixel"] .btn-primary { font-size: 12px; padding: 12px; letter-spacing: 0; }
+body[data-font="pixel"] .btn-secondary { font-size: 11px; }
+body[data-font="pixel"] .chip { font-size: 11px; padding: 8px 12px; }
+body[data-font="pixel"] .tab-icon { font-size: 18px; }
+body[data-font="pixel"] .tab-label { font-size: 8px; letter-spacing: 0; }
+body[data-font="pixel"] .section-title { font-size: 13px; }
+body[data-font="pixel"] .section-meta { font-size: 9px; }
+body[data-font="pixel"] .sticker-num { font-size: 16px; }
+body[data-font="pixel"] .sticker-code { font-size: 9px; }
+body[data-font="pixel"] .family-name { font-size: 11px; }
+body[data-font="pixel"] .family-pct { font-size: 12px; }
+body[data-font="pixel"] .family-meta { font-size: 9px; }
+body[data-font="pixel"] .cc-stat-main { font-size: 18px; }
+body[data-font="pixel"] .cc-name { font-size: 11px; }
+body[data-font="pixel"] .match-day { font-size: 18px; }
+body[data-font="pixel"] .match-time { font-size: 11px; }
+body[data-font="pixel"] .match-team-side { font-size: 11px; }
+body[data-font="pixel"] .login-flow-hint, body[data-font="pixel"] .name-status,
+body[data-font="pixel"] .login-hint, body[data-font="pixel"] .profiles-helper { font-size: 10px; line-height: 1.6; }
+body[data-font="pixel"] .podium-banner { font-size: 11px; }
+body[data-font="pixel"] .group-tab { font-size: 10px; }
+body[data-font="pixel"] .brazil-day { font-size: 16px; }
+body[data-font="pixel"] .brazil-teams { font-size: 11px; }
+
+/* Bebas Neue - alta e fina */
+body[data-font="bebas"] { font-size: 17px; letter-spacing: .5px; }
+body[data-font="bebas"] .header-name { font-size: 20px; letter-spacing: 1px; }
+body[data-font="bebas"] h2, body[data-font="bebas"] h3 { letter-spacing: 1px; }
+
+/* Fredoka - arredondada */
+body[data-font="fredoka"] { font-size: 14.5px; }
+
+/* Nunito é o padrão, sem ajuste */
 body {
   min-height: 100vh;
   min-height: 100dvh;

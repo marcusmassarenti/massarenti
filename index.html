@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=47">
+  <link rel="stylesheet" href="style.css?v=48">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -140,9 +140,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=47"></script>
-  <script src="data/countries.js?v=47"></script>
-  <script src="data/stickers.js?v=47"></script>
+  <script src="data/supabase-config.js?v=48"></script>
+  <script src="data/countries.js?v=48"></script>
+  <script src="data/stickers.js?v=48"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -291,20 +291,26 @@
     // Detecta se o nome já existe na nuvem e atualiza o texto do botão
     const submitBtnRef = document.getElementById('submitBtn');
     let nameCheckTimer = null;
+    // Normaliza nome (sem acento, minúscula) pra comparar variações
+    function normalizeName(n) {
+      return (n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    }
+    // Cache da lista de perfis (atualiza a cada checagem)
+    let allProfilesCache = null;
     async function checkNameExists(name) {
       if (!supabaseClient || !name) return null;
       try {
-        // Timeout de 3s pra evitar "Verificando..." eterno em rede ruim
         const timeoutP = new Promise(res => setTimeout(() => res({ timeout: true }), 3000));
-        const queryP = supabaseClient
-          .from('profiles')
-          .select('name')
-          .eq('name', name)
-          .maybeSingle();
+        const queryP = supabaseClient.from('profiles').select('name');
         const result = await Promise.race([queryP, timeoutP]);
         if (result.timeout) return null;
         if (result.error) return null;
-        return !!result.data;
+        allProfilesCache = result.data || [];
+        const target = normalizeName(name);
+        // Compara normalizado — "Caua" = "Cauã" = "CAUA"
+        const matched = allProfilesCache.find(p => normalizeName(p.name) === target);
+        // Retorna o objeto se achou (com o nome canônico) ou false se não
+        return matched ? { exists: true, canonical: matched.name } : { exists: false };
       } catch (e) { return null; }
     }
     function updateSubmitButtonText() {
@@ -357,15 +363,24 @@
       submitBtnRef.textContent = '⏳ Verificando...';
       nameStatus.hidden = true;
       nameCheckTimer = setTimeout(async () => {
-        const exists = await checkNameExists(name);
+        const result = await checkNameExists(name);
         if (nameInput.value.trim() !== name) return;
-        updateNameStatus(exists, name);
-        if (exists === true) {
-          submitBtnRef.textContent = '🔑 Entrar';
-        } else if (exists === false) {
-          submitBtnRef.textContent = '✨ Criar conta';
-        } else {
+        if (!result) {
           submitBtnRef.textContent = 'Entrar ou Criar conta';
+          nameStatus.hidden = true;
+          return;
+        }
+        if (result.exists) {
+          updateNameStatus(true, result.canonical);
+          // Se digitou variação (Caua), mostra o nome canônico (Cauã)
+          if (result.canonical !== name) {
+            submitBtnRef.textContent = `🔑 Entrar como "${result.canonical}"`;
+          } else {
+            submitBtnRef.textContent = '🔑 Entrar';
+          }
+        } else {
+          updateNameStatus(false, name);
+          submitBtnRef.textContent = '✨ Criar conta';
         }
       }, 500);
     };

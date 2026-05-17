@@ -440,6 +440,12 @@
     document.documentElement.style.setProperty('--c-accent', theme.color);
     document.documentElement.style.setProperty('--c-accent-dark', shadeColor(theme.color, -25));
     document.documentElement.style.setProperty('--font-body', theme.font);
+    // Marca a fonte ativa pra ajustar tamanhos via CSS
+    const fontKey = theme.font.includes('Press Start') ? 'pixel'
+      : theme.font.includes('Bebas') ? 'bebas'
+      : theme.font.includes('Fredoka') ? 'fredoka'
+      : 'nunito';
+    document.body.setAttribute('data-font', fontKey);
   }
   function shadeColor(hex, percent) {
     const num = parseInt(hex.replace('#', ''), 16);
