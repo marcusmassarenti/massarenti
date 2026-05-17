@@ -331,27 +331,13 @@
     UZB: 'uz', JOR: 'jo', IRQ: 'iq', NZL: 'nz'
   };
 
-  let worldMapSvgCache = null;
-  async function loadWorldMapSvg() {
-    if (worldMapSvgCache) return worldMapSvgCache;
-    try {
-      const r = await fetch('assets/world-map.svg');
-      worldMapSvgCache = await r.text();
-      return worldMapSvgCache;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  async function renderWorldMap() {
+  function renderWorldMap() {
     const map = $('#worldMap');
-    map.innerHTML = '<div style="padding:40px;text-align:center;color:var(--c-muted)">Carregando mapa...</div>';
-    const svgText = await loadWorldMapSvg();
-    if (!svgText) {
-      map.innerHTML = '<div style="padding:40px;text-align:center;color:var(--c-red)">Não consegui carregar o mapa. Confira se o arquivo <code>assets/world-map.svg</code> existe.</div>';
+    if (!window.WORLD_MAP_SVG) {
+      map.innerHTML = '<div style="padding:40px;text-align:center;color:var(--c-red)">Não consegui carregar o mapa.</div>';
       return;
     }
-    map.innerHTML = svgText;
+    map.innerHTML = window.WORLD_MAP_SVG;
     const svg = map.querySelector('svg');
     if (!svg) return;
     svg.style.width = '100%';
