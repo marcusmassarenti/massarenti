@@ -56,7 +56,10 @@
         <button class="chip" data-view="map">🗺️ Mapa Mundi</button>
       </div>
       <div id="countriesGrid" class="countries-grid"></div>
-      <div id="worldMap" class="world-map" hidden></div>
+      <div id="worldMapWrap" hidden>
+        <button id="openFullscreenMap" class="btn-secondary" style="width:100%;margin-bottom:8px">🔍 Ver em tela cheia</button>
+        <div id="worldMap" class="world-map"></div>
+      </div>
       <div class="world-map-legend" id="worldMapLegend" hidden>
         <span><span class="swatch" style="background:var(--p-blue)"></span>Participante</span>
         <span><span class="swatch" style="background:var(--p-yellow)"></span>Em andamento</span>
@@ -103,6 +106,20 @@
       <span class="tab-label">Jogos</span>
     </button>
   </nav>
+
+  <!-- Modal mapa em tela cheia -->
+  <div id="mapFullscreenModal" class="modal map-fullscreen-modal" hidden>
+    <div class="modal-content map-fullscreen-content">
+      <button class="modal-close" id="closeMapFullscreen">✕</button>
+      <h2>🗺️ Mapa Mundi - Copa 2026</h2>
+      <div class="world-map-legend">
+        <span><span class="swatch" style="background:var(--p-blue)"></span>Participante</span>
+        <span><span class="swatch" style="background:var(--p-yellow)"></span>Em andamento</span>
+        <span><span class="swatch" style="background:var(--p-green)"></span>Completa</span>
+      </div>
+      <div id="worldMapFullscreen" class="world-map world-map-big"></div>
+    </div>
+  </div>
 
   <!-- Modal país -->
   <div id="countryModal" class="modal" hidden>

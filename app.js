@@ -254,9 +254,10 @@
     if (next > 9) return; // máximo 9 (1 colada + 8 repetidas)
     state.counts[s.number] = next;
     if (current === 0) animateStickerGet(el, evt, s.shiny, false);
-    else animateStickerGet(el, evt, s.shiny, true); // animação de "repetida"
+    else animateStickerGet(el, evt, s.shiny, true);
     saveData();
     renderCollection();
+    if (!$('#countryModal').hidden) renderCountryModalContent();
   }
 
   function animateStickerGet(el, evt, shiny, isDuplicate) {
@@ -331,8 +332,8 @@
     UZB: 'uz', JOR: 'jo', IRQ: 'iq', NZL: 'nz'
   };
 
-  function renderWorldMap() {
-    const map = $('#worldMap');
+  function renderWorldMap(container) {
+    const map = container || $('#worldMap');
     if (!window.WORLD_MAP_SVG) {
       map.innerHTML = '<div style="padding:40px;text-align:center;color:var(--c-red)">Não consegui carregar o mapa.</div>';
       return;
@@ -343,9 +344,8 @@
     svg.style.width = '100%';
     svg.style.height = 'auto';
     svg.style.display = 'block';
-    svg.style.maxHeight = '70vh';
 
-    // Estado de cada país participante
+    // Estado de cada país
     const stateByIso = {};
     window.COUNTRIES.forEach(c => {
       const iso = FIFA_TO_ISO[c.code];
@@ -355,37 +355,92 @@
       const total = sec.items.length;
       const complete = owned === total;
       const partial = owned > 0 && !complete;
-      const cls = complete ? 'wm-complete' : (partial ? 'wm-partial' : 'wm-participating');
-      if (!stateByIso[iso]) stateByIso[iso] = { codes: [], cls };
+      if (!stateByIso[iso]) stateByIso[iso] = { codes: [], cls: 'wm-participating' };
       stateByIso[iso].codes.push(c.code);
-      // País mais avançado define a cor
       if (complete) stateByIso[iso].cls = 'wm-complete';
       else if (partial && stateByIso[iso].cls !== 'wm-complete') stateByIso[iso].cls = 'wm-partial';
     });
 
-    // Colore os caminhos dos países participantes (e seus filhos)
+    // Colore os caminhos. Se for <g>, aplica a classe em todos os <path> dentro
     Object.keys(stateByIso).forEach(iso => {
-      const els = svg.querySelectorAll(`#${iso}, [id="${iso}"]`);
-      els.forEach(el => {
-        el.classList.add('wm-country', stateByIso[iso].cls);
-        el.style.cursor = 'pointer';
-        const code = stateByIso[iso].codes[0];
-        const country = countryByCode[code];
-        el.addEventListener('click', () => openCountryModal(code));
+      const root = svg.querySelector(`[id="${iso}"]`);
+      if (!root) return;
+      const paths = root.tagName.toLowerCase() === 'path' ? [root] : Array.from(root.querySelectorAll('path'));
+      const code = stateByIso[iso].codes[0];
+      const country = countryByCode[code];
+      paths.forEach(p => {
+        p.classList.add('wm-country', stateByIso[iso].cls);
+        p.style.cursor = 'pointer';
+        p.addEventListener('click', () => openCountryModal(code));
         const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
         title.textContent = `${country.flag} ${country.name} (Grupo ${country.group})`;
-        el.appendChild(title);
+        p.appendChild(title);
       });
+      // Adiciona bandeira no centro do bounding box
+      try {
+        const bbox = root.getBBox ? root.getBBox() : null;
+        if (bbox && bbox.width > 4 && bbox.height > 4) {
+          const cx = bbox.x + bbox.width / 2;
+          const cy = bbox.y + bbox.height / 2;
+          const flagText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          flagText.setAttribute('x', cx);
+          flagText.setAttribute('y', cy + 4);
+          flagText.setAttribute('text-anchor', 'middle');
+          flagText.setAttribute('font-size', Math.max(10, Math.min(bbox.width / 2.5, 22)));
+          flagText.setAttribute('pointer-events', 'none');
+          flagText.textContent = country.flag;
+          svg.appendChild(flagText);
+        }
+      } catch (e) {}
+    });
+
+    // Países que NÃO têm path próprio no SVG (ex: Curaçao) - adiciona marcador
+    const fallbackPositions = { CUW: [320, 580] }; // x,y aproximado no SVG (1000x510)
+    window.COUNTRIES.forEach(c => {
+      const iso = FIFA_TO_ISO[c.code];
+      if (!iso || svg.querySelector(`[id="${iso}"]`)) return;
+      const pos = fallbackPositions[c.code];
+      if (!pos) return;
+      const sec = sectionsMap[c.code];
+      const owned = sec.items.filter(s => isOwned(s.number)).length;
+      const total = sec.items.length;
+      const fill = owned === total ? '#54a96d' : (owned > 0 ? '#f5d34c' : '#4a8ec6');
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.style.cursor = 'pointer';
+      g.addEventListener('click', () => openCountryModal(c.code));
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', pos[0]);
+      circle.setAttribute('cy', pos[1]);
+      circle.setAttribute('r', 10);
+      circle.setAttribute('fill', fill);
+      circle.setAttribute('stroke', '#fff');
+      circle.setAttribute('stroke-width', '2');
+      g.appendChild(circle);
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', pos[0]);
+      txt.setAttribute('y', pos[1] + 4);
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('font-size', '11');
+      txt.textContent = c.flag;
+      g.appendChild(txt);
+      svg.appendChild(g);
     });
   }
 
+  let currentOpenCountry = null;
   function openCountryModal(code) {
+    currentOpenCountry = code;
+    renderCountryModalContent();
+    $('#countryModal').hidden = false;
+  }
+  function renderCountryModalContent() {
+    if (!currentOpenCountry) return;
+    const code = currentOpenCountry;
     const c = countryByCode[code];
     const sec = sectionsMap[code];
     const owned = sec.items.filter(s => isOwned(s.number)).length;
     const total = sec.items.length;
     const pct = (owned / total * 100).toFixed(0);
-
     const body = $('#countryModalBody');
     body.innerHTML = `
       <div class="country-modal-header">
@@ -401,7 +456,6 @@
     `;
     const grid = body.querySelector('#modalStickerGrid');
     sec.items.forEach(s => grid.appendChild(buildSticker(s)));
-    $('#countryModal').hidden = false;
   }
 
   // ---------- RENDER: JOGOS ----------
@@ -621,9 +675,15 @@
     $$('.map-toggle .chip').forEach(c => c.classList.toggle('active', c === chip));
     const view = chip.dataset.view;
     $('#countriesGrid').hidden = (view !== 'grid');
-    $('#worldMap').hidden = (view !== 'map');
+    $('#worldMapWrap').hidden = (view !== 'map');
     $('#worldMapLegend').hidden = (view !== 'map');
     if (view === 'map') renderWorldMap();
+  });
+
+  // Mapa tela cheia
+  $('#openFullscreenMap').addEventListener('click', () => {
+    $('#mapFullscreenModal').hidden = false;
+    setTimeout(() => renderWorldMap($('#worldMapFullscreen')), 30);
   });
 
   // ---------- MODAIS (com delegação global pra evitar bugs) ----------
@@ -737,6 +797,7 @@
       state.counts = {};
       saveData();
       renderCollection();
+      if (!$('#countryModal').hidden) renderCountryModalContent();
       $('#settingsModal').hidden = true;
     }
   });

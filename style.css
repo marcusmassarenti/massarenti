@@ -827,8 +827,29 @@ main { padding: 12px 12px 100px; }
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
   padding: 10px;
-  overflow-x: auto;
+  overflow: auto;
 }
+.world-map-big {
+  height: calc(100vh - 200px);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.world-map-big svg { max-height: 100%; }
+.map-fullscreen-modal .modal-content {
+  max-width: 98vw;
+  width: 98vw;
+  max-height: 98vh;
+  height: 98vh;
+  border-radius: 12px !important;
+  display: flex;
+  flex-direction: column;
+}
+.map-fullscreen-content { padding: 14px; }
+.map-fullscreen-content h2 { font-size: 18px; margin-bottom: 8px; }
+.map-fullscreen-content .world-map-legend { margin-bottom: 8px; }
+.map-fullscreen-content > div.world-map { flex: 1; }
 .world-map svg { width: 100%; height: auto; display: block; }
 .world-map svg path {
   fill: #e0e8d8;
