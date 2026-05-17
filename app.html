@@ -63,8 +63,18 @@
       </div>
       <div id="countriesGrid" class="countries-grid"></div>
       <div id="worldMapWrap" hidden>
-        <button id="openFullscreenMap" class="btn-secondary" style="width:100%;margin-bottom:8px">🔍 Ver em tela cheia</button>
-        <div id="worldMap" class="world-map"></div>
+        <div class="map-actions">
+          <button id="openFullscreenMap" class="btn-secondary">🔍 Tela cheia</button>
+          <button id="toggleMapFlags" class="btn-secondary" data-on="1">🚩 Bandeiras: ON</button>
+        </div>
+        <div class="map-container">
+          <div class="map-controls">
+            <button data-zoom="in">+</button>
+            <button data-zoom="out">−</button>
+            <button data-zoom="reset">⌖</button>
+          </div>
+          <div id="worldMap" class="world-map"></div>
+        </div>
       </div>
       <div class="world-map-legend" id="worldMapLegend" hidden>
         <span><span class="swatch" style="background:var(--p-blue)"></span>Participante</span>
@@ -79,8 +89,8 @@
         <div class="filter-chips" id="phaseChips">
           <button class="chip active" data-phase="all">Todos</button>
           <button class="chip" data-phase="Grupos">Grupos</button>
+          <button class="chip" data-phase="16-avos">16-avos</button>
           <button class="chip" data-phase="Oitavas">Oitavas</button>
-          <button class="chip" data-phase="Oitavas Finais">R16</button>
           <button class="chip" data-phase="Quartas">Quartas</button>
           <button class="chip" data-phase="Semis">Semis</button>
           <button class="chip" data-phase="Final">Final</button>
@@ -123,7 +133,14 @@
         <span><span class="swatch" style="background:var(--p-yellow)"></span>Em andamento</span>
         <span><span class="swatch" style="background:var(--p-green)"></span>Completa</span>
       </div>
-      <div id="worldMapFullscreen" class="world-map world-map-big"></div>
+      <div class="map-container fullscreen">
+        <div class="map-controls">
+          <button data-zoom="in">+</button>
+          <button data-zoom="out">−</button>
+          <button data-zoom="reset">⌖</button>
+        </div>
+        <div id="worldMapFullscreen" class="world-map world-map-big"></div>
+      </div>
     </div>
   </div>
 

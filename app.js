@@ -123,19 +123,25 @@
     const container = $('#sectionsList');
     container.innerHTML = '';
 
+    // Quando não há busca/filtro, mostra GRID de cards de seleções (UX celular)
+    if (!currentSearch && currentFilter === 'all') {
+      renderCollectionGrid(container);
+      updateGlobalProgress();
+      return;
+    }
+
     SECTION_ORDER.forEach(sec => {
       const data = sectionsMap[sec];
       if (!data) return;
       const filteredItems = data.items.filter(s => matchesFilter(s) && matchesSearch(s));
-      if (filteredItems.length === 0 && (currentFilter !== 'all' || currentSearch)) return;
+      if (filteredItems.length === 0) return;
 
       const ownedInSection = data.items.filter(s => isOwned(s.number)).length;
       const totalInSection = data.items.length;
       const isComplete = ownedInSection === totalInSection;
-      const collapsed = state.sectionsCollapsed[sec] === true;
 
       const block = document.createElement('div');
-      block.className = 'section-block' + (collapsed ? ' collapsed' : '');
+      block.className = 'section-block';
       block.dataset.section = sec;
 
       const country = countryByCode[sec];
@@ -149,26 +155,83 @@
             <div class="section-meta">${data.items[0].code}-01 a ${data.items[0].code}-${String(data.items.length).padStart(2,'0')}</div>
           </div>
           <div class="section-progress-mini ${isComplete ? 'complete' : ''}">${ownedInSection}/${totalInSection}</div>
-          <div class="section-toggle">▼</div>
         </div>
         <div class="section-progress-bar"><div style="width:${(ownedInSection/totalInSection*100).toFixed(1)}%"></div></div>
         <div class="stickers-grid"></div>
       `;
       const grid = block.querySelector('.stickers-grid');
       filteredItems.forEach(s => grid.appendChild(buildSticker(s)));
-      block.querySelector('.section-header').addEventListener('click', () => {
-        state.sectionsCollapsed[sec] = !state.sectionsCollapsed[sec];
-        block.classList.toggle('collapsed');
-        saveData();
-      });
       container.appendChild(block);
     });
 
     if (container.children.length === 0) {
       container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--c-muted);">Nenhuma figurinha encontrada com esses filtros.</div>';
     }
-
     updateGlobalProgress();
+  }
+
+  function renderCollectionGrid(container) {
+    const grid = document.createElement('div');
+    grid.className = 'collection-grid';
+    SECTION_ORDER.forEach(sec => {
+      const data = sectionsMap[sec];
+      if (!data) return;
+      const owned = data.items.filter(s => isOwned(s.number)).length;
+      const total = data.items.length;
+      const dup = data.items.reduce((acc, s) => acc + Math.max(0, ownedCount(s.number) - 1), 0);
+      const complete = owned === total;
+      const partial = owned > 0 && !complete;
+      const country = countryByCode[sec];
+      const groupTag = country ? `<span class="country-group-tag">Grupo ${country.group}</span>` : '<span class="country-group-tag" style="background:var(--p-purple)">INTRO</span>';
+      const card = document.createElement('div');
+      card.className = 'collection-card' + (complete ? ' complete' : partial ? ' partial' : '');
+      card.innerHTML = `
+        <div class="cc-flag">${sectionFlag(sec)}</div>
+        <div class="cc-info">
+          <div class="cc-name">${data.name}</div>
+          ${groupTag}
+        </div>
+        <div class="cc-stats">
+          <div class="cc-stat-main">${owned}<span class="cc-divider">/${total}</span></div>
+          ${dup > 0 ? `<div class="cc-stat-dup">🔁 ${dup} rep.</div>` : ''}
+        </div>
+        <div class="cc-progress"><div style="width:${(owned/total*100).toFixed(1)}%"></div></div>
+      `;
+      card.addEventListener('click', () => {
+        if (sec === 'intro') {
+          // Para o intro, abre modal especial
+          openIntroModal();
+        } else {
+          openCountryModal(sec);
+        }
+      });
+      grid.appendChild(card);
+    });
+    container.appendChild(grid);
+  }
+
+  function openIntroModal() {
+    currentOpenCountry = '__intro__';
+    const sec = sectionsMap.intro;
+    const owned = sec.items.filter(s => isOwned(s.number)).length;
+    const total = sec.items.length;
+    const pct = (owned / total * 100).toFixed(0);
+    const body = $('#countryModalBody');
+    body.innerHTML = `
+      <div class="country-modal-header">
+        <div class="country-modal-flag">🏆</div>
+        <div class="country-modal-name">Introdução</div>
+        <div class="country-modal-meta">Mascotes, estádios e oficial</div>
+      </div>
+      <div class="country-modal-progress">
+        ${owned} de ${total} figurinhas (${pct}%)
+        <div class="country-modal-progress-bar"><div style="width:${pct}%"></div></div>
+      </div>
+      <div class="stickers-grid" id="modalStickerGrid"></div>
+    `;
+    const grid = body.querySelector('#modalStickerGrid');
+    sec.items.forEach(s => grid.appendChild(buildSticker(s)));
+    $('#countryModal').hidden = false;
   }
 
   function buildSticker(s) {
@@ -332,6 +395,7 @@
     UZB: 'uz', JOR: 'jo', IRQ: 'iq', NZL: 'nz'
   };
 
+  let showMapFlags = true;
   function renderWorldMap(container) {
     const map = container || $('#worldMap');
     if (!window.WORLD_MAP_SVG) {
@@ -344,6 +408,11 @@
     svg.style.width = '100%';
     svg.style.height = 'auto';
     svg.style.display = 'block';
+    // Salva o viewBox original pra reset
+    if (!svg.dataset.originalViewBox) {
+      svg.dataset.originalViewBox = svg.getAttribute('viewBox') || '0 0 1000 510';
+    }
+    attachMapPanZoom(svg, map);
 
     // Estado de cada país
     const stateByIso = {};
@@ -411,6 +480,8 @@
             flagText.setAttribute('text-anchor', 'middle');
             flagText.setAttribute('font-size', size);
             flagText.setAttribute('pointer-events', 'none');
+            flagText.setAttribute('class', 'wm-flag');
+            if (!showMapFlags) flagText.style.display = 'none';
             flagText.textContent = country.flag;
             svg.appendChild(flagText);
           });
@@ -480,6 +551,7 @@
   }
   function renderCountryModalContent() {
     if (!currentOpenCountry) return;
+    if (currentOpenCountry === '__intro__') { openIntroModal(); return; }
     const code = currentOpenCountry;
     const c = countryByCode[code];
     const sec = sectionsMap[code];
@@ -730,6 +802,124 @@
     $('#mapFullscreenModal').hidden = false;
     setTimeout(() => renderWorldMap($('#worldMapFullscreen')), 30);
   });
+
+  // Toggle bandeiras
+  $('#toggleMapFlags').addEventListener('click', (e) => {
+    showMapFlags = !showMapFlags;
+    e.currentTarget.textContent = '🚩 Bandeiras: ' + (showMapFlags ? 'ON' : 'OFF');
+    document.querySelectorAll('.world-map svg .wm-flag').forEach(f => {
+      f.style.display = showMapFlags ? '' : 'none';
+    });
+  });
+
+  // Zoom buttons (delegação - funciona pros 2 containers)
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-zoom]');
+    if (!btn) return;
+    const wrapper = btn.closest('.map-container');
+    if (!wrapper) return;
+    const svg = wrapper.querySelector('svg');
+    if (!svg) return;
+    const action = btn.dataset.zoom;
+    if (action === 'reset') {
+      svg.setAttribute('viewBox', svg.dataset.originalViewBox);
+    } else {
+      zoomSvg(svg, action === 'in' ? 0.7 : 1.4, 0.5, 0.5);
+    }
+  });
+
+  function zoomSvg(svg, scale, focalX, focalY) {
+    const vb = (svg.getAttribute('viewBox') || svg.dataset.originalViewBox).split(/\s+/).map(Number);
+    let [x, y, w, h] = vb;
+    const origVb = svg.dataset.originalViewBox.split(/\s+/).map(Number);
+    const newW = Math.max(origVb[2] * 0.08, Math.min(origVb[2], w * scale));
+    const newH = Math.max(origVb[3] * 0.08, Math.min(origVb[3], h * scale));
+    const cx = x + w * focalX;
+    const cy = y + h * focalY;
+    const newX = Math.max(origVb[0] - origVb[2] * 0.2, Math.min(origVb[0] + origVb[2] - newW * 0.8, cx - newW * focalX));
+    const newY = Math.max(origVb[1] - origVb[3] * 0.2, Math.min(origVb[1] + origVb[3] - newH * 0.8, cy - newH * focalY));
+    svg.setAttribute('viewBox', `${newX} ${newY} ${newW} ${newH}`);
+  }
+
+  function attachMapPanZoom(svg, container) {
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let startVb = null;
+    const getVb = () => (svg.getAttribute('viewBox') || svg.dataset.originalViewBox).split(/\s+/).map(Number);
+
+    // Mouse wheel zoom
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      const fx = (e.clientX - rect.left) / rect.width;
+      const fy = (e.clientY - rect.top) / rect.height;
+      zoomSvg(svg, e.deltaY > 0 ? 1.15 : 0.87, fx, fy);
+    }, { passive: false });
+
+    // Mouse drag pan
+    svg.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('wm-country')) return; // click no país
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startVb = getVb();
+      svg.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const rect = svg.getBoundingClientRect();
+      const dx = (e.clientX - startX) / rect.width * startVb[2];
+      const dy = (e.clientY - startY) / rect.height * startVb[3];
+      svg.setAttribute('viewBox', `${startVb[0] - dx} ${startVb[1] - dy} ${startVb[2]} ${startVb[3]}`);
+    });
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+      svg.style.cursor = '';
+    });
+
+    // Touch: 1 dedo pan, 2 dedos pinch zoom
+    let pinchStartDist = 0;
+    let pinchStartVb = null;
+    svg.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        startX = t.clientX; startY = t.clientY;
+        startVb = getVb();
+        isDragging = true;
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        pinchStartDist = Math.hypot(dx, dy);
+        pinchStartVb = getVb();
+        isDragging = false;
+      }
+    }, { passive: true });
+    svg.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1 && isDragging) {
+        const t = e.touches[0];
+        const rect = svg.getBoundingClientRect();
+        const dx = (t.clientX - startX) / rect.width * startVb[2];
+        const dy = (t.clientY - startY) / rect.height * startVb[3];
+        svg.setAttribute('viewBox', `${startVb[0] - dx} ${startVb[1] - dy} ${startVb[2]} ${startVb[3]}`);
+        e.preventDefault();
+      } else if (e.touches.length === 2 && pinchStartVb) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        const scale = pinchStartDist / dist;
+        const newW = pinchStartVb[2] * scale;
+        const newH = pinchStartVb[3] * scale;
+        const cx = pinchStartVb[0] + pinchStartVb[2] / 2;
+        const cy = pinchStartVb[1] + pinchStartVb[3] / 2;
+        svg.setAttribute('viewBox', `${cx - newW/2} ${cy - newH/2} ${newW} ${newH}`);
+        e.preventDefault();
+      }
+    }, { passive: false });
+    svg.addEventListener('touchend', () => {
+      isDragging = false;
+      pinchStartVb = null;
+    });
+  }
 
   // ---------- MODAIS (com delegação global pra evitar bugs) ----------
   function closeAllModals() {

@@ -113,7 +113,7 @@
     const dayOffset = Math.floor(i / 4);
     const date = new Date(r32Date.getTime() + dayOffset * 24 * 60 * 60 * 1000);
     matches.push({
-      id: matchId++, phase: 'Oitavas', round: 'Round of 32',
+      id: matchId++, phase: '16-avos', round: '16-avos de Final',
       date: date.toISOString().substring(0, 10),
       time: groupTimes[i % 4],
       homeCode: null, awayCode: null,
@@ -130,7 +130,7 @@
     const dayOffset = Math.floor(i / 2);
     const date = new Date(r16Date.getTime() + dayOffset * 24 * 60 * 60 * 1000);
     matches.push({
-      id: matchId++, phase: 'Oitavas Finais', round: 'Round of 16',
+      id: matchId++, phase: 'Oitavas', round: 'Oitavas de Final',
       date: date.toISOString().substring(0, 10),
       time: i % 2 === 0 ? '16:00' : '20:00',
       homeCode: null, awayCode: null,
