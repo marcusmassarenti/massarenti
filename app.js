@@ -598,12 +598,9 @@
         <div class="cc-progress"><div style="width:${(owned/total*100).toFixed(1)}%"></div></div>
       `;
       card.addEventListener('click', () => {
-        if (sec === 'intro') {
-          // Para o intro, abre modal especial
-          openIntroModal();
-        } else {
-          openCountryModal(sec);
-        }
+        if (sec === 'intro') openIntroModal();
+        else if (sec === 'cocacola') openCocaModal();
+        else openCountryModal(sec);
       });
       grid.appendChild(card);
     });
@@ -611,17 +608,24 @@
   }
 
   function openIntroModal() {
-    currentOpenCountry = '__intro__';
-    const sec = sectionsMap.intro;
+    openSpecialSectionModal('intro', '🏆', 'Introdução', 'Mascotes, estádios e oficial');
+  }
+  function openCocaModal() {
+    openSpecialSectionModal('cocacola', '🥤', 'Coca-Cola', 'Figurinhas bônus oficiais');
+  }
+  function openSpecialSectionModal(sectionKey, icon, name, subtitle) {
+    currentOpenCountry = '__' + sectionKey + '__';
+    const sec = sectionsMap[sectionKey];
+    if (!sec) return;
     const owned = sec.items.filter(s => isOwned(s.number)).length;
     const total = sec.items.length;
     const pct = (owned / total * 100).toFixed(0);
     const body = $('#countryModalBody');
     body.innerHTML = `
       <div class="country-modal-header">
-        <div class="country-modal-flag">🏆</div>
-        <div class="country-modal-name">Introdução</div>
-        <div class="country-modal-meta">Mascotes, estádios e oficial</div>
+        <div class="country-modal-flag">${icon}</div>
+        <div class="country-modal-name">${name}</div>
+        <div class="country-modal-meta">${subtitle}</div>
       </div>
       <div class="country-modal-progress">
         ${owned} de ${total} figurinhas (${pct}%)
@@ -953,6 +957,7 @@
   function renderCountryModalContent() {
     if (!currentOpenCountry) return;
     if (currentOpenCountry === '__intro__') { openIntroModal(); return; }
+    if (currentOpenCountry === '__cocacola__') { openCocaModal(); return; }
     const code = currentOpenCountry;
     const c = countryByCode[code];
     const sec = sectionsMap[code];
@@ -1773,18 +1778,30 @@
     const todayHtml = buildTodayGamesHtml();
     const brazilHtml = buildBrazilGamesHtml();
 
-    // por país
+    // por país (+ intro + cocacola como "seções especiais")
     const byCountry = window.COUNTRIES.map(c => {
       const sec = sectionsMap[c.code];
       const cOwned = sec.items.filter(s => isOwned(s.number)).length;
       const cTotal = sec.items.length;
       return {
-        ...c,
-        owned: cOwned,
-        total: cTotal,
-        missing: cTotal - cOwned,
+        ...c, owned: cOwned, total: cTotal, missing: cTotal - cOwned,
         pct: cOwned / cTotal * 100
       };
+    });
+    // Adiciona Coca-Cola e Intro como seções extras no painel
+    ['cocacola', 'intro'].forEach(key => {
+      const sec = sectionsMap[key];
+      if (!sec) return;
+      const cOwned = sec.items.filter(s => isOwned(s.number)).length;
+      const cTotal = sec.items.length;
+      byCountry.push({
+        code: key,
+        name: key === 'cocacola' ? '🥤 Coca-Cola' : '🏆 Introdução',
+        flag: key === 'cocacola' ? '🥤' : '🏆',
+        group: key === 'cocacola' ? 'CC' : 'INTRO',
+        owned: cOwned, total: cTotal, missing: cTotal - cOwned,
+        pct: cOwned / cTotal * 100
+      });
     });
     const completed = byCountry.filter(c => c.missing === 0).length;
     const almostDone = byCountry.filter(c => c.missing > 0 && c.missing <= 3).sort((a,b) => a.missing - b.missing);
@@ -1869,7 +1886,12 @@
     dashEl.innerHTML = '';
     dashEl.innerHTML = familyBlock + html;
     $$('#dashboardContent .country-missing-row').forEach(r => {
-      r.addEventListener('click', () => openCountryModal(r.dataset.code));
+      r.addEventListener('click', () => {
+        const code = r.dataset.code;
+        if (code === 'intro') openIntroModal();
+        else if (code === 'cocacola') openCocaModal();
+        else openCountryModal(code);
+      });
     });
     $('#manageGroups').addEventListener('click', openGroupsModal);
     loadAndRenderGroups();
