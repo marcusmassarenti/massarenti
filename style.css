@@ -1540,6 +1540,59 @@ main { padding: 12px 12px 100px; }
   font-weight: 700;
 }
 
+/* === JOGOS DE HOJE === */
+.today-block {
+  background: #fff;
+  border: 1.5px solid var(--c-border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.today-block h3 {
+  background: var(--c-ink);
+  color: #fff;
+  margin: 0 !important;
+  padding: 10px 14px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+}
+.today-list {
+  display: flex;
+  flex-direction: column;
+}
+.today-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--c-border);
+  font-size: 12px;
+}
+.today-row:last-child { border-bottom: none; }
+.today-row.past { opacity: .55; background: var(--c-bg-soft); }
+.today-row.live {
+  background: linear-gradient(90deg, rgba(212,68,74,.12), transparent);
+  border-left: 3px solid var(--c-red);
+  animation: pulse-live 2s ease-in-out infinite;
+}
+.today-row.brazil {
+  background: linear-gradient(90deg, rgba(255,215,0,.18), rgba(0,156,59,.08));
+  border-left: 3px solid #009C3B;
+  font-weight: 800;
+}
+.today-time {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  min-width: 50px;
+  color: var(--c-ink);
+}
+.today-match { flex: 1; min-width: 0; }
+.today-teams { font-weight: 700; line-height: 1.2; }
+.today-score { font-weight: 900; color: var(--c-ink); padding: 0 4px; }
+.today-meta { font-size: 10px; color: var(--c-muted); margin-top: 2px; font-weight: 700; }
+
 /* === JOGOS DO BRASIL === */
 .brazil-block {
   background: linear-gradient(135deg, #FFD700 0%, #009C3B 50%, #002776 100%);

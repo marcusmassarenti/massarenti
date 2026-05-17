@@ -1542,6 +1542,62 @@
     }
   }
 
+  function buildTodayGamesHtml() {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    let games = window.SCHEDULE.filter(m => m.date === todayStr);
+    let title;
+    if (games.length > 0) {
+      title = `⚽ Jogos de hoje (${games.length})`;
+    } else {
+      // Sem jogos hoje - busca próximos
+      const upcoming = window.SCHEDULE.filter(m => {
+        const d = new Date(`${m.date}T${m.time}:00-03:00`);
+        return d > now;
+      }).slice(0, 3);
+      if (upcoming.length === 0) return '';
+      games = upcoming;
+      const nextD = new Date(`${games[0].date}T${games[0].time}:00-03:00`);
+      const sameDay = upcoming.filter(m => m.date === games[0].date);
+      games = sameDay;
+      title = `⏭ Próximos jogos · ${nextD.getDate()}/${['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][nextD.getMonth()]}`;
+    }
+    games.sort((a, b) => a.time.localeCompare(b.time));
+    const rows = games.map(m => {
+      const score = state.scores[m.id];
+      const home = m.resolvedHome || (m.homeCode ? { code: m.homeCode, flag: countryByCode[m.homeCode].flag, name: countryByCode[m.homeCode].name } : null);
+      const away = m.resolvedAway || (m.awayCode ? { code: m.awayCode, flag: countryByCode[m.awayCode].flag, name: countryByCode[m.awayCode].name } : null);
+      const homeName = home ? `${home.flag} ${home.name}` : '❓ ' + (m.homeLabel || '?');
+      const awayName = away ? `${away.flag} ${away.name}` : '❓ ' + (m.awayLabel || '?');
+      const matchDate = new Date(`${m.date}T${m.time}:00-03:00`);
+      const isPast = matchDate < now;
+      const isLive = !isPast && (matchDate - now) < 2 * 60 * 60 * 1000; // dentro de 2h
+      let scoreText = '<span style="color:var(--c-muted)">×</span>';
+      if (score) {
+        const hWon = score.home > score.away || score.penaltyWinner === 'home';
+        const aWon = score.away > score.home || score.penaltyWinner === 'away';
+        scoreText = `<span class="today-score">${score.home} × ${score.away}</span>`;
+      }
+      const hasBrazil = m.homeCode === 'BRA' || m.awayCode === 'BRA';
+      return `
+        <div class="today-row ${isPast ? 'past' : ''} ${isLive ? 'live' : ''} ${hasBrazil ? 'brazil' : ''}">
+          <div class="today-time">${m.time}${isLive ? ' 🔴' : ''}</div>
+          <div class="today-match">
+            <div class="today-teams">${homeName} ${scoreText} ${awayName}</div>
+            <div class="today-meta">${m.round || m.phase}${m.group ? ' · Grupo '+m.group : ''}${hasBrazil ? ' · 🇧🇷' : ''}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="today-block">
+        <h3>${title}</h3>
+        <div class="today-list">${rows}</div>
+      </div>
+    `;
+  }
+
   function buildBrazilGamesHtml() {
     const brazilGames = window.SCHEDULE.filter(m =>
       m.homeCode === 'BRA' || m.awayCode === 'BRA'
@@ -1593,6 +1649,7 @@
     const missing = total - owned;
     const pct = (owned / total * 100).toFixed(1);
     const countdownHtml = buildCountdownHtml();
+    const todayHtml = buildTodayGamesHtml();
     const brazilHtml = buildBrazilGamesHtml();
 
     // por país
@@ -1626,6 +1683,7 @@
 
     const html = `
       ${countdownHtml}
+      ${todayHtml}
       ${brazilHtml}
       <div class="dashboard-stats">
         <div class="stat-card big">
@@ -2233,6 +2291,12 @@
   // ---------- INIT ----------
   fillCountryFilter();
   renderDashboard();
+
+  // Atualiza o painel a cada 60s pra contagem regressiva e jogos do dia ficarem frescos
+  setInterval(() => {
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
+    if (activeTab === 'dashboard') renderDashboard();
+  }, 60000);
 
   // Carrega do Supabase na inicialização (se disponível) e re-renderiza
   if (supabaseClient && !viewMode) {
