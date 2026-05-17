@@ -279,17 +279,27 @@
     const map = $('#worldMap');
     // SVG simplificado: bolinhas em coordenadas aproximadas
     const positions = {
+      // CONCACAF
       CAN: [180, 110], USA: [195, 175], MEX: [195, 240],
-      ARG: [310, 480], BRA: [350, 380], URU: [320, 470], COL: [290, 320], ECU: [275, 350],
-      PAR: [325, 440], VEN: [305, 305], CRC: [220, 280], PAN: [240, 290], JAM: [255, 270],
-      ESP: [475, 195], FRA: [495, 175], ENG: [488, 145], GER: [515, 155], POR: [462, 195],
-      NED: [505, 145], BEL: [502, 158], ITA: [520, 195], CRO: [535, 190], SUI: [510, 175],
-      DEN: [520, 130], AUT: [528, 175], POL: [543, 152], NOR: [515, 105], TUR: [580, 205],
-      SCO: [488, 122], MAR: [475, 240], SEN: [485, 290], EGY: [575, 250], NGA: [545, 320],
-      ALG: [510, 240], CIV: [510, 320], TUN: [525, 220], CMR: [555, 335], GHA: [515, 320],
+      HAI: [255, 270], PAN: [240, 290], CUW: [270, 285],
+      // CONMEBOL
+      ARG: [310, 480], BRA: [350, 380], URU: [320, 470], COL: [290, 320],
+      ECU: [275, 350], PAR: [325, 440],
+      // UEFA
+      ESP: [475, 195], FRA: [495, 175], ENG: [488, 145], GER: [515, 155],
+      POR: [462, 195], NED: [505, 145], BEL: [502, 158], CRO: [535, 190],
+      SUI: [510, 175], AUT: [528, 175], NOR: [515, 105], TUR: [580, 205],
+      SCO: [488, 122], CZE: [530, 165], BIH: [538, 185], SWE: [535, 110],
+      // CAF
+      MAR: [475, 240], SEN: [485, 290], EGY: [575, 250], ALG: [510, 240],
+      CIV: [510, 320], TUN: [525, 220], GHA: [515, 320], RSA: [560, 460],
+      CPV: [450, 290], COD: [555, 360],
+      // AFC
       JPN: [830, 215], KOR: [800, 225], IRN: [625, 225], AUS: [820, 425],
-      KSA: [605, 260], QAT: [620, 255], UZB: [665, 200], JOR: [595, 240], NZL: [870, 470],
-      IRQ: [610, 220]
+      KSA: [605, 260], QAT: [620, 255], UZB: [665, 200], JOR: [595, 240],
+      IRQ: [610, 220],
+      // OFC
+      NZL: [870, 470]
     };
     let svg = '<svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg">';
     // Fundo simples (oceanos)
@@ -299,16 +309,18 @@
     svg += '<path d="M250,300 Q300,340 320,420 L340,510 L280,500 L240,420 Z" fill="#e8efea" stroke="#c9d6cf" stroke-width="1"/>';
     svg += '<path d="M780,400 Q830,380 870,420 L860,470 L800,460 Z" fill="#e8efea" stroke="#c9d6cf" stroke-width="1"/>';
 
+    const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--c-blue').trim() || '#0a2463';
     window.COUNTRIES.forEach(c => {
       const pos = positions[c.code];
       if (!pos) return;
       const sec = sectionsMap[c.code];
       const owned = sec.items.filter(s => isOwned(s.number)).length;
       const complete = owned === sec.items.length;
-      const cls = 'map-country participating' + (complete ? ' complete' : '');
-      svg += `<g class="${cls}" data-code="${c.code}" style="cursor:pointer">
-        <circle cx="${pos[0]}" cy="${pos[1]}" r="14" fill="${complete ? '#10b981' : 'var(--c-blue)'}" stroke="#fff" stroke-width="2"/>
+      const fillColor = complete ? '#10b981' : themeColor;
+      svg += `<g data-code="${c.code}" style="cursor:pointer">
+        <circle cx="${pos[0]}" cy="${pos[1]}" r="14" fill="${fillColor}" stroke="#fff" stroke-width="2"/>
         <text x="${pos[0]}" y="${pos[1]+5}" text-anchor="middle" font-size="14" style="pointer-events:none">${c.flag}</text>
+        <text x="${pos[0]}" y="${pos[1]+28}" text-anchor="middle" font-size="9" font-weight="bold" fill="#1a1f36" style="pointer-events:none">${c.code}</text>
       </g>`;
     });
     svg += '</svg>';
