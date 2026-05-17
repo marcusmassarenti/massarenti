@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d4444a"/>
+      <stop offset="20%" stop-color="#f06a25"/>
+      <stop offset="40%" stop-color="#f5d34c"/>
+      <stop offset="60%" stop-color="#54a96d"/>
+      <stop offset="80%" stop-color="#4a8ec6"/>
+      <stop offset="100%" stop-color="#5d4a9c"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff2a8"/>
+      <stop offset="50%" stop-color="#ecc34a"/>
+      <stop offset="100%" stop-color="#b58423"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="92" fill="url(#bg)"/>
+  <rect x="32" y="32" width="448" height="448" rx="68" fill="#ffffff"/>
+  <text x="256" y="190" text-anchor="middle" font-family="Arial Black,Helvetica,sans-serif" font-weight="900" font-size="80" fill="#111">26</text>
+  <g transform="translate(220,210)">
+    <ellipse cx="36" cy="32" rx="26" ry="28" fill="url(#gold)"/>
+    <path d="M16,60 Q6,80 12,108 Q18,138 36,158 L52,170 L72,170 L88,158 Q106,138 112,108 Q118,80 108,60 Q98,80 64,82 Q30,80 16,60 Z" fill="url(#gold)" stroke="#8b5e15" stroke-width="2"/>
+    <rect x="16" y="168" width="80" height="14" rx="3" fill="url(#gold)"/>
+    <rect x="6" y="184" width="100" height="22" rx="3" fill="#2a3328"/>
+  </g>
+  <text x="256" y="450" text-anchor="middle" font-family="Arial Black,Helvetica,sans-serif" font-weight="900" font-size="48" fill="#111" letter-spacing="2">CAUÃ</text>
+</svg>

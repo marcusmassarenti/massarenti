@@ -366,30 +366,54 @@
       const root = svg.querySelector(`[id="${iso}"]`);
       if (!root) return;
       const paths = root.tagName.toLowerCase() === 'path' ? [root] : Array.from(root.querySelectorAll('path'));
-      const code = stateByIso[iso].codes[0];
-      const country = countryByCode[code];
+      const codes = stateByIso[iso].codes;
+      // Quando há mais de um país no mesmo ISO (ex: Inglaterra + Escócia no GB),
+      // o click abre um menu de seleção
       paths.forEach(p => {
         p.classList.add('wm-country', stateByIso[iso].cls);
         p.style.cursor = 'pointer';
-        p.addEventListener('click', () => openCountryModal(code));
+        p.addEventListener('click', () => {
+          if (codes.length === 1) openCountryModal(codes[0]);
+          else openMultiCountryChoice(codes);
+        });
         const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-        title.textContent = `${country.flag} ${country.name} (Grupo ${country.group})`;
+        title.textContent = codes.map(code => {
+          const c = countryByCode[code];
+          return `${c.flag} ${c.name} (Grupo ${c.group})`;
+        }).join(' / ');
         p.appendChild(title);
       });
-      // Adiciona bandeira no centro do bounding box
+      // Adiciona bandeira(s) no centro do país (usando o MAIOR path do grupo,
+      // pra evitar Alasca/Hawaii puxando o centro dos EUA pro Ártico, etc.)
       try {
-        const bbox = root.getBBox ? root.getBBox() : null;
+        let bbox;
+        if (paths.length === 1) {
+          bbox = paths[0].getBBox();
+        } else {
+          let maxArea = 0, mainBbox = null;
+          paths.forEach(p => {
+            const pb = p.getBBox();
+            const area = pb.width * pb.height;
+            if (area > maxArea) { maxArea = area; mainBbox = pb; }
+          });
+          bbox = mainBbox || root.getBBox();
+        }
         if (bbox && bbox.width > 4 && bbox.height > 4) {
           const cx = bbox.x + bbox.width / 2;
           const cy = bbox.y + bbox.height / 2;
-          const flagText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          flagText.setAttribute('x', cx);
-          flagText.setAttribute('y', cy + 4);
-          flagText.setAttribute('text-anchor', 'middle');
-          flagText.setAttribute('font-size', Math.max(10, Math.min(bbox.width / 2.5, 22)));
-          flagText.setAttribute('pointer-events', 'none');
-          flagText.textContent = country.flag;
-          svg.appendChild(flagText);
+          const size = Math.max(10, Math.min(bbox.width / 2.5, 22));
+          codes.forEach((code, i) => {
+            const country = countryByCode[code];
+            const flagText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            flagText.setAttribute('x', cx);
+            const offsetY = codes.length > 1 ? (i - (codes.length - 1) / 2) * (size + 2) : 0;
+            flagText.setAttribute('y', cy + 4 + offsetY);
+            flagText.setAttribute('text-anchor', 'middle');
+            flagText.setAttribute('font-size', size);
+            flagText.setAttribute('pointer-events', 'none');
+            flagText.textContent = country.flag;
+            svg.appendChild(flagText);
+          });
         }
       } catch (e) {}
     });
@@ -431,6 +455,27 @@
   function openCountryModal(code) {
     currentOpenCountry = code;
     renderCountryModalContent();
+    $('#countryModal').hidden = false;
+  }
+  function openMultiCountryChoice(codes) {
+    // Mostra um pequeno menu pra escolher qual país abrir (ex: ENG ou SCO no UK)
+    const body = $('#countryModalBody');
+    body.innerHTML = `
+      <h2 style="margin-bottom:14px">Qual seleção?</h2>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${codes.map(code => {
+          const c = countryByCode[code];
+          return `<button class="btn-secondary multi-choice" data-code="${code}" style="display:flex;align-items:center;gap:10px;text-align:left;padding:14px">
+            <span style="font-size:28px">${c.flag}</span>
+            <span style="font-weight:800">${c.name}</span>
+            <span class="country-group-tag" style="margin-left:auto">Grupo ${c.group}</span>
+          </button>`;
+        }).join('')}
+      </div>
+    `;
+    body.querySelectorAll('.multi-choice').forEach(b => {
+      b.addEventListener('click', () => openCountryModal(b.dataset.code));
+    });
     $('#countryModal').hidden = false;
   }
   function renderCountryModalContent() {
