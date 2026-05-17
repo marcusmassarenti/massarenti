@@ -364,7 +364,7 @@
           <span class="section-flag">${sectionFlag(sec)}</span>
           <div class="section-info">
             <div class="section-title">${data.name} ${groupTag}</div>
-            <div class="section-meta">${data.items[0].code}-01 a ${data.items[0].code}-${String(data.items.length).padStart(2,'0')}</div>
+            <div class="section-meta">${data.items[0].code}-${String(data.items[0].localNumber).padStart(2,'0')} a ${data.items[0].code}-${String(data.items[data.items.length-1].localNumber).padStart(2,'0')}</div>
           </div>
           <div class="section-progress-mini ${isComplete ? 'complete' : ''}">${ownedInSection}/${totalInSection}</div>
         </div>

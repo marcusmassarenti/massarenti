@@ -208,11 +208,43 @@
   <div id="confetti"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=5"></script>
-  <script src="data/countries.js?v=5"></script>
-  <script src="data/stickers.js?v=5"></script>
-  <script src="data/schedule.js?v=5"></script>
-  <script src="data/world-map.js?v=5"></script>
-  <script src="app.js?v=5"></script>
+  <script src="data/supabase-config.js?v=6"></script>
+  <script src="data/countries.js?v=6"></script>
+  <script src="data/stickers.js?v=6"></script>
+  <script src="data/schedule.js?v=6"></script>
+  <script src="data/world-map.js?v=6"></script>
+  <script src="app.js?v=6"></script>
+  <script>
+    // Service Worker - auto-atualiza quando tem versão nova
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+          // Verifica updates a cada 30s
+          setInterval(() => reg.update(), 30000);
+          reg.addEventListener('updatefound', () => {
+            const newSW = reg.installing;
+            newSW && newSW.addEventListener('statechange', () => {
+              if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                // Versão nova instalada → mostra aviso
+                showUpdateBanner();
+              }
+            });
+          });
+        }).catch(() => {});
+      });
+      function showUpdateBanner() {
+        if (document.getElementById('updateBanner')) return;
+        const b = document.createElement('div');
+        b.id = 'updateBanner';
+        b.style.cssText = 'position:fixed;bottom:80px;left:10px;right:10px;background:#111;color:#fff;padding:12px;border-radius:12px;display:flex;align-items:center;gap:10px;z-index:500;box-shadow:0 4px 16px rgba(0,0,0,.3);font-size:13px;font-weight:700';
+        b.innerHTML = '✨ Versão nova disponível! <button id="reloadNow" style="background:#FFD700;color:#111;border:none;padding:6px 12px;border-radius:6px;font-weight:900;margin-left:auto;cursor:pointer">Atualizar</button>';
+        document.body.appendChild(b);
+        document.getElementById('reloadNow').onclick = () => {
+          navigator.serviceWorker.controller && navigator.serviceWorker.controller.postMessage('SKIP_WAITING');
+          setTimeout(() => window.location.reload(), 200);
+        };
+      }
+    }
+  </script>
 </body>
 </html>

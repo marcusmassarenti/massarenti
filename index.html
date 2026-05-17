@@ -116,9 +116,16 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=5"></script>
-  <script src="data/countries.js?v=5"></script>
-  <script src="data/stickers.js?v=5"></script>
+  <script src="data/supabase-config.js?v=6"></script>
+  <script src="data/countries.js?v=6"></script>
+  <script src="data/stickers.js?v=6"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
   <script>
     const form = document.getElementById('loginForm');
     const nameInput = document.getElementById('loginName');

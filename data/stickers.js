@@ -5,7 +5,7 @@
   const stickers = [];
   const pad = (n) => String(n).padStart(2, '0');
 
-  // ============ SEÇÃO INTRODUÇÃO (FWC 1–20) ============
+  // ============ SEÇÃO INTRODUÇÃO (FWC 00–19) ============
   const introDescriptions = [
     'Troféu da Copa', 'Logo Oficial', 'Bola Oficial Adidas', 'Pôster Oficial',
     'Mascote Maple', 'Mascote Zayu', 'Mascote Clutch',
@@ -17,12 +17,12 @@
   for (let i = 0; i < 20; i++) {
     stickers.push({
       number: i + 1,
-      localNumber: i + 1,
+      localNumber: i, // FWC-00 até FWC-19 (como no álbum oficial)
       section: 'intro',
       sectionName: 'Introdução',
       country: null,
       code: 'FWC',
-      name: `FWC-${pad(i + 1)}`,
+      name: `FWC-${pad(i)}`,
       description: introDescriptions[i],
       type: i < 4 ? 'capa' : (i < 7 ? 'mascote' : 'estádio'),
       shiny: i < 7
