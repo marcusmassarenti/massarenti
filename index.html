@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=26">
+  <link rel="stylesheet" href="style.css?v=27">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -125,7 +125,7 @@
           <button type="button" class="pin-toggle-eye" id="togglePin" aria-label="Mostrar/esconder PIN">👁️</button>
         </div>
       </label>
-      <button type="submit" class="btn-primary">Entrar ou Criar conta</button>
+      <button type="submit" class="btn-primary" id="submitBtn">Entrar ou Criar conta</button>
 
       <div id="loginError" class="login-error" hidden></div>
 
@@ -135,9 +135,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=26"></script>
-  <script src="data/countries.js?v=26"></script>
-  <script src="data/stickers.js?v=26"></script>
+  <script src="data/supabase-config.js?v=27"></script>
+  <script src="data/countries.js?v=27"></script>
+  <script src="data/stickers.js?v=27"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -238,6 +238,8 @@
         btn.addEventListener('click', () => {
           nameInput.value = n;
           pinInput.focus();
+          // Atualiza o botão pra "Entrar" já que é perfil conhecido
+          if (typeof updateSubmitButtonText === 'function') updateSubmitButtonText();
         });
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
@@ -256,6 +258,48 @@
       });
     }
     renderProfiles();
+
+    // Detecta se o nome já existe na nuvem e atualiza o texto do botão
+    const submitBtnRef = document.getElementById('submitBtn');
+    let nameCheckTimer = null;
+    async function checkNameExists(name) {
+      if (!supabaseClient || !name) return null;
+      try {
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .select('name')
+          .eq('name', name)
+          .maybeSingle();
+        if (error) return null;
+        return !!data;
+      } catch (e) { return null; }
+    }
+    function updateSubmitButtonText() {
+      const name = nameInput.value.trim();
+      if (!name) {
+        submitBtnRef.textContent = 'Entrar ou Criar conta';
+        submitBtnRef.dataset.action = '';
+        return;
+      }
+      clearTimeout(nameCheckTimer);
+      submitBtnRef.textContent = '⏳ Verificando...';
+      nameCheckTimer = setTimeout(async () => {
+        const exists = await checkNameExists(name);
+        if (nameInput.value.trim() !== name) return; // usuário mudou o texto
+        if (exists === true) {
+          submitBtnRef.textContent = '🔑 Entrar';
+          submitBtnRef.dataset.action = 'login';
+        } else if (exists === false) {
+          submitBtnRef.textContent = '✨ Criar conta';
+          submitBtnRef.dataset.action = 'create';
+        } else {
+          submitBtnRef.textContent = 'Entrar ou Criar conta';
+          submitBtnRef.dataset.action = '';
+        }
+      }, 500);
+    }
+    nameInput.addEventListener('input', updateSubmitButtonText);
+    nameInput.addEventListener('blur', updateSubmitButtonText);
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
