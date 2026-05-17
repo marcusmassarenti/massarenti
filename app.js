@@ -1462,13 +1462,19 @@
     const pct = (owned / total * 100).toFixed(0);
     const dup = Object.keys(counts).reduce((acc, k) => acc + Math.max(0, counts[k] - 1), 0);
     const isMe = p.name === profileName;
+    const medal = p.medal || '';
+    const positionLabel = p.position ? `${p.position}º` : '';
     return `
-      <div class="family-card ${isMe ? 'me' : ''}" data-name="${p.name}">
+      <div class="family-card ${isMe ? 'me' : ''} ${medal ? 'has-medal' : ''}" data-name="${p.name}">
+        ${medal ? `<div class="family-medal medal-${p.position}">${medal}</div>` : ''}
         ${!isMe ? `<button class="family-remove" data-name="${p.name}" title="Remover da lista">✗</button>` : ''}
         <div class="family-card-top">
           <div class="family-avatar">${p.name.charAt(0).toUpperCase()}</div>
           <div class="family-name-block">
-            <div class="family-name">${p.name}${isMe ? ' 👤' : ''}</div>
+            <div class="family-name">
+              ${positionLabel ? `<span class="family-pos">${positionLabel}</span>` : ''}
+              ${p.name}${isMe ? ' 👤' : ''}
+            </div>
             <div class="family-pct">${pct}%</div>
           </div>
         </div>
@@ -1479,6 +1485,26 @@
         </div>
       </div>
     `;
+  }
+
+  function rankProfilesByProgress(profiles) {
+    // Ordena por quantidade de figurinhas únicas coladas (desc)
+    const ranked = [...profiles].sort((a, b) => {
+      const aOwned = Object.values(a.counts || {}).filter(v => v > 0).length;
+      const bOwned = Object.values(b.counts || {}).filter(v => v > 0).length;
+      if (bOwned !== aOwned) return bOwned - aOwned;
+      // Empate: quem tem mais repetidas vence
+      const aDup = Object.values(a.counts || {}).reduce((acc, v) => acc + Math.max(0, v - 1), 0);
+      const bDup = Object.values(b.counts || {}).reduce((acc, v) => acc + Math.max(0, v - 1), 0);
+      if (bDup !== aDup) return bDup - aDup;
+      return a.name.localeCompare(b.name);
+    });
+    const medals = ['🥇', '🥈', '🥉'];
+    ranked.forEach((p, i) => {
+      p.position = i + 1;
+      if (i < medals.length && ranked.length >= 2) p.medal = medals[i];
+    });
+    return ranked;
   }
 
   function renderDashboard() {
@@ -1676,7 +1702,15 @@
       listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--c-muted);font-size:13px;grid-column:1/-1">Sem membros ainda.</div>';
       return;
     }
-    listEl.innerHTML = members.map(buildFamilyRow).join('');
+    const ranked = rankProfilesByProgress(members);
+    const champion = ranked[0];
+    const champOwned = Object.values(champion.counts || {}).filter(v => v > 0).length;
+    const podiumBanner = ranked.length >= 2 ? `
+      <div class="podium-banner">
+        🏆 <strong>${champion.name}</strong> está liderando com ${champOwned}/980 figurinhas!
+      </div>
+    ` : '';
+    listEl.innerHTML = podiumBanner + ranked.map(buildFamilyRow).join('');
     listEl.querySelectorAll('.family-card').forEach(r => {
       if (r.classList.contains('me')) return;
       r.addEventListener('click', async () => {
