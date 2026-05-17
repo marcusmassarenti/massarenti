@@ -1,5 +1,8 @@
 /* === ÁLBUM DO CAUÃ - COPA 2026 — Tema Panini oficial === */
 :root {
+  /* Personalizado pelo usuário */
+  --c-accent: #111111;
+  --c-accent-dark: #000000;
   /* Paleta inspirada na capa oficial Panini 2026 */
   --c-bg: #ffffff;
   --c-bg-soft: #f6f7f9;
@@ -42,6 +45,7 @@ html, body {
   background: var(--c-bg);
   -webkit-tap-highlight-color: transparent;
 }
+body { font-family: var(--font-body); }
 body {
   min-height: 100vh;
   min-height: 100dvh;
@@ -607,7 +611,7 @@ input, select { font-family: inherit; font-size: 16px; }
 .pin-toggle-eye:active { transform: translateY(-50%) scale(.9); }
 
 .btn-primary {
-  background: var(--c-ink);
+  background: var(--c-accent);
   color: #fff;
   font-weight: 900;
   font-family: 'Nunito', sans-serif;
@@ -619,7 +623,7 @@ input, select { font-family: inherit; font-size: 16px; }
   text-transform: uppercase;
 }
 .btn-primary:active { transform: translateY(1px); }
-.btn-primary:hover { background: #000; }
+.btn-primary:hover { background: var(--c-accent-dark); }
 .btn-secondary {
   background: var(--c-bg-soft);
   border: 1.5px solid var(--c-border);
@@ -684,6 +688,38 @@ input, select { font-family: inherit; font-size: 16px; }
   padding: 0 10px;
   position: relative;
   z-index: 1;
+}
+.new-user-btn {
+  background: linear-gradient(135deg, var(--p-blue), var(--p-purple));
+  color: #fff;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.new-user-btn:hover { filter: brightness(1.08); }
+.new-user-btn:active { transform: scale(.98); }
+.name-status {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.name-status.exists {
+  background: #fff3cd;
+  border: 1px solid #ffe07a;
+  color: #856404;
+}
+.name-status.new {
+  background: #d4edda;
+  border: 1px solid #a3d8a8;
+  color: #155724;
 }
 .login-flow-hint {
   background: linear-gradient(135deg, #fff8d6, #fffbeb);
@@ -797,7 +833,7 @@ input, select { font-family: inherit; font-size: 16px; }
 .header-left { display: flex; align-items: center; gap: 10px; }
 .header-avatar {
   width: 38px; height: 38px;
-  background: var(--c-ink);
+  background: var(--c-accent);
   color: var(--c-gold);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -907,9 +943,9 @@ main { padding: 12px 12px 8px; }
 }
 .chip:hover { background: var(--c-bg-soft); }
 .chip.active {
-  background: var(--c-ink);
+  background: var(--c-accent);
   color: #fff;
-  border-color: var(--c-ink);
+  border-color: var(--c-accent);
 }
 
 /* === SEÇÕES === */
@@ -1452,7 +1488,7 @@ main { padding: 12px 12px 8px; }
   text-transform: uppercase;
   letter-spacing: .3px;
 }
-.tab-btn.active { color: var(--c-ink); }
+.tab-btn.active { color: var(--c-accent); }
 .tab-btn.active .tab-icon { transform: scale(1.15); }
 
 /* === MODAL === */

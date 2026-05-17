@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=46">
+  <link rel="stylesheet" href="style.css?v=47">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -110,10 +110,7 @@
         <div class="divider-or"><span>ou</span></div>
       </div>
 
-      <details class="login-flow-hint" id="loginFlowHint">
-        <summary>🆕 Primeira vez aqui? <span class="hint-toggle">toca pra ver como funciona</span></summary>
-        <p>Escolha um <strong>nome</strong> (igual usar em jogos) e um <strong>PIN de 4 dígitos</strong> só seu. O sistema cria sua conta automaticamente. Pra entrar de novo depois, é só usar o mesmo nome+PIN.</p>
-      </details>
+      <button type="button" id="newUserBtn" class="new-user-btn">🆕 Sou novo aqui — criar conta</button>
 
       <label>
         <span>Nome do colecionador</span>
@@ -143,9 +140,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=46"></script>
-  <script src="data/countries.js?v=46"></script>
-  <script src="data/stickers.js?v=46"></script>
+  <script src="data/supabase-config.js?v=47"></script>
+  <script src="data/countries.js?v=47"></script>
+  <script src="data/stickers.js?v=47"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -334,8 +331,60 @@
         }
       }, 500);
     }
+    // Aviso embaixo do campo nome quando ele já existe
+    const nameStatus = document.createElement('div');
+    nameStatus.className = 'name-status';
+    nameStatus.hidden = true;
+    nameInput.parentElement.appendChild(nameStatus);
+    function updateNameStatus(exists, name) {
+      if (!name) { nameStatus.hidden = true; return; }
+      nameStatus.hidden = false;
+      if (exists === true) {
+        nameStatus.className = 'name-status exists';
+        nameStatus.innerHTML = `⚠️ <strong>"${name}"</strong> já existe! Se for você, digite seu PIN. Se não, escolhe outro nome.`;
+      } else if (exists === false) {
+        nameStatus.className = 'name-status new';
+        nameStatus.innerHTML = `✨ <strong>"${name}"</strong> está disponível! Escolhe um PIN pra criar.`;
+      } else {
+        nameStatus.hidden = true;
+      }
+    }
+    const originalUpdate = updateSubmitButtonText;
+    updateSubmitButtonText = async function () {
+      const name = nameInput.value.trim();
+      if (!name) { submitBtnRef.textContent = 'Entrar ou Criar conta'; nameStatus.hidden = true; return; }
+      clearTimeout(nameCheckTimer);
+      submitBtnRef.textContent = '⏳ Verificando...';
+      nameStatus.hidden = true;
+      nameCheckTimer = setTimeout(async () => {
+        const exists = await checkNameExists(name);
+        if (nameInput.value.trim() !== name) return;
+        updateNameStatus(exists, name);
+        if (exists === true) {
+          submitBtnRef.textContent = '🔑 Entrar';
+        } else if (exists === false) {
+          submitBtnRef.textContent = '✨ Criar conta';
+        } else {
+          submitBtnRef.textContent = 'Entrar ou Criar conta';
+        }
+      }, 500);
+    };
+    nameInput.removeEventListener('input', originalUpdate);
+    nameInput.removeEventListener('blur', originalUpdate);
     nameInput.addEventListener('input', updateSubmitButtonText);
     nameInput.addEventListener('blur', updateSubmitButtonText);
+
+    // Botão "novo usuário" - foca o campo nome e dá uma dica
+    const newUserBtn = document.getElementById('newUserBtn');
+    if (newUserBtn) {
+      newUserBtn.addEventListener('click', () => {
+        nameInput.value = '';
+        nameInput.focus();
+        nameStatus.hidden = false;
+        nameStatus.className = 'name-status new';
+        nameStatus.innerHTML = '👇 Digite um <strong>nome novo</strong> (qualquer um, tipo seu apelido). O sistema vai pedir um PIN pra criar a conta automaticamente.';
+      });
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();

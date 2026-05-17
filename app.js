@@ -313,7 +313,7 @@
   function saveTheme() { localStorage.setItem(themeKey, JSON.stringify(theme)); }
 
   const state = loadData();
-  const theme = Object.assign({ color: '#0a2463', font: "'Bebas Neue', sans-serif" }, loadTheme());
+  const theme = Object.assign({ color: '#111111', font: "'Nunito', sans-serif" }, loadTheme());
 
   // ===== MODO VIEW (visualizar álbum de outra pessoa) =====
   let viewMode = false;
@@ -437,9 +437,9 @@
 
   // ---------- THEME ----------
   function applyTheme() {
-    document.documentElement.style.setProperty('--c-blue', theme.color);
-    document.documentElement.style.setProperty('--font-display', theme.font);
-    document.documentElement.style.setProperty('--c-blue-deep', shadeColor(theme.color, -30));
+    document.documentElement.style.setProperty('--c-accent', theme.color);
+    document.documentElement.style.setProperty('--c-accent-dark', shadeColor(theme.color, -25));
+    document.documentElement.style.setProperty('--font-body', theme.font);
   }
   function shadeColor(hex, percent) {
     const num = parseInt(hex.replace('#', ''), 16);
@@ -2430,6 +2430,32 @@
   });
 
 
+
+  // Tema: cor de destaque (avatar, abas ativas, botões)
+  const themeColors = ['#111111', '#d4444a', '#f06a25', '#54a96d', '#4a8ec6', '#5d4a9c', '#e8a4b8', '#e3b23c'];
+  if ($('#colorOptions')) {
+    themeColors.forEach(c => {
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch' + (c === theme.color ? ' active' : '');
+      sw.style.background = c;
+      sw.title = c;
+      sw.addEventListener('click', () => {
+        theme.color = c;
+        saveTheme();
+        applyTheme();
+        $$('.color-swatch').forEach(s => s.classList.toggle('active', s === sw));
+      });
+      $('#colorOptions').appendChild(sw);
+    });
+  }
+  if ($('#fontSelect')) {
+    $('#fontSelect').value = theme.font;
+    $('#fontSelect').addEventListener('change', (e) => {
+      theme.font = e.target.value;
+      saveTheme();
+      applyTheme();
+    });
+  }
 
   // Reset (zera figurinhas E placares)
   $('#resetBtn').addEventListener('click', () => {

@@ -13,8 +13,8 @@
   <title>Álbum do Cauã - Copa 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&family=Press+Start+2P&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=46">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=Press+Start+2P&family=Fredoka:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=47">
 </head>
 <body class="app-body">
   <header class="app-header">
@@ -326,6 +326,19 @@
       <h2>Configurações</h2>
 
 
+      <div class="setting-group">
+        <h3>🎨 Personalizar</h3>
+        <label>Cor de destaque</label>
+        <div class="color-options" id="colorOptions"></div>
+        <label>Fonte do app</label>
+        <select id="fontSelect">
+          <option value="'Nunito', sans-serif">Nunito (padrão)</option>
+          <option value="'Bebas Neue', sans-serif">Bebas Neue (clássica)</option>
+          <option value="'Fredoka', sans-serif">Fredoka (arredondada)</option>
+          <option value="'Press Start 2P', monospace">Pixel (game)</option>
+        </select>
+      </div>
+
       <div class="setting-group" id="adminGroup" hidden>
         <h3>🔒 Admin</h3>
         <p style="font-size:12px;color:var(--c-muted);margin-bottom:8px">Lista de todos os perfis cadastrados no app.</p>
@@ -354,12 +367,12 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=46"></script>
-  <script src="data/countries.js?v=46"></script>
-  <script src="data/stickers.js?v=46"></script>
-  <script src="data/schedule.js?v=46"></script>
-  <script src="data/world-map.js?v=46"></script>
-  <script src="app.js?v=46"></script>
+  <script src="data/supabase-config.js?v=47"></script>
+  <script src="data/countries.js?v=47"></script>
+  <script src="data/stickers.js?v=47"></script>
+  <script src="data/schedule.js?v=47"></script>
+  <script src="data/world-map.js?v=47"></script>
+  <script src="app.js?v=47"></script>
   <script>
     // Service Worker - auto-atualiza quando tem versão nova
     if ('serviceWorker' in navigator) {
