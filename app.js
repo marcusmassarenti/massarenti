@@ -1538,15 +1538,40 @@
       if (c === 0) myMissing.add(s.number);
     });
 
-    const stickerLabel = (num) => {
-      const s = window.STICKERS.find(x => x.number === num);
-      return s ? s.name : '#' + num;
-    };
+    // Agrupa lista de números de figurinha por seleção/seção
+    function groupByCountry(nums) {
+      const groups = {};
+      nums.forEach(num => {
+        const s = window.STICKERS.find(x => x.number === num);
+        if (!s) return;
+        const key = s.section;
+        if (!groups[key]) {
+          const country = countryByCode[s.section];
+          const flag = country ? country.flag : (s.section === 'cocacola' ? '🥤' : '🏆');
+          const name = country ? country.name : s.sectionName;
+          groups[key] = { flag, name, code: s.code, numbers: [] };
+        }
+        groups[key].numbers.push(s.localNumber);
+      });
+      // Ordena pelos nomes
+      return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
+    }
+    function renderTradeGroup(group) {
+      const nums = group.numbers.sort((a, b) => a - b)
+        .map(n => `<span class="trade-num">${String(n).padStart(2, '0')}</span>`).join('');
+      return `
+        <div class="trade-row">
+          <span class="trade-row-flag">${group.flag}</span>
+          <span class="trade-row-name">${group.name}</span>
+          <span class="trade-row-nums">${nums}</span>
+        </div>
+      `;
+    }
 
     const cards = others.map(other => {
       const oCounts = other.counts || {};
-      const theyCanGive = []; // tem repetida + eu não tenho
-      const iCanGive = [];    // eu tenho repetida + ela não tem
+      const theyCanGive = [];
+      const iCanGive = [];
       window.STICKERS.forEach(s => {
         const mine = myCounts[s.number] || 0;
         const theirs = oCounts[s.number] || 0;
@@ -1554,8 +1579,8 @@
         if (mine > 1 && theirs === 0) iCanGive.push(s.number);
       });
       if (theyCanGive.length === 0 && iCanGive.length === 0) return '';
-      const youGetList = theyCanGive.slice(0, 30).map(n => stickerLabel(n)).join(', ');
-      const youGiveList = iCanGive.slice(0, 30).map(n => stickerLabel(n)).join(', ');
+      const youGetGroups = groupByCountry(theyCanGive);
+      const youGiveGroups = groupByCountry(iCanGive);
       return `
         <div class="trade-card">
           <div class="trade-card-toggle">
@@ -1571,12 +1596,12 @@
             ${theyCanGive.length > 0 ? `
               <div class="trade-block trade-block-get">
                 <div class="trade-block-title">🎁 ${other.name} pode te dar (${theyCanGive.length})</div>
-                <div class="trade-list">${youGetList}${theyCanGive.length > 30 ? '...' : ''}</div>
+                <div class="trade-rows">${youGetGroups.map(renderTradeGroup).join('')}</div>
               </div>` : ''}
             ${iCanGive.length > 0 ? `
               <div class="trade-block trade-block-give">
                 <div class="trade-block-title">✋ Você pode dar pra ${other.name} (${iCanGive.length})</div>
-                <div class="trade-list">${youGiveList}${iCanGive.length > 30 ? '...' : ''}</div>
+                <div class="trade-rows">${youGiveGroups.map(renderTradeGroup).join('')}</div>
               </div>` : ''}
           </div>
         </div>
@@ -2693,6 +2718,43 @@
     }
   });
 
+  // Novidades acumuladas desde a última visita
+  function showChangelogIfNew() {
+    if (viewMode || !window.CHANGELOG || !window.APP_VERSION) return;
+    const lastSeenKey = `caua_lastSeenVersion_${profileName}`;
+    const lastSeen = parseInt(localStorage.getItem(lastSeenKey) || '0', 10);
+    if (lastSeen >= window.APP_VERSION) return;
+    const newOnes = window.CHANGELOG.filter(c => c.version > lastSeen);
+    if (newOnes.length === 0) {
+      localStorage.setItem(lastSeenKey, String(window.APP_VERSION));
+      return;
+    }
+    setTimeout(() => {
+      const list = document.getElementById('changelogList');
+      if (!list) return;
+      list.innerHTML = newOnes.map(c => `
+        <div class="changelog-block">
+          <div class="changelog-version">
+            <span class="changelog-version-num">v${c.version}</span>
+            <span class="changelog-version-title">${c.title || 'Atualização'}</span>
+            <span class="changelog-version-date">${c.date}</span>
+          </div>
+          <ul class="changelog-items">
+            ${c.items.map(it => `<li>${it}</li>`).join('')}
+          </ul>
+        </div>
+      `).join('');
+      document.getElementById('changelogModal').hidden = false;
+    }, 600);
+
+    const closeIt = () => {
+      localStorage.setItem(lastSeenKey, String(window.APP_VERSION));
+      document.getElementById('changelogModal').hidden = true;
+    };
+    document.getElementById('closeChangelog').onclick = closeIt;
+    document.getElementById('changelogOk').onclick = closeIt;
+  }
+
   // Lembrete de PIX (pra quem não pagou ainda, exceto o admin)
   async function showPixReminderIfNeeded() {
     if (!supabaseClient || viewMode || isAdminUser) return;
@@ -2799,6 +2861,7 @@
   renderDashboard();
   showWelcomeIfNeeded();
   showPixReminderIfNeeded();
+  showChangelogIfNew();
 
   // Atualiza o painel a cada 60s pra contagem regressiva e jogos do dia ficarem frescos
   setInterval(() => {
