@@ -823,13 +823,41 @@ main { padding: 12px 12px 100px; }
 }
 
 .world-map {
-  background: #fff;
+  background: linear-gradient(180deg, #d8ecfa 0%, #b8d6ee 100%);
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
   padding: 10px;
   overflow-x: auto;
 }
-.world-map svg { width: 100%; height: auto; min-width: 560px; display: block; }
+.world-map svg { width: 100%; height: auto; display: block; }
+.world-map svg path {
+  fill: #e0e8d8;
+  stroke: #c0cab4;
+  stroke-width: .4;
+  transition: fill .15s;
+}
+.world-map svg path.wm-country { stroke: #fff; stroke-width: .6; }
+.world-map svg path.wm-participating { fill: var(--p-blue); }
+.world-map svg path.wm-partial { fill: var(--p-yellow); }
+.world-map svg path.wm-complete { fill: var(--p-green); }
+.world-map svg path.wm-country:hover { fill: var(--p-red); }
+.world-map-legend {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--c-muted);
+  font-weight: 700;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.world-map-legend .swatch {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
 
 /* === JOGOS === */
 .next-match {

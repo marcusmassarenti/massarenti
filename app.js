@@ -318,82 +318,78 @@
     });
   }
 
-  function renderWorldMap() {
+  // FIFA 3-letter → ISO 3166-1 alpha-2 (lowercase, como no SVG)
+  const FIFA_TO_ISO = {
+    CAN: 'ca', USA: 'us', MEX: 'mx', HAI: 'ht', PAN: 'pa', CUW: 'cw',
+    BRA: 'br', ARG: 'ar', URU: 'uy', COL: 'co', ECU: 'ec', PAR: 'py',
+    ESP: 'es', FRA: 'fr', ENG: 'gb', GER: 'de', POR: 'pt', NED: 'nl',
+    BEL: 'be', CRO: 'hr', SUI: 'ch', AUT: 'at', NOR: 'no', TUR: 'tr',
+    SCO: 'gb', CZE: 'cz', BIH: 'ba', SWE: 'se',
+    MAR: 'ma', SEN: 'sn', EGY: 'eg', ALG: 'dz', CIV: 'ci', TUN: 'tn',
+    GHA: 'gh', RSA: 'za', CPV: 'cv', COD: 'cd',
+    JPN: 'jp', KOR: 'kr', IRN: 'ir', AUS: 'au', KSA: 'sa', QAT: 'qa',
+    UZB: 'uz', JOR: 'jo', IRQ: 'iq', NZL: 'nz'
+  };
+
+  let worldMapSvgCache = null;
+  async function loadWorldMapSvg() {
+    if (worldMapSvgCache) return worldMapSvgCache;
+    try {
+      const r = await fetch('assets/world-map.svg');
+      worldMapSvgCache = await r.text();
+      return worldMapSvgCache;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function renderWorldMap() {
     const map = $('#worldMap');
-    // Mapa-múndi: lat/lon real convertido para equirectangular em viewBox 1000x500
-    // x = (lon+180)/360*1000 ; y = (90-lat)/180*500
-    const latlon = {
-      CAN: [56, -106], USA: [40, -100], MEX: [23, -102], HAI: [19, -72], PAN: [8, -80], CUW: [12, -69],
-      BRA: [-14, -52], ARG: [-38, -64], URU: [-33, -56], COL: [4, -74], ECU: [-1, -78], PAR: [-23, -58],
-      ESP: [40, -3], FRA: [47, 2], ENG: [53, -1], GER: [51, 10], POR: [39, -8], NED: [52, 5],
-      BEL: [51, 4], CRO: [45, 16], SUI: [47, 8], AUT: [47, 14], NOR: [62, 10], TUR: [39, 35],
-      SCO: [57, -4], CZE: [50, 15], BIH: [44, 18], SWE: [62, 17],
-      MAR: [32, -7], SEN: [14, -14], EGY: [27, 30], ALG: [28, 2], CIV: [8, -5], TUN: [34, 10],
-      GHA: [8, -1], RSA: [-29, 24], CPV: [16, -24], COD: [-2, 23],
-      JPN: [36, 138], KOR: [37, 128], IRN: [32, 53], AUS: [-25, 134], KSA: [24, 45], QAT: [25, 51],
-      UZB: [41, 64], JOR: [31, 36], IRQ: [33, 44], NZL: [-41, 174]
-    };
-    const project = ([lat, lon]) => [
-      Math.round((lon + 180) / 360 * 1000),
-      Math.round((90 - lat) / 180 * 500)
-    ];
+    map.innerHTML = '<div style="padding:40px;text-align:center;color:var(--c-muted)">Carregando mapa...</div>';
+    const svgText = await loadWorldMapSvg();
+    if (!svgText) {
+      map.innerHTML = '<div style="padding:40px;text-align:center;color:var(--c-red)">Não consegui carregar o mapa. Confira se o arquivo <code>assets/world-map.svg</code> existe.</div>';
+      return;
+    }
+    map.innerHTML = svgText;
+    const svg = map.querySelector('svg');
+    if (!svg) return;
+    svg.style.width = '100%';
+    svg.style.height = 'auto';
+    svg.style.display = 'block';
+    svg.style.maxHeight = '70vh';
 
-    // Continentes (paths simplificados mas reconhecíveis em viewBox 1000x500)
-    const continents = [
-      // America do Norte + Groenlândia
-      'M 30,103 L 70,55 L 130,42 L 230,40 L 320,40 L 390,30 L 440,40 L 420,58 L 395,72 L 375,90 L 355,108 L 340,118 L 320,130 L 305,150 L 285,165 L 280,180 L 270,200 L 250,205 L 245,222 L 278,232 L 260,228 L 230,215 L 208,205 L 188,195 L 175,170 L 165,135 L 158,118 L 145,112 L 125,108 L 100,98 L 85,85 L 60,80 L 30,103 Z',
-      // America do Sul
-      'M 290,217 L 322,219 L 350,233 L 380,250 L 400,265 L 395,290 L 380,315 L 362,325 L 345,344 L 330,358 L 320,380 L 312,400 L 304,408 L 298,395 L 300,370 L 297,340 L 298,310 L 290,280 L 280,255 L 286,235 L 290,217 Z',
-      // Europa (sem ilhas)
-      'M 478,150 L 470,140 L 465,127 L 472,115 L 488,108 L 485,98 L 478,90 L 490,76 L 525,68 L 555,55 L 600,52 L 615,68 L 620,90 L 610,108 L 595,125 L 575,140 L 555,142 L 530,140 L 515,148 L 495,152 L 478,150 Z',
-      // Reino Unido
-      'M 487,90 L 498,90 L 503,98 L 502,108 L 495,115 L 487,108 L 484,98 Z',
-      // Irlanda
-      'M 475,103 L 482,103 L 482,112 L 475,112 Z',
-      // Africa
-      'M 528,147 L 555,148 L 580,160 L 595,170 L 605,182 L 615,200 L 635,215 L 640,225 L 625,232 L 610,250 L 605,275 L 605,300 L 600,320 L 588,335 L 575,345 L 555,346 L 545,338 L 538,318 L 535,290 L 528,260 L 515,238 L 500,228 L 480,225 L 462,215 L 452,205 L 458,188 L 470,175 L 482,168 L 500,158 L 528,147 Z',
-      // Asia
-      'M 597,140 L 625,128 L 650,118 L 680,108 L 720,98 L 770,85 L 820,75 L 870,65 L 905,75 L 925,95 L 940,115 L 920,135 L 895,128 L 880,135 L 875,150 L 870,165 L 860,175 L 850,188 L 845,200 L 855,210 L 835,210 L 815,225 L 800,240 L 785,250 L 760,245 L 740,238 L 728,225 L 720,210 L 710,195 L 700,180 L 698,170 L 695,165 L 685,170 L 670,182 L 655,200 L 640,215 L 625,215 L 615,200 L 605,180 L 600,160 L 597,140 Z',
-      // Indonesia
-      'M 790,260 L 820,255 L 835,268 L 830,278 L 800,278 L 785,270 Z',
-      // Australia
-      'M 815,295 L 855,288 L 893,290 L 925,305 L 925,322 L 905,335 L 885,343 L 855,343 L 830,338 L 815,325 L 813,305 Z',
-      // Nova Zelândia
-      'M 950,360 L 975,355 L 982,370 L 970,378 L 953,372 Z',
-      // Japão
-      'M 880,150 L 895,145 L 900,160 L 890,175 L 882,168 Z',
-      // Madagascar
-      'M 622,300 L 632,295 L 635,315 L 625,325 L 620,315 Z'
-    ];
-
-    let svg = '<svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">';
-    svg += '<rect width="1000" height="500" fill="#cfe3f4"/>';
-    // Linhas de referência
-    svg += '<line x1="0" y1="250" x2="1000" y2="250" stroke="#b4c9da" stroke-width="0.5" stroke-dasharray="3,3"/>'; // Equador
-    svg += '<line x1="500" y1="0" x2="500" y2="500" stroke="#b4c9da" stroke-width="0.5" stroke-dasharray="3,3"/>'; // Meridiano
-    continents.forEach(d => {
-      svg += `<path d="${d}" fill="#e8eee5" stroke="#a8b8a4" stroke-width="0.7" stroke-linejoin="round"/>`;
-    });
-
-    const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--c-blue').trim() || '#0a2463';
+    // Estado de cada país participante
+    const stateByIso = {};
     window.COUNTRIES.forEach(c => {
-      const ll = latlon[c.code];
-      if (!ll) return;
-      const [x, y] = project(ll);
+      const iso = FIFA_TO_ISO[c.code];
+      if (!iso) return;
       const sec = sectionsMap[c.code];
       const owned = sec.items.filter(s => isOwned(s.number)).length;
-      const complete = owned === sec.items.length;
+      const total = sec.items.length;
+      const complete = owned === total;
       const partial = owned > 0 && !complete;
-      const fillColor = complete ? '#10b981' : (partial ? '#f59e0b' : themeColor);
-      svg += `<g data-code="${c.code}" style="cursor:pointer">
-        <circle cx="${x}" cy="${y}" r="11" fill="${fillColor}" stroke="#fff" stroke-width="1.8"/>
-        <text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" style="pointer-events:none">${c.flag}</text>
-      </g>`;
+      const cls = complete ? 'wm-complete' : (partial ? 'wm-partial' : 'wm-participating');
+      if (!stateByIso[iso]) stateByIso[iso] = { codes: [], cls };
+      stateByIso[iso].codes.push(c.code);
+      // País mais avançado define a cor
+      if (complete) stateByIso[iso].cls = 'wm-complete';
+      else if (partial && stateByIso[iso].cls !== 'wm-complete') stateByIso[iso].cls = 'wm-partial';
     });
-    svg += '</svg>';
-    map.innerHTML = svg;
-    map.querySelectorAll('g[data-code]').forEach(g => {
-      g.addEventListener('click', () => openCountryModal(g.dataset.code));
+
+    // Colore os caminhos dos países participantes (e seus filhos)
+    Object.keys(stateByIso).forEach(iso => {
+      const els = svg.querySelectorAll(`#${iso}, [id="${iso}"]`);
+      els.forEach(el => {
+        el.classList.add('wm-country', stateByIso[iso].cls);
+        el.style.cursor = 'pointer';
+        const code = stateByIso[iso].codes[0];
+        const country = countryByCode[code];
+        el.addEventListener('click', () => openCountryModal(code));
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        title.textContent = `${country.flag} ${country.name} (Grupo ${country.group})`;
+        el.appendChild(title);
+      });
     });
   }
 
@@ -640,6 +636,7 @@
     const view = chip.dataset.view;
     $('#countriesGrid').hidden = (view !== 'grid');
     $('#worldMap').hidden = (view !== 'map');
+    $('#worldMapLegend').hidden = (view !== 'map');
     if (view === 'map') renderWorldMap();
   });
 
