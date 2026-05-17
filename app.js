@@ -36,13 +36,82 @@
   const state = loadData();
   const theme = Object.assign({ color: '#0a2463', font: "'Bebas Neue', sans-serif" }, loadTheme());
 
+  // ===== MODO VIEW (visualizar álbum de outra pessoa) =====
+  let viewMode = false;
+  let viewerName = profileName;
+  let viewedName = profileName;
+  const urlParams = new URLSearchParams(window.location.search);
+  const viewCode = urlParams.get('view');
+
+  function encodeAlbumState() {
+    const counts = [];
+    for (let i = 1; i <= 980; i++) {
+      counts.push(Math.min(9, state.counts[i] || 0).toString(16));
+    }
+    const scoresArr = [];
+    Object.keys(state.scores || {}).forEach(id => {
+      const sc = state.scores[id];
+      let s = `${id},${sc.home},${sc.away}`;
+      if (sc.penaltyWinner) s += ',' + (sc.penaltyWinner === 'home' ? 'h' : 'a');
+      scoresArr.push(s);
+    });
+    const data = { n: profileName, c: counts.join(''), s: scoresArr.join('|') };
+    return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  }
+  function decodeAlbumState(b64) {
+    const data = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    const counts = {};
+    for (let i = 0; i < data.c.length; i++) {
+      const v = parseInt(data.c[i], 16);
+      if (v > 0) counts[i + 1] = v;
+    }
+    const scores = {};
+    if (data.s) {
+      data.s.split('|').filter(Boolean).forEach(s => {
+        const parts = s.split(',');
+        const sc = { home: parseInt(parts[1], 10), away: parseInt(parts[2], 10) };
+        if (parts[3] === 'h') sc.penaltyWinner = 'home';
+        if (parts[3] === 'a') sc.penaltyWinner = 'away';
+        scores[parts[0]] = sc;
+      });
+    }
+    return { name: data.n, counts, scores };
+  }
+
+  if (viewCode) {
+    try {
+      const view = decodeAlbumState(viewCode);
+      state.counts = view.counts;
+      state.scores = view.scores;
+      viewedName = view.name;
+      viewMode = true;
+      document.body.classList.add('view-mode');
+    } catch (e) { console.error('Código inválido', e); }
+  }
+
+  // saveData fica no-op quando em view mode
+  if (viewMode) {
+    saveData = () => {};
+  }
+
   // ---------- DOM ----------
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
 
   // Header
-  $('#headerName').textContent = profileName;
-  $('#headerAvatar').textContent = profileName.charAt(0).toUpperCase();
+  $('#headerName').textContent = viewMode ? `Vendo: ${viewedName}` : profileName;
+  $('#headerAvatar').textContent = (viewMode ? viewedName : profileName).charAt(0).toUpperCase();
+
+  // Banner de view mode
+  if (viewMode) {
+    const banner = document.createElement('div');
+    banner.className = 'view-banner';
+    banner.innerHTML = `
+      👀 Você está vendo o álbum de <strong>${viewedName}</strong> (somente leitura) ·
+      <a href="app.html">Voltar ao meu álbum</a>
+    `;
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
 
   // ---------- THEME ----------
   function applyTheme() {
@@ -285,6 +354,7 @@
       removeBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
     }
 
+    if (viewMode) return el; // view mode: sem interação
     let pressTimer = null;
     let longPressed = false;
     const startPress = (e) => {
@@ -1402,6 +1472,37 @@
     saveTheme();
     applyTheme();
   });
+
+  // Compartilhar álbum (gera link)
+  if ($('#shareBtn')) {
+    $('#shareBtn').addEventListener('click', () => {
+      const code = encodeAlbumState();
+      const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, 'app.html');
+      const url = `${base}?view=${code}`;
+      const result = $('#shareResult');
+      result.hidden = false;
+      result.innerHTML = `
+        <p style="font-size:12px;font-weight:700;margin-bottom:6px">Link copiado! Cole no WhatsApp ou no navegador da família 👇</p>
+        <textarea readonly style="width:100%;height:60px;padding:6px;font-size:11px;font-family:monospace;border:1px solid var(--c-border);border-radius:6px">${url}</textarea>
+        <button class="btn-secondary" id="copyShareLink" style="margin-top:6px;width:100%">📋 Copiar link</button>
+      `;
+      const ta = result.querySelector('textarea');
+      ta.select();
+      try {
+        navigator.clipboard.writeText(url);
+      } catch (e) {}
+      $('#copyShareLink').addEventListener('click', () => {
+        ta.select();
+        try {
+          navigator.clipboard.writeText(url);
+          $('#copyShareLink').textContent = '✓ Copiado!';
+          setTimeout(() => { $('#copyShareLink').textContent = '📋 Copiar link'; }, 2000);
+        } catch (e) {
+          document.execCommand('copy');
+        }
+      });
+    });
+  }
 
   // Export
   $('#exportBtn').addEventListener('click', () => {

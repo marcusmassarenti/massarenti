@@ -1655,6 +1655,33 @@ main { padding: 12px 12px 100px; }
   font-weight: 700;
 }
 
+/* === VIEW MODE (visualizando álbum de outra pessoa) === */
+.view-banner {
+  background: linear-gradient(90deg, var(--p-purple), var(--p-blue));
+  color: #fff;
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+.view-banner a {
+  color: var(--c-gold);
+  font-weight: 900;
+  margin-left: 6px;
+  text-decoration: underline;
+}
+.view-mode .sticker { cursor: default !important; }
+.view-mode .sticker:active { transform: none; }
+.view-mode .sticker-remove,
+.view-mode .dup-minus { display: none !important; }
+.view-mode .score-input { background: #f0f0f0 !important; pointer-events: none; color: #333; }
+.view-mode .pen-toggle { pointer-events: none; opacity: .8; }
+.view-mode .logout-btn,
+.view-mode .settings-btn { display: none; }
+
 /* === CONFETE === */
 #confetti {
   position: fixed;
