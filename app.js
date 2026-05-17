@@ -1581,12 +1581,13 @@
       }
       const hasBrazil = m.homeCode === 'BRA' || m.awayCode === 'BRA';
       return `
-        <div class="today-row ${isPast ? 'past' : ''} ${isLive ? 'live' : ''} ${hasBrazil ? 'brazil' : ''}">
+        <div class="today-row ${isPast ? 'past' : ''} ${isLive ? 'live' : ''} ${hasBrazil ? 'brazil' : ''}" data-match-id="${m.id}">
           <div class="today-time">${m.time}${isLive ? ' 🔴' : ''}</div>
           <div class="today-match">
             <div class="today-teams">${homeName} ${scoreText} ${awayName}</div>
             <div class="today-meta">${m.round || m.phase}${m.group ? ' · Grupo '+m.group : ''}${hasBrazil ? ' · 🇧🇷' : ''}</div>
           </div>
+          <div class="today-action">📝</div>
         </div>
       `;
     }).join('');
@@ -1622,7 +1623,7 @@
         scoreHtml = `<span class="brazil-score" style="color:${winColor}">${braScore} × ${oppScore}</span>`;
       }
       return `
-        <div class="brazil-row ${isPast ? 'past' : ''}">
+        <div class="brazil-row ${isPast ? 'past' : ''}" data-match-id="${m.id}">
           <div class="brazil-date">
             <div class="brazil-day">${d.getDate()}</div>
             <div class="brazil-month">${months[d.getMonth()]}</div>
@@ -1631,6 +1632,7 @@
             <div class="brazil-teams">🇧🇷 Brasil ${score ? scoreHtml : '<span style="color:var(--c-muted)">×</span>'} ${opponent.flag} ${opponent.name}</div>
             <div class="brazil-venue">${m.time} · ${m.venue || ''}</div>
           </div>
+          <div class="brazil-action">📝</div>
         </div>
       `;
     }).join('');
@@ -1751,6 +1753,112 @@
     });
     $('#manageGroups').addEventListener('click', openGroupsModal);
     loadAndRenderGroups();
+
+    // Liga cliques nos jogos do dashboard pra abrir o modal de placar rápido
+    $$('#dashboardContent .today-row, #dashboardContent .brazil-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = parseInt(row.dataset.matchId, 10);
+        if (id) openQuickScoreModal(id);
+      });
+    });
+  }
+
+  function openQuickScoreModal(matchId) {
+    resolveBracket();
+    const m = window.SCHEDULE.find(x => x.id === matchId);
+    if (!m) return;
+    const score = getScore(matchId);
+    const home = m.resolvedHome || (m.homeCode ? { code: m.homeCode, flag: countryByCode[m.homeCode].flag, name: countryByCode[m.homeCode].name } : null);
+    const away = m.resolvedAway || (m.awayCode ? { code: m.awayCode, flag: countryByCode[m.awayCode].flag, name: countryByCode[m.awayCode].name } : null);
+    if (!home || !away) {
+      showToast('Esse jogo ainda não tem times definidos.', 'info');
+      return;
+    }
+    const d = getMatchDateObj(m);
+    const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const isKO = m.phase !== 'Grupos';
+    $('#quickScoreBody').innerHTML = `
+      <div class="qs-info">
+        <div class="qs-phase">${m.round || m.phase}${m.group ? ' · Grupo ' + m.group : ''}</div>
+        <div class="qs-date">${d.getDate()}/${months[d.getMonth()]} · ${m.time} Brasília</div>
+        <div class="qs-venue">${m.venue || ''}</div>
+      </div>
+      <div class="qs-score-row">
+        <div class="qs-team">
+          <div class="qs-flag">${home.flag}</div>
+          <div class="qs-name">${home.name}</div>
+        </div>
+        <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="99" class="qs-input qs-home" value="${score ? score.home : ''}" placeholder="-">
+        <div class="qs-vs">×</div>
+        <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="99" class="qs-input qs-away" value="${score ? score.away : ''}" placeholder="-">
+        <div class="qs-team">
+          <div class="qs-flag">${away.flag}</div>
+          <div class="qs-name">${away.name}</div>
+        </div>
+      </div>
+      <div class="qs-pen-row" id="qsPenRow" style="display:none">
+        <p style="font-size:12px;font-weight:700;text-align:center;margin-bottom:8px">⚽ Empate! Quem ganhou nos pênaltis?</p>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button class="btn-secondary qs-pen" data-side="home">${home.flag} ${home.code}</button>
+          <button class="btn-secondary qs-pen" data-side="away">${away.flag} ${away.code}</button>
+        </div>
+      </div>
+      <div class="qs-buttons">
+        <button class="btn-secondary qs-clear">🗑 Apagar placar</button>
+        <button class="btn-primary qs-save">💾 Salvar</button>
+      </div>
+    `;
+    const updatePenRow = () => {
+      const h = $('#quickScoreBody .qs-home').value;
+      const a = $('#quickScoreBody .qs-away').value;
+      const show = isKO && h !== '' && a !== '' && parseInt(h) === parseInt(a);
+      $('#qsPenRow').style.display = show ? 'block' : 'none';
+      const curScore = state.scores[matchId];
+      $$('#qsPenRow .qs-pen').forEach(b => {
+        b.classList.toggle('active', curScore && curScore.penaltyWinner === b.dataset.side);
+      });
+    };
+    updatePenRow();
+    $$('#quickScoreBody .qs-input').forEach(inp => {
+      inp.addEventListener('input', updatePenRow);
+    });
+    $$('#quickScoreBody .qs-pen').forEach(b => {
+      b.addEventListener('click', () => {
+        const side = b.dataset.side;
+        const cur = state.scores[matchId] || {};
+        if (cur.penaltyWinner === side) delete cur.penaltyWinner;
+        else cur.penaltyWinner = side;
+        state.scores[matchId] = cur;
+        $$('#qsPenRow .qs-pen').forEach(bb => {
+          bb.classList.toggle('active', cur.penaltyWinner === bb.dataset.side);
+        });
+      });
+    });
+    $('#quickScoreBody .qs-clear').addEventListener('click', () => {
+      delete state.scores[matchId];
+      saveData();
+      showToast('🗑 Placar apagado', 'info', 1800);
+      $('#quickScoreModal').hidden = true;
+      renderDashboard();
+    });
+    $('#quickScoreBody .qs-save').addEventListener('click', () => {
+      const h = $('#quickScoreBody .qs-home').value;
+      const a = $('#quickScoreBody .qs-away').value;
+      if (h === '' || a === '') {
+        showToast('Preencha os dois placares.', 'error');
+        return;
+      }
+      const hN = parseInt(h, 10), aN = parseInt(a, 10);
+      if (isNaN(hN) || isNaN(aN)) return;
+      const prev = state.scores[matchId] || {};
+      state.scores[matchId] = { home: hN, away: aN };
+      if (hN === aN && prev.penaltyWinner) state.scores[matchId].penaltyWinner = prev.penaltyWinner;
+      saveData();
+      showToast('✅ Placar salvo!', 'success', 1800);
+      $('#quickScoreModal').hidden = true;
+      renderDashboard();
+    });
+    $('#quickScoreModal').hidden = false;
   }
 
   async function loadAndRenderGroups() {

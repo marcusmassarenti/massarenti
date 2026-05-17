@@ -2507,6 +2507,90 @@ main { padding: 12px 12px 8px; }
   -webkit-text-fill-color: transparent;
 }
 
+/* === QUICK SCORE MODAL === */
+.today-row, .brazil-row { cursor: pointer; transition: background .15s; }
+.today-row:active, .brazil-row:active { transform: scale(.98); }
+.today-action, .brazil-action {
+  font-size: 18px;
+  opacity: .5;
+  margin-left: auto;
+  padding-left: 8px;
+}
+.quick-score-content { max-width: 500px; }
+.qs-info {
+  text-align: center;
+  background: var(--c-bg-soft);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+.qs-phase {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--c-ink);
+}
+.qs-date { font-size: 12px; color: var(--c-muted); margin-top: 2px; font-weight: 700; }
+.qs-venue { font-size: 11px; color: var(--c-muted); margin-top: 2px; }
+.qs-score-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.qs-team { text-align: center; }
+.qs-flag { font-size: 36px; line-height: 1; }
+.qs-name { font-weight: 800; font-size: 12px; margin-top: 4px; line-height: 1.2; }
+.qs-input {
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--c-ink);
+  border-radius: 10px;
+  text-align: center;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 28px;
+  background: #fffceb;
+  color: var(--c-ink);
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.qs-input::-webkit-outer-spin-button,
+.qs-input::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+.qs-input:focus { outline: 3px solid var(--c-gold); background: #fff; }
+.qs-vs {
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--c-muted);
+}
+.qs-pen-row {
+  background: #fff8d6;
+  border: 1px solid var(--c-gold);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+.qs-pen {
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 14px;
+}
+.qs-pen.active {
+  background: var(--c-gold) !important;
+  color: var(--c-ink) !important;
+  border-color: var(--c-gold-dark) !important;
+}
+.qs-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.qs-buttons button { flex: 1; padding: 12px; font-size: 14px; }
+
 /* === TOAST === */
 #toastHost {
   position: fixed;
