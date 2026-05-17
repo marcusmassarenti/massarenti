@@ -80,7 +80,6 @@
   // Agrupa stickers por seção
   const SECTION_ORDER = ['intro'];
   window.COUNTRIES.forEach(c => SECTION_ORDER.push(c.code));
-  SECTION_ORDER.push('lendas', 'brilhantes', 'momentos');
 
   const sectionsMap = {};
   window.STICKERS.forEach(s => {
@@ -96,9 +95,6 @@
     const c = countryByCode[sec];
     if (c) return c.flag;
     if (sec === 'intro') return '🏆';
-    if (sec === 'lendas') return '⭐';
-    if (sec === 'brilhantes') return '✨';
-    if (sec === 'momentos') return '🎬';
     return '⚽';
   }
 
@@ -117,7 +113,10 @@
     if (!currentSearch) return true;
     const q = currentSearch.toLowerCase();
     if (String(s.number).includes(q)) return true;
-    return s.name.toLowerCase().includes(q);
+    if (String(s.localNumber).includes(q)) return true;
+    if (s.name.toLowerCase().includes(q)) return true;
+    if ((s.description || '').toLowerCase().includes(q)) return true;
+    return false;
   }
 
   function renderCollection() {
@@ -147,7 +146,7 @@
           <span class="section-flag">${sectionFlag(sec)}</span>
           <div class="section-info">
             <div class="section-title">${data.name} ${groupTag}</div>
-            <div class="section-meta">Figurinhas ${data.items[0].number}–${data.items[data.items.length-1].number}</div>
+            <div class="section-meta">${data.items[0].code}-01 a ${data.items[0].code}-${String(data.items.length).padStart(2,'0')}</div>
           </div>
           <div class="section-progress-mini ${isComplete ? 'complete' : ''}">${ownedInSection}/${totalInSection}</div>
           <div class="section-toggle">▼</div>
@@ -185,10 +184,11 @@
     const flag = s.country ? countryByCode[s.country].flag : sectionFlag(s.section);
     el.innerHTML = `
       <div class="flag-mini">${flag}</div>
-      <div class="sticker-num">#${String(s.number).padStart(3,'0')}</div>
-      <div class="sticker-name">${s.name}</div>
+      <div class="sticker-code">${s.code}</div>
+      <div class="sticker-num">${String(s.localNumber).padStart(2,'0')}</div>
+      <div class="sticker-name">${s.description || ''}</div>
     `;
-    el.title = `#${s.number} — ${s.name}`;
+    el.title = `${s.name} — ${s.description || ''} (global #${s.number})`;
     el.addEventListener('click', (e) => toggleSticker(s, el, e));
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();

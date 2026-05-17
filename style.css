@@ -439,11 +439,20 @@ main { padding: 12px 12px 100px; }
   border-radius: 8px;
   border: 1px solid #fff;
 }
+.sticker-code {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 2px;
+  line-height: 1;
+  margin-top: 2px;
+  opacity: .95;
+}
 .sticker-num {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 30px;
   letter-spacing: 1px;
   line-height: 1;
+  margin-top: 2px;
 }
 .sticker-name {
   font-size: 9px;
@@ -452,12 +461,14 @@ main { padding: 12px 12px 100px; }
   text-align: center;
   margin-top: 4px;
   font-weight: 700;
-  max-height: 36px;
+  max-height: 24px;
   overflow: hidden;
+  opacity: .85;
 }
 .sticker.shiny .sticker-name, .sticker.owned .sticker-name { color: inherit; }
 .sticker:not(.owned) .sticker-name { color: var(--c-muted); }
 .sticker:not(.owned) .sticker-num { color: #9ca3af; }
+.sticker:not(.owned) .sticker-code { color: #9ca3af; }
 .sticker .flag-mini {
   font-size: 18px;
   line-height: 1;
