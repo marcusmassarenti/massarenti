@@ -484,6 +484,13 @@
   $('#settingsModal').addEventListener('click', (e) => {
     if (e.target.id === 'settingsModal') $('#settingsModal').hidden = true;
   });
+  // ESC fecha qualquer modal aberto
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      $('#settingsModal').hidden = true;
+      $('#countryModal').hidden = true;
+    }
+  });
 
   // ---------- SETTINGS ----------
   $('#settingsBtn').addEventListener('click', () => {
