@@ -14,10 +14,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=17">
+  <link rel="stylesheet" href="style.css?v=18">
 </head>
 <body class="login-body">
   <div class="login-container">
+    <div id="installBanner" class="install-banner" hidden>
+      <span class="install-icon">📲</span>
+      <div class="install-text">
+        <strong>Instala como app!</strong>
+        <small>Abre direto da tela inicial, igual app de verdade</small>
+      </div>
+      <button id="installBtn" class="install-btn" type="button">Instalar</button>
+      <button id="installDismiss" class="install-close" type="button" aria-label="Dispensar">✕</button>
+    </div>
     <div class="album-cover">
       <div class="cover-leaves">
         <div class="leaf-col left">
@@ -291,6 +300,73 @@
         submitBtn.disabled = false;
       }
     });
-  </script>
+
+    // ===== INSTALAÇÃO DO APP (PWA) =====
+    (function setupInstallBanner() {
+      const banner = document.getElementById('installBanner');
+      const installBtn = document.getElementById('installBtn');
+      const dismissBtn = document.getElementById('installDismiss');
+      if (!banner) return;
+
+      // Já tá rodando como app instalado? Esconde
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+      if (isStandalone) return;
+
+      // Usuário dispensou? Não mostra de novo por 7 dias
+      const dismissedAt = parseInt(localStorage.getItem('caua_installDismissed') || '0', 10);
+      if (dismissedAt && (Date.now() - dismissedAt) < 7 * 24 * 60 * 60 * 1000) return;
+
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      let deferredPrompt = null;
+
+      // Android Chrome - evento nativo
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        banner.hidden = false;
+      });
+
+      // iOS Safari - mostra banner com instruções manuais
+      if (isIOS && isSafari) {
+        banner.hidden = false;
+      }
+
+      installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          // Android: dispara prompt nativo
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') banner.hidden = true;
+          deferredPrompt = null;
+        } else if (isIOS) {
+          // iOS: abre modal com instruções
+          alert(
+            '📱 Pra instalar no iPhone:\n\n' +
+            '1. Toca no botão de Compartilhar (📤 quadradinho com setinha pra cima)\n' +
+            '2. Rola até "Adicionar à Tela de Início"\n' +
+            '3. Toca em "Adicionar"\n\n' +
+            'Pronto! O ícone fica na sua tela inicial 🎉'
+          );
+        } else {
+          alert(
+            '📱 Pra instalar no celular/computador:\n\n' +
+            '1. Abre o menu do navegador (⋮ ou ≡)\n' +
+            '2. Procura "Instalar app" ou "Adicionar à tela inicial"\n' +
+            '3. Confirma e pronto!'
+          );
+        }
+      });
+
+      dismissBtn.addEventListener('click', () => {
+        banner.hidden = true;
+        localStorage.setItem('caua_installDismissed', String(Date.now()));
+      });
+
+      window.addEventListener('appinstalled', () => {
+        banner.hidden = true;
+      });
+    })();
 </body>
 </html>

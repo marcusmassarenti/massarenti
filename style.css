@@ -114,6 +114,58 @@ input, select { font-family: inherit; font-size: 16px; }
   position: relative;
   z-index: 1;
 }
+.install-banner {
+  background: linear-gradient(135deg, var(--c-ink) 0%, #333 100%);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.2);
+  border: 2px solid var(--c-gold);
+  animation: install-slide .4s ease-out;
+}
+@keyframes install-slide {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.install-icon { font-size: 24px; flex-shrink: 0; }
+.install-text { flex: 1; min-width: 0; }
+.install-text strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--c-gold);
+}
+.install-text small {
+  display: block;
+  font-size: 11px;
+  opacity: .9;
+  line-height: 1.2;
+}
+.install-btn {
+  background: var(--c-gold);
+  color: var(--c-ink);
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.install-btn:active { transform: scale(.95); }
+.install-close {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,.6);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.install-close:hover { color: #fff; }
 @media (min-width: 820px) {
   .login-container {
     max-width: 940px;
