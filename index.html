@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="style.css?v=11">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -92,26 +92,31 @@
     </div>
 
     <form id="loginForm" class="login-card" autocomplete="off">
-      <h1>Entrar no álbum</h1>
+      <h1>Bem-vindo ao álbum!</h1>
+
+      <div class="profiles-section" id="profilesSection" hidden>
+        <h2>👋 Já tenho conta — clica no seu nome</h2>
+        <div id="profilesList" class="profiles-list"></div>
+        <div class="divider-or"><span>ou</span></div>
+      </div>
+
+      <div class="login-flow-hint">
+        <strong>🆕 Primeira vez aqui?</strong> Escolha um <strong>nome</strong> (igual usar em jogos) e um <strong>PIN de 4 dígitos</strong>. O sistema cria sua conta automaticamente.
+      </div>
+
       <label>
         <span>Nome do colecionador</span>
         <input type="text" id="loginName" maxlength="20" placeholder="Ex: Cauã" required>
       </label>
       <label>
-        <span>PIN de 4 dígitos</span>
+        <span>PIN de 4 dígitos (segredo seu)</span>
         <input type="password" id="loginPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="••••" required>
       </label>
-      <button type="submit" class="btn-primary">Abrir álbum</button>
+      <button type="submit" class="btn-primary">Entrar ou Criar conta</button>
 
       <div id="loginError" class="login-error" hidden></div>
 
-      <div class="profiles-section" id="profilesSection" hidden>
-        <h2>Perfis salvos</h2>
-        <div id="profilesList" class="profiles-list"></div>
-      </div>
-
-      <p class="login-hint">Cada perfil tem suas próprias figurinhas marcadas.<br>
-      Primeira vez? Escolha um nome e PIN — fica salvo neste celular.</p>
+      <p class="login-hint">💾 Seu PIN é privado. Cada um tem o seu pra ninguém mexer no álbum dos outros.</p>
     </form>
   </div>
 
