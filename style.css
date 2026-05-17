@@ -2309,6 +2309,97 @@ main { padding: 12px 12px 8px; }
   font-weight: 700;
 }
 
+/* === TROCAS POSSÍVEIS === */
+.trades-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 2px dashed var(--c-border);
+}
+.trades-section > h3 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.trades-helper {
+  font-size: 11px;
+  color: var(--c-muted);
+  margin-bottom: 10px;
+}
+.trade-card {
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+.trade-card-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.trade-card-toggle:hover { background: var(--c-bg-soft); }
+.trade-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.trade-name {
+  flex: 1;
+  font-weight: 800;
+  font-size: 13px;
+}
+.trade-summary {
+  display: flex;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 13px;
+}
+.trade-get { color: var(--c-success); }
+.trade-give { color: var(--c-red); }
+.trade-chevron {
+  font-size: 14px;
+  color: var(--c-muted);
+  transition: transform .2s;
+}
+.trade-card.open .trade-chevron { transform: rotate(180deg); }
+.trade-details {
+  display: none;
+  padding: 0 12px 12px;
+}
+.trade-card.open .trade-details { display: block; }
+.trade-block {
+  background: var(--c-bg-soft);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 6px;
+}
+.trade-block-get { background: rgba(84,169,109,.1); border-left: 3px solid var(--c-success); }
+.trade-block-give { background: rgba(212,68,74,.08); border-left: 3px solid var(--c-red); }
+.trade-block-title {
+  font-weight: 800;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.trade-list {
+  font-family: 'Nunito', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-ink);
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
 /* === GRUPOS === */
 .groups-bar {
   display: flex;

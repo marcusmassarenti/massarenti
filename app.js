@@ -573,7 +573,18 @@
   function renderCollectionGrid(container) {
     const grid = document.createElement('div');
     grid.className = 'collection-grid';
-    SECTION_ORDER.forEach(sec => {
+    // Ordena: em view mode (vendo álbum de outro) ou se foi pedido, mais cheio → mais vazio
+    let orderedSections = SECTION_ORDER.slice();
+    if (viewMode) {
+      orderedSections.sort((a, b) => {
+        const aData = sectionsMap[a], bData = sectionsMap[b];
+        if (!aData || !bData) return 0;
+        const aOwn = aData.items.filter(s => isOwned(s.number)).length;
+        const bOwn = bData.items.filter(s => isOwned(s.number)).length;
+        return bOwn - aOwn;
+      });
+    }
+    orderedSections.forEach(sec => {
       const data = sectionsMap[sec];
       if (!data) return;
       const owned = data.items.filter(s => isOwned(s.number)).length;
@@ -1514,6 +1525,74 @@
     `;
   }
 
+  function buildTradesSection(members) {
+    const others = members.filter(p => p.name !== profileName);
+    if (others.length === 0) return '';
+    const myCounts = state.counts || {};
+    // Minhas figurinhas extras (repetidas)
+    const myExtras = new Set();
+    const myMissing = new Set();
+    window.STICKERS.forEach(s => {
+      const c = myCounts[s.number] || 0;
+      if (c > 1) myExtras.add(s.number);
+      if (c === 0) myMissing.add(s.number);
+    });
+
+    const stickerLabel = (num) => {
+      const s = window.STICKERS.find(x => x.number === num);
+      return s ? s.name : '#' + num;
+    };
+
+    const cards = others.map(other => {
+      const oCounts = other.counts || {};
+      const theyCanGive = []; // tem repetida + eu não tenho
+      const iCanGive = [];    // eu tenho repetida + ela não tem
+      window.STICKERS.forEach(s => {
+        const mine = myCounts[s.number] || 0;
+        const theirs = oCounts[s.number] || 0;
+        if (theirs > 1 && mine === 0) theyCanGive.push(s.number);
+        if (mine > 1 && theirs === 0) iCanGive.push(s.number);
+      });
+      if (theyCanGive.length === 0 && iCanGive.length === 0) return '';
+      const youGetList = theyCanGive.slice(0, 30).map(n => stickerLabel(n)).join(', ');
+      const youGiveList = iCanGive.slice(0, 30).map(n => stickerLabel(n)).join(', ');
+      return `
+        <div class="trade-card">
+          <div class="trade-card-toggle">
+            <div class="trade-avatar">${other.name.charAt(0).toUpperCase()}</div>
+            <div class="trade-name">${other.name}</div>
+            <div class="trade-summary">
+              ${theyCanGive.length > 0 ? `<span class="trade-get">🎁 ${theyCanGive.length}</span>` : ''}
+              ${iCanGive.length > 0 ? `<span class="trade-give">✋ ${iCanGive.length}</span>` : ''}
+            </div>
+            <div class="trade-chevron">▾</div>
+          </div>
+          <div class="trade-details">
+            ${theyCanGive.length > 0 ? `
+              <div class="trade-block trade-block-get">
+                <div class="trade-block-title">🎁 ${other.name} pode te dar (${theyCanGive.length})</div>
+                <div class="trade-list">${youGetList}${theyCanGive.length > 30 ? '...' : ''}</div>
+              </div>` : ''}
+            ${iCanGive.length > 0 ? `
+              <div class="trade-block trade-block-give">
+                <div class="trade-block-title">✋ Você pode dar pra ${other.name} (${iCanGive.length})</div>
+                <div class="trade-list">${youGiveList}${iCanGive.length > 30 ? '...' : ''}</div>
+              </div>` : ''}
+          </div>
+        </div>
+      `;
+    }).filter(Boolean).join('');
+
+    if (!cards) return '';
+    return `
+      <div class="trades-section">
+        <h3>🔄 Trocas possíveis</h3>
+        <p class="trades-helper">Cruzei minhas repetidas com o que falta pros amigos (e vice-versa). Toca pra ver detalhes.</p>
+        ${cards}
+      </div>
+    `;
+  }
+
   function buildCompactRow(p) {
     const counts = p.counts || {};
     let owned = 0;
@@ -2088,7 +2167,19 @@
         </div>
       </details>
     ` : '';
-    listEl.innerHTML = podiumBanner + podiumHtml + meCard + restHtml;
+    // === SEÇÃO DE TROCAS ===
+    const tradesHtml = buildTradesSection(ranked);
+    listEl.innerHTML = podiumBanner + podiumHtml + meCard + restHtml + tradesHtml;
+
+    // Liga os toggles de detalhes de troca
+    listEl.querySelectorAll('.trade-card-toggle').forEach(t => {
+      t.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const card = t.closest('.trade-card');
+        card.classList.toggle('open');
+      });
+    });
+
     listEl.querySelectorAll('.family-card, .family-compact-row, .my-pos-card').forEach(r => {
       if (r.classList.contains('me')) return;
       r.addEventListener('click', async () => {
