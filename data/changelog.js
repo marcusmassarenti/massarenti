@@ -1,7 +1,16 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 60;
+window.APP_VERSION = 61;
 window.CHANGELOG = [
+  {
+    version: 61,
+    date: '17/mai',
+    title: '💰 Lembrete de PIX mais leve',
+    items: [
+      '🚪 Lembrete aparece só ao abrir o app (não toda vez que clica no Painel)',
+      '⏰ Se ficar com o app aberto, lembra de novo a cada 5 minutinhos'
+    ]
+  },
   {
     version: 60,
     date: '17/mai',

@@ -2563,8 +2563,6 @@
       if (tab === 'collection') renderCollection();
       if (tab === 'dashboard') {
         renderDashboard();
-        // Lembrete de PIX também ao voltar pra Painel (pra quem ainda não pagou)
-        showPixReminderIfNeeded();
       }
       if (tab === 'countries') { renderCountries(); renderWorldMap(); }
       if (tab === 'schedule') renderSchedule();
@@ -2994,8 +2992,8 @@
     document.getElementById('changelogOk').onclick = closeIt;
   }
 
-  // Lembrete de PIX (sempre que o usuário entrar/abrir o app, exceto o admin)
-  async function showPixReminderIfNeeded() {
+  // Lembrete de PIX: ao abrir o app + a cada 5min enquanto estiver aberto (exceto admin/já pagou)
+  async function showPixReminderIfNeeded(delay = 1500) {
     if (!supabaseClient || viewMode || isAdminUser) return;
     try {
       const { data } = await supabaseClient
@@ -3004,12 +3002,17 @@
         .eq('name', profileName)
         .maybeSingle();
       if (data && data.paid === true) return; // já pagou
-      // Mostra o lembrete a cada vez que o usuário entrar
       setTimeout(() => {
         const modal = document.getElementById('pixReminderModal');
-        if (modal) modal.hidden = false;
-      }, 1500);
+        if (modal && modal.hidden) modal.hidden = false;
+      }, delay);
     } catch (e) { /* ignora */ }
+  }
+  // A cada 5 minutos com o app aberto, mostra de novo (se ainda não pagou)
+  if (!window._pixReminderInterval) {
+    window._pixReminderInterval = setInterval(() => {
+      showPixReminderIfNeeded(0);
+    }, 5 * 60 * 1000);
   }
   // Liga os botões do modal PIX
   if (document.getElementById('copyPixBtn')) {
