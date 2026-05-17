@@ -1605,17 +1605,17 @@
     const owned = totalOwned();
     const total = window.STICKERS_TOTAL;
     const missing = total - owned;
-    let txt = `📋 *FIGURINHAS QUE FALTAM*\n`;
-    txt += `_${profileName} · Álbum Copa 2026_\n\n`;
-    txt += `Faltam *${missing}* de ${total} (${(owned/total*100).toFixed(0)}% completo)\n\n`;
+    let txt = `📋 *FIGURINHAS QUE FALTAM* (${profileName})\n`;
+    txt += `Faltam *${missing}* de ${total} (${(owned/total*100).toFixed(0)}%)\n`;
     if (groups.length === 0) {
-      txt += `🎉 *ÁLBUM COMPLETO!* Não falta nada!`;
+      txt += `🎉 *ÁLBUM COMPLETO!*`;
     } else {
       groups.forEach(g => {
-        txt += `${g.flag} *${g.name}* (${g.missing.length}/${g.total}):\n${compactNumbers(g.missing)}\n\n`;
+        const nums = g.missing.map(n => String(n).padStart(2, '0')).join(',');
+        txt += `${g.flag} *${g.name}*: ${nums}\n`;
       });
     }
-    txt += `💬 Tem repetida pra trocar? Me chama!\n`;
+    txt += `💬 Tem repetida? Me chama!\n`;
     txt += `🔗 https://copa.massarenti.me`;
     const url = `https://wa.me/?text=${encodeURIComponent(txt)}`;
     window.open(url, '_blank');

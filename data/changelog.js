@@ -1,7 +1,16 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 61;
+window.APP_VERSION = 62;
 window.CHANGELOG = [
+  {
+    version: 62,
+    date: '17/mai',
+    title: '💬 Mensagem do WhatsApp mais curta',
+    items: [
+      '✂️ Sem espaçamentos extras: bandeira + país + números na mesma linha',
+      '📱 Fica mais fácil de ler e mandar pros amigos'
+    ]
+  },
   {
     version: 61,
     date: '17/mai',
