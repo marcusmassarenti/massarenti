@@ -13,14 +13,15 @@
   function loadData() {
     try {
       const raw = localStorage.getItem(storageKey);
-      if (!raw) return { counts: {}, sectionsCollapsed: {} };
+      if (!raw) return { counts: {}, sectionsCollapsed: {}, scores: {} };
       const parsed = JSON.parse(raw);
       return {
         counts: parsed.counts || {},
-        sectionsCollapsed: parsed.sectionsCollapsed || {}
+        sectionsCollapsed: parsed.sectionsCollapsed || {},
+        scores: parsed.scores || {}
       };
     } catch (e) {
-      return { counts: {}, sectionsCollapsed: {} };
+      return { counts: {}, sectionsCollapsed: {}, scores: {} };
     }
   }
   function saveData() {
@@ -249,10 +250,11 @@
       <div class="flag-mini">${flag}</div>
       <div class="sticker-code">${s.code}</div>
       <div class="sticker-num">${String(s.localNumber).padStart(2,'0')}</div>
+      ${count > 0 ? `<button class="sticker-remove" type="button" aria-label="Desmarcar (errei)">✗</button>` : ''}
       ${count > 1 ? `<button class="dup-minus" type="button" aria-label="Tirar uma repetida (troquei)">−</button>` : ''}
       ${count > 1 ? `<span class="dup-badge">+${count-1}</span>` : ''}
     `;
-    el.title = `${s.name} — toque pra colar · toque de novo vira repetida · botão − tira repetida (quando troquei)`;
+    el.title = `${s.name} — toque pra colar · de novo vira repetida · botão ✗ desmarca · botão − tira uma repetida`;
     const minusBtn = el.querySelector('.dup-minus');
     if (minusBtn) {
       minusBtn.addEventListener('click', (e) => {
@@ -262,11 +264,25 @@
           state.counts[s.number] = cur - 1;
           saveData();
           renderCollection();
+          if (!$('#countryModal').hidden) renderCountryModalContent();
           if (navigator.vibrate) navigator.vibrate(20);
         }
       });
       minusBtn.addEventListener('mousedown', (e) => e.stopPropagation());
       minusBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+    }
+    const removeBtn = el.querySelector('.sticker-remove');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        delete state.counts[s.number];
+        saveData();
+        renderCollection();
+        if (!$('#countryModal').hidden) renderCountryModalContent();
+        if (navigator.vibrate) navigator.vibrate([30, 30, 30]);
+      });
+      removeBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+      removeBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
     }
 
     let pressTimer = null;
@@ -575,6 +591,189 @@
     sec.items.forEach(s => grid.appendChild(buildSticker(s)));
   }
 
+  // ---------- PLACAR / CLASSIFICAÇÃO / MATA-MATA ----------
+  function getScore(matchId) {
+    return state.scores[matchId];
+  }
+  function setScore(matchId, home, away) {
+    if (home === null || home === '' || away === null || away === '') {
+      delete state.scores[matchId];
+    } else {
+      state.scores[matchId] = { home: parseInt(home, 10), away: parseInt(away, 10) };
+    }
+    saveData();
+  }
+
+  // Calcula a tabela de cada grupo
+  function computeGroupStandings() {
+    const standings = {};
+    const groupCodes = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+    groupCodes.forEach(g => {
+      standings[g] = {};
+      window.COUNTRIES.filter(c => c.group === g).forEach(c => {
+        standings[g][c.code] = { code: c.code, name: c.name, flag: c.flag, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 };
+      });
+    });
+    window.SCHEDULE.forEach(match => {
+      if (match.phase !== 'Grupos') return;
+      const score = getScore(match.id);
+      if (!score) return;
+      const s = standings[match.group];
+      if (!s) return;
+      const home = s[match.homeCode];
+      const away = s[match.awayCode];
+      if (!home || !away) return;
+      home.P++; away.P++;
+      home.GF += score.home; home.GA += score.away;
+      away.GF += score.away; away.GA += score.home;
+      if (score.home > score.away) { home.W++; home.Pts += 3; away.L++; }
+      else if (score.home < score.away) { away.W++; away.Pts += 3; home.L++; }
+      else { home.D++; home.Pts++; away.D++; away.Pts++; }
+      home.GD = home.GF - home.GA;
+      away.GD = away.GF - away.GA;
+    });
+    // Ordena cada grupo
+    const sorted = {};
+    Object.keys(standings).forEach(g => {
+      sorted[g] = Object.values(standings[g]).sort((a, b) => {
+        if (b.Pts !== a.Pts) return b.Pts - a.Pts;
+        if (b.GD !== a.GD) return b.GD - a.GD;
+        if (b.GF !== a.GF) return b.GF - a.GF;
+        return a.name.localeCompare(b.name);
+      });
+    });
+    return sorted;
+  }
+
+  // Calcula a posição (1º, 2º, 3º) de cada país. Retorna {ARG: '1A', ESP: '2A', ...}
+  function getQualifiedTeams() {
+    const standings = computeGroupStandings();
+    const placings = { first: {}, second: {}, third: [] };
+    Object.keys(standings).forEach(g => {
+      const ranked = standings[g];
+      if (ranked[0] && ranked[0].P >= 3) placings.first[g] = ranked[0];
+      if (ranked[1] && ranked[1].P >= 3) placings.second[g] = ranked[1];
+      if (ranked[2] && ranked[2].P >= 3) placings.third.push({ ...ranked[2], group: g });
+    });
+    // 8 melhores terceiros
+    placings.third.sort((a, b) => {
+      if (b.Pts !== a.Pts) return b.Pts - a.Pts;
+      if (b.GD !== a.GD) return b.GD - a.GD;
+      if (b.GF !== a.GF) return b.GF - a.GF;
+      return a.name.localeCompare(b.name);
+    });
+    placings.bestThirds = placings.third.slice(0, 8);
+    return { placings, standings };
+  }
+
+  // Mapa de qual jogo de 16-avos recebe qual time
+  // Baseado no que a FIFA divulgou (round-of-32 pairings)
+  const R32_PAIRINGS = {
+    73: { home: { type: '2nd', group: 'A' }, away: { type: '2nd', group: 'B' } },
+    74: { home: { type: '1st', group: 'E' }, away: { type: 'best3rd', from: ['A','B','C','D','F'] } },
+    75: { home: { type: '1st', group: 'F' }, away: { type: '2nd', group: 'C' } },
+    76: { home: { type: '1st', group: 'C' }, away: { type: '2nd', group: 'F' } },
+    77: { home: { type: '1st', group: 'I' }, away: { type: 'best3rd', from: ['C','D','F','G','H'] } },
+    78: { home: { type: '2nd', group: 'E' }, away: { type: '2nd', group: 'I' } },
+    79: { home: { type: '1st', group: 'A' }, away: { type: 'best3rd', from: ['C','E','F','H','I'] } },
+    80: { home: { type: '1st', group: 'L' }, away: { type: 'best3rd', from: ['E','H','I','J','K'] } },
+    81: { home: { type: '1st', group: 'D' }, away: { type: 'best3rd', from: ['B','E','F','I','J'] } },
+    82: { home: { type: '1st', group: 'G' }, away: { type: 'best3rd', from: ['A','E','H','I','J'] } },
+    83: { home: { type: '2nd', group: 'K' }, away: { type: '2nd', group: 'L' } },
+    84: { home: { type: '1st', group: 'H' }, away: { type: '2nd', group: 'J' } },
+    85: { home: { type: '1st', group: 'B' }, away: { type: 'best3rd', from: ['E','F','G','I','J'] } },
+    86: { home: { type: '1st', group: 'J' }, away: { type: '2nd', group: 'H' } },
+    87: { home: { type: '1st', group: 'K' }, away: { type: 'best3rd', from: ['D','E','I','J','L'] } },
+    88: { home: { type: '2nd', group: 'D' }, away: { type: '2nd', group: 'G' } }
+  };
+
+  // Confrontos do mata-mata seguinte (oitavas, quartas, semis, etc.)
+  const KO_PAIRINGS = {
+    89: { home: 74, away: 77 },
+    90: { home: 73, away: 75 },
+    91: { home: 76, away: 78 },
+    92: { home: 79, away: 80 },
+    93: { home: 83, away: 84 },
+    94: { home: 81, away: 82 },
+    95: { home: 86, away: 88 },
+    96: { home: 85, away: 87 },
+    97: { home: 89, away: 90 },
+    98: { home: 93, away: 94 },
+    99: { home: 91, away: 92 },
+    100: { home: 95, away: 96 },
+    101: { home: 97, away: 98 },
+    102: { home: 99, away: 100 },
+    103: { home: 101, away: 102, loserFinal: true }, // perdedor das semis
+    104: { home: 101, away: 102 } // vencedor das semis
+  };
+
+  function resolveTeam(spec, placings) {
+    if (spec.type === '1st') return placings.first[spec.group] || null;
+    if (spec.type === '2nd') return placings.second[spec.group] || null;
+    if (spec.type === 'best3rd') {
+      // Pega o melhor 3º cujo grupo está em "from"
+      const candidate = placings.bestThirds.find(t => spec.from.includes(t.group));
+      return candidate || null;
+    }
+    return null;
+  }
+
+  function winnerOf(matchId) {
+    const match = window.SCHEDULE.find(m => m.id === matchId);
+    if (!match) return null;
+    const score = getScore(matchId);
+    if (!score) return null;
+    if (score.home > score.away) return match.resolvedHome || null;
+    if (score.away > score.home) return match.resolvedAway || null;
+    // Empate: precisa de pênaltis. Vou aceitar um campo score.penaltyWinner ('home'|'away')
+    if (score.penaltyWinner === 'home') return match.resolvedHome || null;
+    if (score.penaltyWinner === 'away') return match.resolvedAway || null;
+    return null;
+  }
+  function loserOf(matchId) {
+    const match = window.SCHEDULE.find(m => m.id === matchId);
+    if (!match) return null;
+    const score = getScore(matchId);
+    if (!score) return null;
+    if (score.home > score.away) return match.resolvedAway || null;
+    if (score.away > score.home) return match.resolvedHome || null;
+    if (score.penaltyWinner === 'home') return match.resolvedAway || null;
+    if (score.penaltyWinner === 'away') return match.resolvedHome || null;
+    return null;
+  }
+
+  // Atualiza .resolvedHome e .resolvedAway em todos os jogos baseado nos placares
+  function resolveBracket() {
+    const { placings } = getQualifiedTeams();
+    // Primeiro, fase de grupos: home/away já estão fixos (homeCode/awayCode)
+    window.SCHEDULE.forEach(m => {
+      if (m.homeCode) m.resolvedHome = { code: m.homeCode, flag: countryByCode[m.homeCode].flag, name: countryByCode[m.homeCode].name };
+      if (m.awayCode) m.resolvedAway = { code: m.awayCode, flag: countryByCode[m.awayCode].flag, name: countryByCode[m.awayCode].name };
+    });
+    // 16-avos
+    Object.keys(R32_PAIRINGS).forEach(jogo => {
+      const id = parseInt(jogo, 10);
+      const match = window.SCHEDULE.find(m => m.id === id);
+      if (!match) return;
+      const pair = R32_PAIRINGS[id];
+      match.resolvedHome = resolveTeam(pair.home, placings);
+      match.resolvedAway = resolveTeam(pair.away, placings);
+    });
+    // Mata-mata seguinte (ordem importa - resolve do menor pro maior)
+    Object.keys(KO_PAIRINGS).map(Number).sort((a,b)=>a-b).forEach(id => {
+      const match = window.SCHEDULE.find(m => m.id === id);
+      if (!match) return;
+      const pair = KO_PAIRINGS[id];
+      if (id === 103) {
+        match.resolvedHome = loserOf(pair.home);
+        match.resolvedAway = loserOf(pair.away);
+      } else {
+        match.resolvedHome = winnerOf(pair.home);
+        match.resolvedAway = winnerOf(pair.away);
+      }
+    });
+  }
+
   // ---------- RENDER: JOGOS ----------
   let currentPhase = 'all';
   let currentCountryFilter = '';
@@ -593,28 +792,31 @@
     return new Date(`${m.date}T${m.time}:00-03:00`);
   }
 
-  function teamHTML(code, label) {
-    if (code) {
-      const c = countryByCode[code];
-      return `<span class="match-team"><span class="flag-mini">${c.flag}</span>${c.name}</span>`;
+  function teamHTML(resolvedTeam, fallbackLabel) {
+    if (resolvedTeam && resolvedTeam.code) {
+      return `<span class="match-team"><span class="flag-mini">${resolvedTeam.flag}</span>${resolvedTeam.name}</span>`;
     }
-    return `<span class="match-team" style="color:var(--c-muted)"><span class="flag-mini">❓</span>${label || '?'}</span>`;
+    return `<span class="match-team" style="color:var(--c-muted)"><span class="flag-mini">❓</span>${fallbackLabel || '?'}</span>`;
   }
 
   function renderSchedule() {
+    resolveBracket();
     const list = $('#matchesList');
     list.innerHTML = '';
     const filtered = window.SCHEDULE.filter(m => {
       if (currentPhase !== 'all' && m.phase !== currentPhase) return false;
-      if (currentCountryFilter && m.homeCode !== currentCountryFilter && m.awayCode !== currentCountryFilter) return false;
+      if (currentCountryFilter) {
+        const hc = m.resolvedHome ? m.resolvedHome.code : null;
+        const ac = m.resolvedAway ? m.resolvedAway.code : null;
+        if (hc !== currentCountryFilter && ac !== currentCountryFilter) return false;
+      }
       return true;
     });
 
-    // Próximo jogo
     const now = new Date();
     const nextBox = $('#nextMatch');
     if (currentPhase === 'all' && !currentCountryFilter) {
-      const upcoming = window.SCHEDULE.find(m => getMatchDateObj(m) >= now);
+      const upcoming = window.SCHEDULE.find(m => getMatchDateObj(m) >= now && !getScore(m.id));
       if (upcoming) {
         nextBox.style.display = '';
         nextBox.innerHTML = `<div class="next-match-label">⏭ PRÓXIMO JOGO</div>` + matchCardHTML(upcoming);
@@ -632,6 +834,49 @@
     filtered.forEach(m => {
       list.insertAdjacentHTML('beforeend', matchCardHTML(m));
     });
+    // Liga os inputs de placar
+    list.querySelectorAll('.score-input').forEach(inp => {
+      inp.addEventListener('change', onScoreChange);
+      inp.addEventListener('blur', onScoreChange);
+    });
+    list.querySelectorAll('.pen-toggle').forEach(btn => {
+      btn.addEventListener('click', onPenaltyToggle);
+    });
+  }
+
+  function onScoreChange(e) {
+    const card = e.target.closest('.match-card');
+    if (!card) return;
+    const id = parseInt(card.dataset.matchId, 10);
+    const home = card.querySelector('.score-home').value;
+    const away = card.querySelector('.score-away').value;
+    if (home === '' && away === '') {
+      delete state.scores[id];
+    } else if (home !== '' && away !== '') {
+      const h = parseInt(home, 10);
+      const a = parseInt(away, 10);
+      if (isNaN(h) || isNaN(a)) return;
+      const prev = state.scores[id] || {};
+      state.scores[id] = { home: h, away: a };
+      if (h === a && prev.penaltyWinner) state.scores[id].penaltyWinner = prev.penaltyWinner;
+    }
+    saveData();
+    renderSchedule();
+  }
+
+  function onPenaltyToggle(e) {
+    const card = e.target.closest('.match-card');
+    if (!card) return;
+    const id = parseInt(card.dataset.matchId, 10);
+    const side = e.target.dataset.side; // 'home' ou 'away'
+    if (!state.scores[id]) return;
+    if (state.scores[id].penaltyWinner === side) {
+      delete state.scores[id].penaltyWinner;
+    } else {
+      state.scores[id].penaltyWinner = side;
+    }
+    saveData();
+    renderSchedule();
   }
 
   function matchCardHTML(m) {
@@ -639,21 +884,142 @@
     const day = d.getDate();
     const months = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
     const month = months[d.getMonth()];
+    const score = getScore(m.id);
+    const played = !!score;
+    const homeName = m.resolvedHome ? m.resolvedHome.name : (m.homeLabel || '?');
+    const awayName = m.resolvedAway ? m.resolvedAway.name : (m.awayLabel || '?');
+    const homeFlag = m.resolvedHome ? m.resolvedHome.flag : '❓';
+    const awayFlag = m.resolvedAway ? m.resolvedAway.flag : '❓';
+    const hasTeams = m.resolvedHome && m.resolvedAway;
+    const isDraw = played && score.home === score.away;
+    const isKO = m.phase !== 'Grupos';
     return `
-      <div class="match-card">
+      <div class="match-card ${played ? 'played' : ''}" data-match-id="${m.id}">
         <div class="match-date">
           <div class="match-day">${day}</div>
           <div class="match-month">${month}</div>
           <div class="match-time">${m.time}</div>
         </div>
-        <div class="match-teams">
-          ${teamHTML(m.homeCode, m.homeLabel)}
-          <span class="match-vs">×</span>
-          ${teamHTML(m.awayCode, m.awayLabel)}
+        <div class="match-body">
+          <div class="match-row">
+            <span class="match-team-side"><span class="flag-mini">${homeFlag}</span>${homeName}</span>
+            <input type="number" min="0" max="99" class="score-input score-home" value="${played ? score.home : ''}" placeholder="-" ${hasTeams ? '' : 'disabled'} aria-label="Placar mandante">
+          </div>
+          <div class="match-row">
+            <span class="match-team-side"><span class="flag-mini">${awayFlag}</span>${awayName}</span>
+            <input type="number" min="0" max="99" class="score-input score-away" value="${played ? score.away : ''}" placeholder="-" ${hasTeams ? '' : 'disabled'} aria-label="Placar visitante">
+          </div>
+          ${isKO && isDraw && hasTeams ? `
+            <div class="pen-row">
+              Empate → quem ganhou nos pênaltis?
+              <button class="pen-toggle ${score.penaltyWinner === 'home' ? 'active' : ''}" data-side="home">${homeFlag} ${m.resolvedHome.code}</button>
+              <button class="pen-toggle ${score.penaltyWinner === 'away' ? 'active' : ''}" data-side="away">${awayFlag} ${m.resolvedAway.code}</button>
+            </div>
+          ` : ''}
         </div>
         <div class="match-meta">
           <div class="match-phase">${m.round || m.phase}</div>
+          ${m.group ? `<div class="match-group">Grupo ${m.group}</div>` : ''}
           <div class="match-venue">${m.venue || ''}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ---------- CHAVE (BRACKET) E CLASSIFICAÇÃO ----------
+  function renderBracket() {
+    resolveBracket();
+    const { placings, standings } = getQualifiedTeams();
+    const container = $('#bracketContent');
+    const groupCodes = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+
+    // Tabelas dos grupos
+    const groupsHtml = groupCodes.map(g => {
+      const teams = standings[g];
+      return `
+        <div class="group-standings">
+          <h3>Grupo ${g}</h3>
+          <table>
+            <thead>
+              <tr><th></th><th>Time</th><th>P</th><th>V</th><th>E</th><th>D</th><th>SG</th><th>Pts</th></tr>
+            </thead>
+            <tbody>
+              ${teams.map((t, i) => `
+                <tr class="${i === 0 ? 'pos-1' : i === 1 ? 'pos-2' : i === 2 ? 'pos-3' : 'pos-4'}">
+                  <td class="pos">${i + 1}º</td>
+                  <td class="team"><span>${t.flag}</span> ${t.name}</td>
+                  <td>${t.P}</td>
+                  <td>${t.W}</td>
+                  <td>${t.D}</td>
+                  <td>${t.L}</td>
+                  <td>${t.GD >= 0 ? '+' : ''}${t.GD}</td>
+                  <td class="pts">${t.Pts}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }).join('');
+
+    // Melhores terceiros
+    const thirdsHtml = placings.bestThirds.length ? `
+      <div class="bracket-section">
+        <h3>🥉 Melhores 3º colocados (8 avançam)</h3>
+        <div class="thirds-list">
+          ${placings.bestThirds.map((t, i) => `
+            <div class="third-row">
+              <span class="third-pos">${i + 1}</span>
+              <span class="third-flag">${t.flag}</span>
+              <span class="third-name">${t.name}</span>
+              <span class="third-group">Gr ${t.group}</span>
+              <span class="third-pts">${t.Pts} pts</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    // Chave do mata-mata
+    function teamSlot(team, fallback) {
+      if (team) return `<span class="bk-team"><span class="bk-flag">${team.flag}</span>${team.name}</span>`;
+      return `<span class="bk-team bk-empty">${fallback || '?'}</span>`;
+    }
+    function bracketMatch(matchId) {
+      const m = window.SCHEDULE.find(x => x.id === matchId);
+      if (!m) return '';
+      const score = getScore(matchId);
+      const hWon = score && (score.home > score.away || score.penaltyWinner === 'home');
+      const aWon = score && (score.away > score.home || score.penaltyWinner === 'away');
+      return `
+        <div class="bk-match">
+          <div class="bk-id">Jogo ${matchId}</div>
+          <div class="bk-side ${hWon ? 'win' : ''}">${teamSlot(m.resolvedHome, m.homeLabel)}<span class="bk-score">${score ? score.home : '–'}</span></div>
+          <div class="bk-side ${aWon ? 'win' : ''}">${teamSlot(m.resolvedAway, m.awayLabel)}<span class="bk-score">${score ? score.away : '–'}</span></div>
+        </div>
+      `;
+    }
+
+    const r32Html = `<div class="bk-round"><h4>16-avos</h4>${[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88].map(bracketMatch).join('')}</div>`;
+    const r16Html = `<div class="bk-round"><h4>Oitavas</h4>${[89,90,91,92,93,94,95,96].map(bracketMatch).join('')}</div>`;
+    const qfHtml = `<div class="bk-round"><h4>Quartas</h4>${[97,98,99,100].map(bracketMatch).join('')}</div>`;
+    const sfHtml = `<div class="bk-round"><h4>Semis</h4>${[101,102].map(bracketMatch).join('')}</div>`;
+    const finalHtml = `<div class="bk-round"><h4>3º Lugar</h4>${bracketMatch(103)}</div><div class="bk-round bk-final"><h4>🏆 FINAL</h4>${bracketMatch(104)}</div>`;
+
+    container.innerHTML = `
+      <div class="bracket-section">
+        <h3>📋 Classificação dos Grupos</h3>
+        <div class="groups-grid">${groupsHtml}</div>
+      </div>
+      ${thirdsHtml}
+      <div class="bracket-section">
+        <h3>🔥 Mata-Mata</h3>
+        <div class="bracket-tree">
+          ${r32Html}
+          ${r16Html}
+          ${qfHtml}
+          ${sfHtml}
+          ${finalHtml}
         </div>
       </div>
     `;
@@ -757,6 +1123,7 @@
       if (tab === 'dashboard') renderDashboard();
       if (tab === 'countries') { renderCountries(); renderWorldMap(); }
       if (tab === 'schedule') renderSchedule();
+      if (tab === 'bracket') renderBracket();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
