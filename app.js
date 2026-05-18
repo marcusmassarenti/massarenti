@@ -2857,6 +2857,21 @@
   if ($('#faqBtn')) {
     $('#faqBtn').addEventListener('click', () => {
       $('#faqModal').hidden = false;
+      // Renderiza histórico de atualizações
+      const list = document.getElementById('faqChangelogList');
+      if (list && window.CHANGELOG && !list.dataset.rendered) {
+        list.innerHTML = window.CHANGELOG.map(c => `
+          <details class="faq-changelog-item">
+            <summary>
+              <span class="faq-cl-ver">v${c.version}</span>
+              <span class="faq-cl-title">${c.title || 'Atualização'}</span>
+              <span class="faq-cl-date">${c.date}</span>
+            </summary>
+            <ul>${c.items.map(it => `<li>${it}</li>`).join('')}</ul>
+          </details>
+        `).join('');
+        list.dataset.rendered = '1';
+      }
     });
   }
 

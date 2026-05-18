@@ -1,7 +1,16 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 65;
+window.APP_VERSION = 66;
 window.CHANGELOG = [
+  {
+    version: 66,
+    date: '18/mai',
+    title: '📜 Histórico de atualizações',
+    items: [
+      '❓ No botão FAQ tem agora uma seção "Histórico de atualizações"',
+      '📖 Lista todas as melhorias do app pra você consultar quando quiser'
+    ]
+  },
   {
     version: 65,
     date: '18/mai',
