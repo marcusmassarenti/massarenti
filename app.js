@@ -2430,34 +2430,44 @@
       listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--c-muted);font-size:13px;grid-column:1/-1">Sem membros ainda.</div>';
       return;
     }
-    const ranked = rankProfilesByProgress(members);
-    const champion = ranked[0];
-    const champOwned = Object.values(champion.counts || {}).filter(v => v > 0).length;
-    const podiumBanner = ranked.length >= 2 ? `
-      <div class="podium-banner">
-        🏆 <strong>${champion.name}</strong> está liderando com ${champOwned}/980 figurinhas!
-      </div>
-    ` : '';
-    // Top 3 (ou top 2 se forem só 2): cards grandes com medalha
-    // Resto: lista compacta colapsável
-    const podium = ranked.slice(0, 3);
-    const rest = ranked.slice(3);
-    const meInRest = rest.find(p => p.name === profileName);
-    const meCard = meInRest && !podium.find(p => p.name === profileName)
-      ? `<div class="my-pos-card" data-name="${profileName}">${buildCompactRow(meInRest)}</div>`
-      : '';
-    const podiumHtml = `<div class="podium-row">${podium.map(buildFamilyRow).join('')}</div>`;
-    const restHtml = rest.length > 0 ? `
-      <details class="family-rest" ${rest.length <= 3 ? 'open' : ''}>
-        <summary>Ver os outros ${rest.length} ${rest.length === 1 ? 'membro' : 'membros'} ▾</summary>
-        <div class="family-rest-list">
-          ${rest.map(buildCompactRow).join('')}
+    try {
+      const ranked = rankProfilesByProgress(members);
+      const champion = ranked[0];
+      const champOwned = Object.values(champion.counts || {}).filter(v => v > 0).length;
+      const podiumBanner = ranked.length >= 2 ? `
+        <div class="podium-banner">
+          🏆 <strong>${champion.name}</strong> está liderando com ${champOwned}/980 figurinhas!
         </div>
-      </details>
-    ` : '';
-    // === SEÇÃO DE TROCAS ===
-    const tradesHtml = buildTradesSection(ranked);
-    listEl.innerHTML = podiumBanner + podiumHtml + meCard + restHtml + tradesHtml;
+      ` : '';
+      const podium = ranked.slice(0, 3);
+      const rest = ranked.slice(3);
+      const meInRest = rest.find(p => p.name === profileName);
+      const meCard = meInRest && !podium.find(p => p.name === profileName)
+        ? `<div class="my-pos-card" data-name="${profileName}">${buildCompactRow(meInRest)}</div>`
+        : '';
+      const podiumHtml = `<div class="podium-row">${podium.map(buildFamilyRow).join('')}</div>`;
+      const restHtml = rest.length > 0 ? `
+        <details class="family-rest" ${rest.length <= 3 ? 'open' : ''}>
+          <summary>Ver os outros ${rest.length} ${rest.length === 1 ? 'membro' : 'membros'} ▾</summary>
+          <div class="family-rest-list">
+            ${rest.map(buildCompactRow).join('')}
+          </div>
+        </details>
+      ` : '';
+      // === SEÇÃO DE TROCAS ===
+      let tradesHtml = '';
+      try {
+        tradesHtml = buildTradesSection(ranked);
+      } catch (e) {
+        console.warn('Erro buildTradesSection:', e);
+        tradesHtml = '';
+      }
+      listEl.innerHTML = podiumBanner + podiumHtml + meCard + restHtml + tradesHtml;
+    } catch (e) {
+      console.warn('Erro ao renderizar membros:', e);
+      listEl.innerHTML = `<div style="padding:20px;text-align:center;color:var(--c-red);font-size:13px;grid-column:1/-1">⚠️ Erro ao carregar. Recarregue a página.<br><small>${(e && e.message) || e}</small></div>`;
+      return;
+    }
 
     // Liga os toggles de detalhes de troca
     listEl.querySelectorAll('.trade-card-toggle').forEach(t => {
