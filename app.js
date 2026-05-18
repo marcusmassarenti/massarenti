@@ -1812,7 +1812,7 @@
       const myFirstName = profileName.split(' ')[0];
       const friendFirst = friendName.split(' ')[0];
       const summarize = (groups) => groups.slice(0, 6).map(g =>
-        `${g.flag} ${g.name} (${g.numbers.sort((a,b)=>a-b).map(n => String(n).padStart(2,'0')).join(', ')})`
+        `${g.flag} ${g.name} (${g.items.map(it => it.local).sort((a,b)=>a-b).map(n => String(n).padStart(2,'0')).join(', ')})`
       ).join('\n');
       const askMsg = theyCanGive.length > 0
         ? `Oi ${friendFirst}! 😄 Sou ${myFirstName}, do álbum da Copa 2026.\n` +
