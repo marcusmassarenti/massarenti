@@ -1784,7 +1784,7 @@
     }
     function renderTradeGroup(group) {
       const nums = group.items.sort((a, b) => a.local - b.local)
-        .map(it => `<span class="trade-num selected" data-global="${it.global}">${String(it.local).padStart(2, '0')}</span>`).join('');
+        .map(it => `<span class="trade-num" data-global="${it.global}">${String(it.local).padStart(2, '0')}</span>`).join('');
       return `
         <div class="trade-row">
           <span class="trade-row-flag">${group.flag}</span>
@@ -1847,7 +1847,7 @@
                 <div class="trade-block-title">🎁 ${other.name} pode te dar (${theyCanGive.length})</div>
                 <div class="trade-hint">Toca nas figurinhas pra escolher quais pedir 👇</div>
                 <div class="trade-rows">${youGetGroups.map(renderTradeGroup).join('')}</div>
-                <button class="trade-app-btn trade-app-ask" data-action="ask" data-target="${other.name}">📨 Pedir pelo app (${theyCanGive.length})</button>
+                <button class="trade-app-btn trade-app-ask" data-action="ask" data-target="${other.name}" disabled>📨 Pedir pelo app (0)</button>
                 <a class="trade-wa-btn trade-wa-ask" href="${askUrl}" target="_blank" rel="noopener">💬 Pedir no WhatsApp</a>
               </div>` : ''}
             ${iCanGive.length > 0 ? `
@@ -1855,7 +1855,7 @@
                 <div class="trade-block-title">✋ Você pode dar pra ${other.name} (${iCanGive.length})</div>
                 <div class="trade-hint">Toca nas figurinhas pra escolher quais oferecer 👇</div>
                 <div class="trade-rows">${youGiveGroups.map(renderTradeGroup).join('')}</div>
-                <button class="trade-app-btn trade-app-offer" data-action="offer" data-target="${other.name}">📨 Avisar pelo app (${iCanGive.length})</button>
+                <button class="trade-app-btn trade-app-offer" data-action="offer" data-target="${other.name}" disabled>📨 Avisar pelo app (0)</button>
                 <a class="trade-wa-btn trade-wa-offer" href="${offerUrl}" target="_blank" rel="noopener">📲 Avisar no WhatsApp</a>
               </div>` : ''}
           </div>
