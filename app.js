@@ -2982,6 +2982,8 @@
         </div>
       `).join('');
       document.getElementById('changelogModal').hidden = false;
+      // Marca como visto assim que abre, pra não reaparecer se o usuário fechar a aba
+      localStorage.setItem(lastSeenKey, String(window.APP_VERSION));
     }, 600);
 
     const closeIt = () => {

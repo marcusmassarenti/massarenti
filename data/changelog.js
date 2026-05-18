@@ -5,28 +5,11 @@ window.CHANGELOG = [
   {
     version: 62,
     date: '17/mai',
-    title: '💬 Mensagem do WhatsApp mais curta',
+    title: '✨ Melhorias rápidas',
     items: [
-      '✂️ Sem espaçamentos extras: bandeira + país + números na mesma linha',
-      '📱 Fica mais fácil de ler e mandar pros amigos'
-    ]
-  },
-  {
-    version: 61,
-    date: '17/mai',
-    title: '💰 Lembrete de PIX mais leve',
-    items: [
-      '🚪 Lembrete aparece só ao abrir o app (não toda vez que clica no Painel)',
-      '⏰ Se ficar com o app aberto, lembra de novo a cada 5 minutinhos'
-    ]
-  },
-  {
-    version: 60,
-    date: '17/mai',
-    title: '📋 PDF detalhado',
-    items: [
-      '🔢 Agora o PDF lista TODAS as figurinhas que faltam, uma por uma (ex: 01, 02, 05, 08, 12)',
-      '🤏 Ajuste automático da fonte pra caber tudo em uma página só'
+      '📋 PDF agora lista cada figurinha que falta uma por uma (com ajuste automático de fonte)',
+      '💬 Mensagem do WhatsApp mais curta: bandeira + país + números na mesma linha',
+      '💰 Lembrete de PIX só ao abrir o app, e a cada 5min se ficar aberto'
     ]
   },
   {
