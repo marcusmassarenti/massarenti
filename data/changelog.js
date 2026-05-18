@@ -1,7 +1,18 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 67;
+window.APP_VERSION = 68;
 window.CHANGELOG = [
+  {
+    version: 68,
+    date: '17/mai',
+    title: '📢 Botão de divulgação (admin)',
+    silent: true,
+    items: [
+      '🔒 No painel admin do Cauã, novo botão "Divulgar o app"',
+      '✍️ Mensagens prontas pra família, amigos, grupo de pais e versão curta',
+      '💬 Compartilha direto no WhatsApp ou copia pra outro lugar'
+    ]
+  },
   {
     version: 67,
     date: '17/mai',

@@ -3304,6 +3304,68 @@ main { padding: 12px 12px 8px; }
 
 /* === MODAL DE PEDIDOS DE TROCA RECEBIDOS === */
 #tradeNotifModal { z-index: 285; }
+
+/* === MODAL DIVULGAR APP (admin) === */
+#shareAppModal { z-index: 270; }
+.share-app-content {
+  max-width: 500px;
+}
+.share-app-intro {
+  font-size: 13px;
+  color: var(--c-muted);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.share-app-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.share-app-tab {
+  flex: 1;
+  min-width: 110px;
+  padding: 8px 6px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1.5px solid var(--c-border);
+  background: #fff;
+  color: var(--c-ink);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.share-app-tab:hover { background: var(--c-bg-soft); }
+.share-app-tab.active {
+  background: var(--c-ink);
+  color: var(--c-gold);
+  border-color: var(--c-ink);
+}
+.share-app-preview textarea {
+  width: 100%;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12.5px;
+  line-height: 1.45;
+  padding: 12px;
+  border: 1.5px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-bg-soft);
+  color: var(--c-ink);
+  resize: vertical;
+  white-space: pre-wrap;
+}
+.share-app-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.share-app-actions button { width: 100%; }
+#shareAppWhatsApp {
+  background: #25D366 !important;
+  color: #fff !important;
+  border: none;
+}
 .trade-notif-content {
   max-width: 460px;
   background: linear-gradient(180deg, #fef7e6 0%, #fff 60%);

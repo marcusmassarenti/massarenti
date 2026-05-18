@@ -2907,6 +2907,108 @@
         return false;
       };
     }
+    const shareBtn = document.getElementById('shareAppBtn');
+    if (shareBtn) {
+      shareBtn.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const settings = document.getElementById('settingsModal');
+        if (settings) settings.hidden = true;
+        openShareAppModal();
+      };
+    }
+  }
+
+  // ========== MODAL DIVULGAR APP (admin) ==========
+  const SHARE_APP_MESSAGES = {
+    familia: `Oi gente! 👋
+
+Fiz um app pro Cauã controlar o álbum de figurinhas da Copa do Mundo 2026! ⚽🏆
+
+Tem TUDO que precisa:
+✅ Marcar figurinhas coladas e contar as repetidas
+✅ Ranking entre família e amigos 🥇🥈🥉
+✅ Trocas inteligentes — cruza minhas repetidas com o que falta pros outros
+✅ Mapa-mundi mostrando todos os países da Copa
+✅ Calendário dos 104 jogos com placar
+✅ E muito mais!
+
+É grátis, funciona no celular como app. Bora colecionar junto? 💛
+
+🔗 https://copa.massarenti.me`,
+
+    amigos: `Fala! 👊
+
+Tô usando esse app pro álbum da Copa 2026 e tá MUITO bom — quem coleciona precisa conhecer:
+
+🎯 Marca o que tem, mostra o que falta
+🔄 Cruza repetidas com amigos pra trocar mais fácil
+🏆 Ranking entre quem tá colecionando junto
+🗺️ Mapa-mundi, jogos, chave da Copa, tudo num lugar
+📱 Funciona como app no celular (PWA)
+
+Cola lá:
+🔗 https://copa.massarenti.me
+
+Faz seu cadastro e me adiciona no grupo! 🚀`,
+
+    grupo: `Pais, boa noite! 🌙
+
+Pra quem tá enlouquecendo com álbum da Copa 2026 dos filhos, fiz esse app pro meu (Cauã, 9 anos) e tá ajudando MUITO:
+
+📖 Lista exata do que tem e do que falta (zero confusão na hora de comprar pacotinho!)
+🔄 Cruza repetidas das crianças do grupo — facilita trocar entre elas
+👨‍👩‍👧 Ranking entre família e amigos (eles AMAM)
+📄 Exporta PDF/WhatsApp das que faltam pra você levar pro tio comprar 😂
+⚽ Calendário completo da Copa com placar
+
+Funciona como app no celular, é grátis. Quem quiser usar, bora:
+🔗 https://copa.massarenti.me
+
+Qualquer dúvida me chama! 👍`,
+
+    curto: `Álbum da Copa 2026 organizadinho no app 📱⚽
+
+✅ Marca o que tem
+🔄 Troca com amigos
+🏆 Ranking família
+🆓 Grátis
+
+🔗 https://copa.massarenti.me`
+  };
+
+  async function openShareAppModal() {
+    const modal = document.getElementById('shareAppModal');
+    if (!modal) return;
+    modal.hidden = false;
+    const ta = document.getElementById('shareAppText');
+    let current = 'familia';
+    const update = () => { ta.value = SHARE_APP_MESSAGES[current] || ''; };
+    update();
+    document.querySelectorAll('.share-app-tab').forEach(t => {
+      t.onclick = () => {
+        current = t.dataset.msg;
+        document.querySelectorAll('.share-app-tab').forEach(x => x.classList.toggle('active', x === t));
+        update();
+      };
+    });
+    document.getElementById('shareAppWhatsApp').onclick = () => {
+      const url = `https://wa.me/?text=${encodeURIComponent(ta.value)}`;
+      window.open(url, '_blank');
+    };
+    document.getElementById('shareAppCopy').onclick = async () => {
+      const btn = document.getElementById('shareAppCopy');
+      try {
+        await navigator.clipboard.writeText(ta.value);
+        const orig = btn.textContent;
+        btn.textContent = '✓ Copiado!';
+        showToast('✅ Mensagem copiada!', 'success', 1800);
+        setTimeout(() => { btn.textContent = orig; }, 2000);
+      } catch (e) {
+        showToast('Não consegui copiar. Selecione manualmente.', 'error');
+      }
+    };
+    document.getElementById('closeShareApp').onclick = () => { modal.hidden = true; };
   }
   const closeAP = document.getElementById('closeAllProfiles');
   if (closeAP) {

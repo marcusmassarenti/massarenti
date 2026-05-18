@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=Press+Start+2P&family=Fredoka:wght@400;600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=74">
+  <link rel="stylesheet" href="style.css?v=75">
 </head>
 <body class="app-body">
   <header class="app-header">
@@ -171,6 +171,31 @@
       <h2>📬 Tem gente querendo trocar!</h2>
       <p class="trade-notif-intro">Olha quem mandou pedido pra você no app:</p>
       <div id="tradeNotifList"></div>
+    </div>
+  </div>
+
+  <!-- Modal divulgar app (admin) -->
+  <div id="shareAppModal" class="modal" hidden>
+    <div class="modal-content share-app-content">
+      <button class="modal-close" id="closeShareApp">✕</button>
+      <h2>📢 Divulgar o app</h2>
+      <p class="share-app-intro">Escolha uma mensagem e mande pra galera:</p>
+
+      <div class="share-app-tabs">
+        <button class="share-app-tab active" data-msg="familia">👨‍👩‍👧 Família</button>
+        <button class="share-app-tab" data-msg="amigos">😎 Amigos</button>
+        <button class="share-app-tab" data-msg="grupo">💬 Grupo de pais</button>
+        <button class="share-app-tab" data-msg="curto">⚡ Curto</button>
+      </div>
+
+      <div class="share-app-preview">
+        <textarea id="shareAppText" rows="10" readonly></textarea>
+      </div>
+
+      <div class="share-app-actions">
+        <button class="btn-primary" id="shareAppWhatsApp">💬 Compartilhar no WhatsApp</button>
+        <button class="btn-secondary" id="shareAppCopy">📋 Copiar mensagem</button>
+      </div>
     </div>
   </div>
 
@@ -422,6 +447,7 @@
         <h3>🔒 Admin</h3>
         <p style="font-size:12px;color:var(--c-muted);margin-bottom:8px">Lista de todos os perfis cadastrados no app.</p>
         <button class="btn-secondary" id="viewAllProfilesBtn">👥 Ver todos os usuários</button>
+        <button class="btn-secondary" id="shareAppBtn" style="margin-top:8px">📢 Divulgar o app</button>
       </div>
 
       <div class="setting-group">
@@ -447,13 +473,13 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=74"></script>
-  <script src="data/countries.js?v=74"></script>
-  <script src="data/stickers.js?v=74"></script>
-  <script src="data/schedule.js?v=74"></script>
-  <script src="data/world-map.js?v=74"></script>
-  <script src="data/changelog.js?v=74"></script>
-  <script src="app.js?v=74"></script>
+  <script src="data/supabase-config.js?v=75"></script>
+  <script src="data/countries.js?v=75"></script>
+  <script src="data/stickers.js?v=75"></script>
+  <script src="data/schedule.js?v=75"></script>
+  <script src="data/world-map.js?v=75"></script>
+  <script src="data/changelog.js?v=75"></script>
+  <script src="app.js?v=75"></script>
   <script>
     // Service Worker - auto-atualiza quando tem versão nova
     if ('serviceWorker' in navigator) {
