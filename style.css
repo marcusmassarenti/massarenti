@@ -2410,6 +2410,24 @@ main { padding: 12px 12px 8px; }
 }
 .trade-block-get { background: rgba(84,169,109,.1); border-left: 3px solid var(--c-success); }
 .trade-block-give { background: rgba(212,68,74,.08); border-left: 3px solid var(--c-red); }
+.trade-wa-btn {
+  display: block;
+  text-align: center;
+  margin-top: 8px;
+  padding: 9px 12px;
+  background: #25D366;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 12.5px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(37,211,102,.35);
+  transition: transform .12s, box-shadow .12s;
+}
+.trade-wa-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37,211,102,.45); }
+.trade-wa-btn:active { transform: translateY(0); }
+.trade-wa-offer { background: #1c8c4a; box-shadow: 0 2px 6px rgba(28,140,74,.35); }
+.trade-wa-offer:hover { box-shadow: 0 4px 10px rgba(28,140,74,.45); }
 .trade-block-title {
   font-weight: 800;
   font-size: 12px;

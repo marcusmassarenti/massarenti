@@ -1808,6 +1808,29 @@
       if (theyCanGive.length === 0 && iCanGive.length === 0) return '';
       const youGetGroups = groupByCountry(theyCanGive);
       const youGiveGroups = groupByCountry(iCanGive);
+      // Texto resumido das figurinhas pra usar no WhatsApp
+      const friendName = other.name;
+      const myFirstName = profileName.split(' ')[0];
+      const friendFirst = friendName.split(' ')[0];
+      const summarize = (groups) => groups.slice(0, 6).map(g =>
+        `${g.flag} ${g.name} (${g.numbers.sort((a,b)=>a-b).map(n => String(n).padStart(2,'0')).join(', ')})`
+      ).join('\n');
+      const askMsg = theyCanGive.length > 0
+        ? `Oi ${friendFirst}! 😄 Sou ${myFirstName}, do álbum da Copa 2026.\n` +
+          `Vi que você tem ${theyCanGive.length} repetida${theyCanGive.length > 1 ? 's' : ''} que me ajudaria${theyCanGive.length > 1 ? 'm' : ''} muito! 🙏\n\n` +
+          `Faltam pra mim:\n${summarize(youGetGroups)}${youGetGroups.length > 6 ? '\n…e mais!' : ''}\n\n` +
+          (iCanGive.length > 0 ? `E eu tenho ${iCanGive.length} repetida${iCanGive.length > 1 ? 's' : ''} que te ajuda${iCanGive.length > 1 ? 'm' : ''}, vamos trocar? 🔄\n` : '') +
+          `🔗 copa.massarenti.me`
+        : '';
+      const offerMsg = iCanGive.length > 0
+        ? `Oi ${friendFirst}! 😊 Aqui é ${myFirstName}.\n` +
+          `Tenho ${iCanGive.length} repetida${iCanGive.length > 1 ? 's' : ''} que tá${iCanGive.length > 1 ? 'ão' : ''} faltando pra você! 🎁\n\n` +
+          `Posso te dar:\n${summarize(youGiveGroups)}${youGiveGroups.length > 6 ? '\n…e mais!' : ''}\n\n` +
+          (theyCanGive.length > 0 ? `Se você tiver alguma que falta pra mim, a gente troca! 🔄\n` : '') +
+          `🔗 copa.massarenti.me`
+        : '';
+      const askUrl = askMsg ? `https://wa.me/?text=${encodeURIComponent(askMsg)}` : '';
+      const offerUrl = offerMsg ? `https://wa.me/?text=${encodeURIComponent(offerMsg)}` : '';
       return `
         <div class="trade-card">
           <div class="trade-card-toggle">
@@ -1824,11 +1847,13 @@
               <div class="trade-block trade-block-get">
                 <div class="trade-block-title">🎁 ${other.name} pode te dar (${theyCanGive.length})</div>
                 <div class="trade-rows">${youGetGroups.map(renderTradeGroup).join('')}</div>
+                <a class="trade-wa-btn trade-wa-ask" href="${askUrl}" target="_blank" rel="noopener">💬 Pedir pra ${friendFirst} no WhatsApp</a>
               </div>` : ''}
             ${iCanGive.length > 0 ? `
               <div class="trade-block trade-block-give">
                 <div class="trade-block-title">✋ Você pode dar pra ${other.name} (${iCanGive.length})</div>
                 <div class="trade-rows">${youGiveGroups.map(renderTradeGroup).join('')}</div>
+                <a class="trade-wa-btn trade-wa-offer" href="${offerUrl}" target="_blank" rel="noopener">📲 Avisar ${friendFirst} no WhatsApp</a>
               </div>` : ''}
           </div>
         </div>

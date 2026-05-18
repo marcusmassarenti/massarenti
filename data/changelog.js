@@ -1,7 +1,17 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 62;
+window.APP_VERSION = 63;
 window.CHANGELOG = [
+  {
+    version: 63,
+    date: '18/mai',
+    title: '💬 Pedir troca pelo WhatsApp',
+    items: [
+      '📲 Em cada amigo da seção "Trocas possíveis" tem um botão pra mandar mensagem fofa no WhatsApp pedindo as figurinhas',
+      '🎁 Outro botão pra avisar o amigo que você tem as repetidas que ele precisa',
+      '✨ Mensagens já vêm prontas com bandeira, número e link do app'
+    ]
+  },
   {
     version: 62,
     date: '17/mai',
