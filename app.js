@@ -2969,18 +2969,21 @@
     setTimeout(() => {
       const list = document.getElementById('changelogList');
       if (!list) return;
-      list.innerHTML = newOnes.map(c => `
+      // Junta todas as novidades num bloco só pra não poluir a tela
+      const latest = newOnes[0];
+      const allItems = newOnes.flatMap(c => c.items);
+      list.innerHTML = `
         <div class="changelog-block">
           <div class="changelog-version">
-            <span class="changelog-version-num">v${c.version}</span>
-            <span class="changelog-version-title">${c.title || 'Atualização'}</span>
-            <span class="changelog-version-date">${c.date}</span>
+            <span class="changelog-version-num">v${latest.version}</span>
+            <span class="changelog-version-title">✨ O que mudou</span>
+            <span class="changelog-version-date">${latest.date}</span>
           </div>
           <ul class="changelog-items">
-            ${c.items.map(it => `<li>${it}</li>`).join('')}
+            ${allItems.map(it => `<li>${it}</li>`).join('')}
           </ul>
         </div>
-      `).join('');
+      `;
       document.getElementById('changelogModal').hidden = false;
       // Marca como visto assim que abre, pra não reaparecer se o usuário fechar a aba
       localStorage.setItem(lastSeenKey, String(window.APP_VERSION));
