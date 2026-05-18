@@ -3057,7 +3057,8 @@
     const lastSeenKey = `caua_lastSeenVersion_${profileName}`;
     const lastSeen = parseInt(localStorage.getItem(lastSeenKey) || '0', 10);
     if (lastSeen >= window.APP_VERSION) return;
-    const newOnes = window.CHANGELOG.filter(c => c.version > lastSeen);
+    // Filtra atualizações marcadas como silent (correções pequenas, ajustes de UX, etc)
+    const newOnes = window.CHANGELOG.filter(c => c.version > lastSeen && !c.silent);
     if (newOnes.length === 0) {
       localStorage.setItem(lastSeenKey, String(window.APP_VERSION));
       return;
