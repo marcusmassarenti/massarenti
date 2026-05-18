@@ -2482,17 +2482,37 @@ main { padding: 12px 12px 8px; }
   justify-content: flex-end;
 }
 .trade-num {
-  background: rgba(255,255,255,.7);
-  border: 1px solid rgba(0,0,0,.1);
-  padding: 1px 6px;
+  background: rgba(255,255,255,.5);
+  border: 1.5px solid rgba(0,0,0,.12);
+  padding: 2px 7px;
   border-radius: 6px;
   font-family: 'Nunito', monospace;
   font-weight: 900;
   font-size: 11px;
-  color: var(--c-ink);
+  color: rgba(0,0,0,.35);
+  cursor: pointer;
+  user-select: none;
+  transition: all .12s;
+  opacity: .55;
+  text-decoration: line-through;
 }
-.trade-block-get .trade-num { background: rgba(255,255,255,.9); border-color: var(--c-success); }
-.trade-block-give .trade-num { background: rgba(255,255,255,.9); border-color: var(--c-red); }
+.trade-num:hover { opacity: .85; }
+.trade-num.selected {
+  opacity: 1;
+  text-decoration: none;
+  color: var(--c-ink);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+.trade-block-get .trade-num.selected { border-color: var(--c-success); background: rgba(84,169,109,.15); }
+.trade-block-give .trade-num.selected { border-color: var(--c-red); background: rgba(212,68,74,.12); }
+.trade-hint {
+  font-size: 10.5px;
+  color: var(--c-muted);
+  font-weight: 700;
+  margin: 4px 0 6px;
+  font-style: italic;
+}
 
 /* === GRUPOS === */
 .groups-bar {

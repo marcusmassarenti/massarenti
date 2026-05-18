@@ -1,7 +1,17 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 64;
+window.APP_VERSION = 65;
 window.CHANGELOG = [
+  {
+    version: 65,
+    date: '18/mai',
+    title: '🎯 Escolher figurinhas pra trocar',
+    items: [
+      '👆 Toca em cada figurinha pra ligar/desligar antes de mandar o pedido',
+      '🔢 O botão mostra quantas você selecionou: "📨 Pedir pelo app (3)"',
+      '✨ Vem tudo já marcado — é só desmarcar as que NÃO quer pedir'
+    ]
+  },
   {
     version: 64,
     date: '18/mai',

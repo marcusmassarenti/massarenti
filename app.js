@@ -1776,16 +1776,15 @@
           const country = countryByCode[s.section];
           const flag = country ? country.flag : (s.section === 'cocacola' ? '🥤' : '🏆');
           const name = country ? country.name : s.sectionName;
-          groups[key] = { flag, name, code: s.code, numbers: [] };
+          groups[key] = { flag, name, code: s.code, items: [] };
         }
-        groups[key].numbers.push(s.localNumber);
+        groups[key].items.push({ local: s.localNumber, global: s.number });
       });
-      // Ordena pelos nomes
       return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
     }
     function renderTradeGroup(group) {
-      const nums = group.numbers.sort((a, b) => a - b)
-        .map(n => `<span class="trade-num">${String(n).padStart(2, '0')}</span>`).join('');
+      const nums = group.items.sort((a, b) => a.local - b.local)
+        .map(it => `<span class="trade-num selected" data-global="${it.global}">${String(it.local).padStart(2, '0')}</span>`).join('');
       return `
         <div class="trade-row">
           <span class="trade-row-flag">${group.flag}</span>
@@ -1846,15 +1845,17 @@
             ${theyCanGive.length > 0 ? `
               <div class="trade-block trade-block-get">
                 <div class="trade-block-title">🎁 ${other.name} pode te dar (${theyCanGive.length})</div>
+                <div class="trade-hint">Toca nas figurinhas pra escolher quais pedir 👇</div>
                 <div class="trade-rows">${youGetGroups.map(renderTradeGroup).join('')}</div>
-                <button class="trade-app-btn trade-app-ask" data-action="ask" data-target="${other.name}" data-nums="${theyCanGive.join(',')}">📨 Pedir pelo app</button>
+                <button class="trade-app-btn trade-app-ask" data-action="ask" data-target="${other.name}">📨 Pedir pelo app (${theyCanGive.length})</button>
                 <a class="trade-wa-btn trade-wa-ask" href="${askUrl}" target="_blank" rel="noopener">💬 Pedir no WhatsApp</a>
               </div>` : ''}
             ${iCanGive.length > 0 ? `
               <div class="trade-block trade-block-give">
                 <div class="trade-block-title">✋ Você pode dar pra ${other.name} (${iCanGive.length})</div>
+                <div class="trade-hint">Toca nas figurinhas pra escolher quais oferecer 👇</div>
                 <div class="trade-rows">${youGiveGroups.map(renderTradeGroup).join('')}</div>
-                <button class="trade-app-btn trade-app-offer" data-action="offer" data-target="${other.name}" data-nums="${iCanGive.join(',')}">📨 Avisar pelo app</button>
+                <button class="trade-app-btn trade-app-offer" data-action="offer" data-target="${other.name}">📨 Avisar pelo app (${iCanGive.length})</button>
                 <a class="trade-wa-btn trade-wa-offer" href="${offerUrl}" target="_blank" rel="noopener">📲 Avisar no WhatsApp</a>
               </div>` : ''}
           </div>
@@ -2466,19 +2467,41 @@
         card.classList.toggle('open');
       });
     });
+    // Toggle de seleção de figurinhas dentro do bloco
+    listEl.querySelectorAll('.trade-block .trade-num').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chip.classList.toggle('selected');
+        const block = chip.closest('.trade-block');
+        const selectedCount = block.querySelectorAll('.trade-num.selected').length;
+        const btn = block.querySelector('.trade-app-btn');
+        if (btn) {
+          const isAsk = btn.dataset.action === 'ask';
+          const label = isAsk ? 'Pedir pelo app' : 'Avisar pelo app';
+          btn.textContent = `📨 ${label} (${selectedCount})`;
+          btn.disabled = selectedCount === 0;
+        }
+      });
+    });
     // Liga botões "Pedir/Avisar pelo app"
     listEl.querySelectorAll('.trade-app-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const action = btn.dataset.action; // 'ask' | 'offer'
         const target = btn.dataset.target;
-        const nums = btn.dataset.nums.split(',').map(Number);
+        const block = btn.closest('.trade-block');
+        const nums = Array.from(block.querySelectorAll('.trade-num.selected'))
+          .map(el => Number(el.dataset.global));
+        if (nums.length === 0) {
+          showToast('Escolha pelo menos uma figurinha.', 'error');
+          return;
+        }
         btn.disabled = true;
         const origText = btn.textContent;
         btn.textContent = '⏳ Enviando...';
         const ok = await sendTradeRequest(target, action, nums, '');
         if (ok) {
-          btn.textContent = action === 'ask' ? '✅ Pedido enviado!' : '✅ Aviso enviado!';
+          btn.textContent = action === 'ask' ? `✅ Pedido enviado! (${nums.length})` : `✅ Aviso enviado! (${nums.length})`;
           btn.classList.add('sent');
           showToast(action === 'ask' ? `📨 ${target} vai ver seu pedido ao abrir o app!` : `📨 ${target} vai ver seu aviso ao abrir o app!`, 'success', 2500);
         } else {
