@@ -1847,13 +1847,15 @@
               <div class="trade-block trade-block-get">
                 <div class="trade-block-title">🎁 ${other.name} pode te dar (${theyCanGive.length})</div>
                 <div class="trade-rows">${youGetGroups.map(renderTradeGroup).join('')}</div>
-                <a class="trade-wa-btn trade-wa-ask" href="${askUrl}" target="_blank" rel="noopener">💬 Pedir pra ${friendFirst} no WhatsApp</a>
+                <button class="trade-app-btn trade-app-ask" data-action="ask" data-target="${other.name}" data-nums="${theyCanGive.join(',')}">📨 Pedir pelo app</button>
+                <a class="trade-wa-btn trade-wa-ask" href="${askUrl}" target="_blank" rel="noopener">💬 Pedir no WhatsApp</a>
               </div>` : ''}
             ${iCanGive.length > 0 ? `
               <div class="trade-block trade-block-give">
                 <div class="trade-block-title">✋ Você pode dar pra ${other.name} (${iCanGive.length})</div>
                 <div class="trade-rows">${youGiveGroups.map(renderTradeGroup).join('')}</div>
-                <a class="trade-wa-btn trade-wa-offer" href="${offerUrl}" target="_blank" rel="noopener">📲 Avisar ${friendFirst} no WhatsApp</a>
+                <button class="trade-app-btn trade-app-offer" data-action="offer" data-target="${other.name}" data-nums="${iCanGive.join(',')}">📨 Avisar pelo app</button>
+                <a class="trade-wa-btn trade-wa-offer" href="${offerUrl}" target="_blank" rel="noopener">📲 Avisar no WhatsApp</a>
               </div>` : ''}
           </div>
         </div>
@@ -2462,6 +2464,27 @@
         e.stopPropagation();
         const card = t.closest('.trade-card');
         card.classList.toggle('open');
+      });
+    });
+    // Liga botões "Pedir/Avisar pelo app"
+    listEl.querySelectorAll('.trade-app-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.action; // 'ask' | 'offer'
+        const target = btn.dataset.target;
+        const nums = btn.dataset.nums.split(',').map(Number);
+        btn.disabled = true;
+        const origText = btn.textContent;
+        btn.textContent = '⏳ Enviando...';
+        const ok = await sendTradeRequest(target, action, nums, '');
+        if (ok) {
+          btn.textContent = action === 'ask' ? '✅ Pedido enviado!' : '✅ Aviso enviado!';
+          btn.classList.add('sent');
+          showToast(action === 'ask' ? `📨 ${target} vai ver seu pedido ao abrir o app!` : `📨 ${target} vai ver seu aviso ao abrir o app!`, 'success', 2500);
+        } else {
+          btn.textContent = origText;
+          btn.disabled = false;
+        }
       });
     });
 
@@ -3126,12 +3149,118 @@
     }, 800);
   }
 
+  // ---------- PEDIDOS DE TROCA (in-app) ----------
+  async function sendTradeRequest(toName, type, stickerNumbers, message) {
+    if (!supabaseClient) { showToast('Sem conexão.', 'error'); return false; }
+    const { error } = await supabaseClient
+      .from('trade_requests')
+      .insert({
+        from_name: profileName,
+        to_name: toName,
+        type,
+        sticker_numbers: stickerNumbers,
+        message: message || null
+      });
+    if (error) {
+      console.warn('Erro trade_requests:', error);
+      showToast('Não consegui enviar. Tenta de novo.', 'error');
+      return false;
+    }
+    return true;
+  }
+  async function loadIncomingTradeRequests() {
+    if (!supabaseClient || viewMode) return [];
+    const { data } = await supabaseClient
+      .from('trade_requests')
+      .select('*')
+      .eq('to_name', profileName)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    return data || [];
+  }
+  async function setTradeRequestStatus(id, status) {
+    if (!supabaseClient) return false;
+    const { error } = await supabaseClient
+      .from('trade_requests')
+      .update({ status })
+      .eq('id', id);
+    return !error;
+  }
+  function buildTradeNotificationHtml(reqs) {
+    return reqs.map(r => {
+      const stickers = (r.sticker_numbers || []).map(n => {
+        const s = window.STICKERS.find(x => x.number === n);
+        if (!s) return null;
+        const country = countryByCode[s.section];
+        const flag = country ? country.flag : (s.section === 'cocacola' ? '🥤' : '🏆');
+        const name = country ? country.name : s.sectionName;
+        return { flag, name, num: s.localNumber, section: s.section };
+      }).filter(Boolean);
+      const bySection = {};
+      stickers.forEach(s => {
+        if (!bySection[s.section]) bySection[s.section] = { flag: s.flag, name: s.name, nums: [] };
+        bySection[s.section].nums.push(s.num);
+      });
+      const groupsHtml = Object.values(bySection).map(g =>
+        `<div class="trade-notif-line"><span class="trade-notif-flag">${g.flag}</span><strong>${g.name}</strong>: ${g.nums.sort((a,b)=>a-b).map(n=>String(n).padStart(2,'0')).join(', ')}</div>`
+      ).join('');
+      const title = r.type === 'ask'
+        ? `🙏 <strong>${r.from_name}</strong> tá pedindo figurinhas pra você`
+        : `🎁 <strong>${r.from_name}</strong> tem repetidas que te ajudam!`;
+      const subtitle = r.type === 'ask'
+        ? `Se você tiver essas repetidas, combina a troca!`
+        : `Chama ela pra trocar — você ajuda alguém a completar o álbum 💛`;
+      return `
+        <div class="trade-notif" data-id="${r.id}">
+          <div class="trade-notif-head">${title}</div>
+          <div class="trade-notif-sub">${subtitle}</div>
+          <div class="trade-notif-list">${groupsHtml}</div>
+          <div class="trade-notif-actions">
+            <button class="btn-primary trade-notif-done" data-id="${r.id}">✅ Combinei a troca</button>
+            <button class="btn-secondary trade-notif-dismiss" data-id="${r.id}">Dispensar</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  async function showTradeNotificationsIfAny() {
+    const reqs = await loadIncomingTradeRequests();
+    if (!reqs.length) return;
+    const modal = document.getElementById('tradeNotifModal');
+    const list = document.getElementById('tradeNotifList');
+    if (!modal || !list) return;
+    list.innerHTML = buildTradeNotificationHtml(reqs);
+    modal.hidden = false;
+    list.querySelectorAll('.trade-notif-done').forEach(b => {
+      b.onclick = async () => {
+        const id = b.dataset.id;
+        b.disabled = true;
+        await setTradeRequestStatus(id, 'done');
+        b.closest('.trade-notif').remove();
+        if (!list.querySelector('.trade-notif')) modal.hidden = true;
+        showToast('✨ Troca combinada!', 'success', 2000);
+      };
+    });
+    list.querySelectorAll('.trade-notif-dismiss').forEach(b => {
+      b.onclick = async () => {
+        const id = b.dataset.id;
+        b.disabled = true;
+        await setTradeRequestStatus(id, 'dismissed');
+        b.closest('.trade-notif').remove();
+        if (!list.querySelector('.trade-notif')) modal.hidden = true;
+      };
+    });
+    const close = document.getElementById('closeTradeNotif');
+    if (close) close.onclick = () => { modal.hidden = true; };
+  }
+
   // ---------- INIT ----------
   fillCountryFilter();
   renderDashboard();
   showWelcomeIfNeeded();
   showPixReminderIfNeeded();
   showChangelogIfNew();
+  showTradeNotificationsIfAny();
 
   // Atualiza o painel a cada 60s pra contagem regressiva e jogos do dia ficarem frescos
   setInterval(() => {

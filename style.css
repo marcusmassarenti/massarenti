@@ -2410,10 +2410,30 @@ main { padding: 12px 12px 8px; }
 }
 .trade-block-get { background: rgba(84,169,109,.1); border-left: 3px solid var(--c-success); }
 .trade-block-give { background: rgba(212,68,74,.08); border-left: 3px solid var(--c-red); }
+.trade-app-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, var(--c-gold), #d49a2c);
+  color: var(--c-ink);
+  border: none;
+  font-weight: 900;
+  font-size: 12.5px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(227,178,60,.4);
+  transition: transform .12s, box-shadow .12s;
+}
+.trade-app-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(227,178,60,.5); }
+.trade-app-btn:active:not(:disabled) { transform: translateY(0); }
+.trade-app-btn:disabled { opacity: .7; cursor: default; }
+.trade-app-btn.sent { background: linear-gradient(135deg, #54a96d, #3d8651); color: #fff; }
 .trade-wa-btn {
   display: block;
   text-align: center;
-  margin-top: 8px;
+  margin-top: 6px;
   padding: 9px 12px;
   background: #25D366;
   color: #fff;
@@ -3195,6 +3215,66 @@ main { padding: 12px 12px 8px; }
   border-bottom: 1px dashed rgba(0,0,0,.05);
 }
 .changelog-items li:last-child { border-bottom: none; }
+
+/* === MODAL DE PEDIDOS DE TROCA RECEBIDOS === */
+#tradeNotifModal { z-index: 265; }
+.trade-notif-content {
+  max-width: 460px;
+  background: linear-gradient(180deg, #fef7e6 0%, #fff 60%);
+}
+.trade-notif-content h2 {
+  text-align: center;
+  font-size: 19px !important;
+  margin: 4px 0 6px;
+}
+.trade-notif-intro {
+  text-align: center;
+  font-size: 12px;
+  color: var(--c-muted);
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.trade-notif {
+  background: #fff;
+  border: 2px solid var(--c-gold);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(227,178,60,.25);
+}
+.trade-notif-head {
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.trade-notif-sub {
+  font-size: 11.5px;
+  color: var(--c-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.trade-notif-list {
+  background: var(--c-bg-soft);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.trade-notif-line {
+  font-size: 12px;
+  padding: 3px 0;
+  line-height: 1.35;
+}
+.trade-notif-flag { margin-right: 4px; }
+.trade-notif-actions {
+  display: flex;
+  gap: 8px;
+}
+.trade-notif-actions button {
+  flex: 1;
+  font-size: 12.5px;
+  padding: 9px 8px;
+}
 
 /* === PIX REMINDER MODAL === */
 #pixReminderModal { z-index: 280; }

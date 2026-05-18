@@ -1,7 +1,18 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 63;
+window.APP_VERSION = 64;
 window.CHANGELOG = [
+  {
+    version: 64,
+    date: '18/mai',
+    title: '📨 Pedir troca pelo próprio app',
+    items: [
+      '🟡 Novo botão "Pedir pelo app" em cada amigo: manda um aviso direto, sem precisar do WhatsApp',
+      '📬 Quando o amigo abrir o app, vai aparecer um pop-up com seu pedido (com bandeiras, países e números)',
+      '✅ Ele pode marcar como "Combinei a troca" ou "Dispensar"',
+      '💬 Os botões do WhatsApp continuam disponíveis ao lado'
+    ]
+  },
   {
     version: 63,
     date: '18/mai',
