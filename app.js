@@ -3103,10 +3103,23 @@
         .eq('name', profileName)
         .maybeSingle();
       if (data && data.paid === true) return; // já pagou
-      setTimeout(() => {
+      const tryShow = () => {
         const modal = document.getElementById('pixReminderModal');
-        if (modal && modal.hidden) modal.hidden = false;
-      }, delay);
+        if (!modal || !modal.hidden) return;
+        // Espera outros modais importantes fecharem antes
+        const changelog = document.getElementById('changelogModal');
+        const tradeNotif = document.getElementById('tradeNotifModal');
+        const completion = document.getElementById('completionModal');
+        const blocked = (changelog && !changelog.hidden) ||
+                        (tradeNotif && !tradeNotif.hidden) ||
+                        (completion && !completion.hidden);
+        if (blocked) {
+          setTimeout(tryShow, 1500);
+          return;
+        }
+        modal.hidden = false;
+      };
+      setTimeout(tryShow, delay);
     } catch (e) { /* ignora */ }
   }
   // A cada 5 minutos com o app aberto, mostra de novo (se ainda não pagou)

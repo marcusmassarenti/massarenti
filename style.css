@@ -3232,7 +3232,7 @@ main { padding: 12px 12px 8px; }
 }
 
 /* === CHANGELOG MODAL === */
-#changelogModal { z-index: 260; }
+#changelogModal { z-index: 290; }
 .changelog-content {
   max-width: 440px;
   background: linear-gradient(180deg, #fffceb 0%, #fff 50%);
@@ -3303,7 +3303,7 @@ main { padding: 12px 12px 8px; }
 .changelog-items li:last-child { border-bottom: none; }
 
 /* === MODAL DE PEDIDOS DE TROCA RECEBIDOS === */
-#tradeNotifModal { z-index: 265; }
+#tradeNotifModal { z-index: 285; }
 .trade-notif-content {
   max-width: 460px;
   background: linear-gradient(180deg, #fef7e6 0%, #fff 60%);
