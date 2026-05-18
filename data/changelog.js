@@ -4,7 +4,7 @@ window.APP_VERSION = 67;
 window.CHANGELOG = [
   {
     version: 67,
-    date: '18/mai',
+    date: '17/mai',
     title: '👆 Selecionar figurinhas pra trocar',
     items: [
       '⭕ Por padrão NENHUMA figurinha vem marcada',
@@ -14,7 +14,7 @@ window.CHANGELOG = [
   },
   {
     version: 66,
-    date: '18/mai',
+    date: '17/mai',
     title: '📜 Histórico de atualizações',
     items: [
       '❓ No botão FAQ tem agora uma seção "Histórico de atualizações"',
@@ -23,7 +23,7 @@ window.CHANGELOG = [
   },
   {
     version: 65,
-    date: '18/mai',
+    date: '17/mai',
     title: '🎯 Escolher figurinhas pra trocar',
     items: [
       '👆 Toca em cada figurinha pra ligar/desligar antes de mandar o pedido',
@@ -33,7 +33,7 @@ window.CHANGELOG = [
   },
   {
     version: 64,
-    date: '18/mai',
+    date: '17/mai',
     title: '📨 Pedir troca pelo próprio app',
     items: [
       '🟡 Novo botão "Pedir pelo app" em cada amigo: manda um aviso direto, sem precisar do WhatsApp',
@@ -44,7 +44,7 @@ window.CHANGELOG = [
   },
   {
     version: 63,
-    date: '18/mai',
+    date: '17/mai',
     title: '💬 Pedir troca pelo WhatsApp',
     items: [
       '📲 Em cada amigo da seção "Trocas possíveis" tem um botão pra mandar mensagem fofa no WhatsApp pedindo as figurinhas',
