@@ -1134,6 +1134,75 @@ main { padding: 12px 12px 8px; }
   border-color: var(--c-gold);
   box-shadow: 0 2px 10px rgba(227,178,60,.4);
 }
+/* Indicador de figurinha brilhante (#01 = escudo holográfico) - mesmo quando não colada */
+.sticker.shiny::before {
+  content: '✨';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 13px;
+  z-index: 2;
+  filter: drop-shadow(0 1px 2px rgba(227,178,60,.6));
+  animation: shinyPulse 2s ease-in-out infinite;
+}
+@keyframes shinyPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.2) rotate(15deg); }
+}
+.sticker.shiny:not(.owned) {
+  background: linear-gradient(135deg,
+    rgba(255,247,214,.4) 0%,
+    rgba(255,226,122,.3) 50%,
+    rgba(255,210,74,.4) 100%);
+  border: 2px dashed var(--c-gold);
+}
+/* Holograma animado quando colada */
+.sticker.owned.shiny::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg,
+    transparent 30%,
+    rgba(255,255,255,.5) 50%,
+    transparent 70%);
+  background-size: 200% 100%;
+  animation: hologramShine 3s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: 8px;
+}
+@keyframes hologramShine {
+  0%, 100% { background-position: 200% 0; }
+  50% { background-position: -100% 0; }
+}
+
+/* Figurinha #13 = foto da seleção (especial, com moldura) */
+.sticker.team::before {
+  content: '👥';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 11px;
+  z-index: 2;
+  background: var(--c-ink);
+  color: #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.sticker.team:not(.owned) {
+  border: 2px solid var(--c-ink);
+  background: linear-gradient(135deg, #f8f8f8 0%, #fff 100%);
+}
+.sticker.owned.team {
+  background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+  border: 3px solid var(--c-ink);
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
 /* Figurinhas Coca-Cola - vermelho oficial */
 .sticker[title*="CC-"], .stickers-grid > .sticker:has(.sticker-code:not(:empty)) {
 }

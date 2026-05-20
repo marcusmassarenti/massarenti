@@ -1,7 +1,17 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 68;
+window.APP_VERSION = 69;
 window.CHANGELOG = [
+  {
+    version: 69,
+    date: '20/mai',
+    title: '✨ Figurinhas especiais destacadas',
+    items: [
+      '✨ Figurinha #01 de cada país agora aparece como BRILHANTE (escudo holográfico) com ícone de estrelinhas piscando',
+      '👥 Figurinha #13 é a FOTO DA SELEÇÃO inteira — moldura preta especial com ícone',
+      '🌈 Quando você colar a brilhante, ganha animação de holograma passando'
+    ]
+  },
   {
     version: 68,
     date: '17/mai',

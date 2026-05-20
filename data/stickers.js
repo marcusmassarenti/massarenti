@@ -30,15 +30,20 @@
   }
 
   // ============ SELEÇÕES (21–980) - 48 × 20 figurinhas ============
-  // Por seleção: 1 escudo + 1 foto equipe + 17 jogadores + 1 técnico = 20
+  // Por seleção: 1 escudo brilhante + 11 jogadores + 1 foto equipe + 6 jogadores + 1 técnico = 20
   let num = 21;
   window.COUNTRIES.forEach((country) => {
     for (let i = 1; i <= 20; i++) {
       let type, description;
-      if (i === 1) { type = 'escudo'; description = 'Escudo da seleção'; }
-      else if (i === 2) { type = 'equipe'; description = 'Foto da equipe'; }
+      if (i === 1) { type = 'escudo'; description = 'Escudo da seleção (brilhante)'; }
+      else if (i === 13) { type = 'equipe'; description = 'Foto da seleção'; }
       else if (i === 20) { type = 'técnico'; description = 'Técnico'; }
-      else { type = 'jogador'; description = `Jogador #${i - 2}`; }
+      else {
+        type = 'jogador';
+        // Renumerar a descrição do jogador pulando o 13
+        const playerIdx = i < 13 ? i - 1 : i - 2;
+        description = `Jogador #${playerIdx}`;
+      }
 
       stickers.push({
         number: num++,
@@ -50,7 +55,8 @@
         name: `${country.code}-${pad(i)}`,
         description,
         type,
-        shiny: i === 1
+        shiny: i === 1,
+        team: i === 13
       });
     }
   });

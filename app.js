@@ -657,6 +657,7 @@
     if (s.section === 'cocacola') el.classList.add('cocacola');
     if (count > 0) el.classList.add('owned');
     if (s.shiny) el.classList.add('shiny');
+    if (s.team) el.classList.add('team');
     if (count > 1) {
       el.classList.add('duplicate');
       el.dataset.count = '+' + (count - 1);
