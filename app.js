@@ -1723,7 +1723,7 @@
     const counts = p.counts || {};
     let owned = 0;
     Object.keys(counts).forEach(k => { if (counts[k] > 0) owned++; });
-    const total = 980;
+    const total = window.STICKERS_TOTAL;
     const pct = (owned / total * 100).toFixed(0);
     const dup = Object.keys(counts).reduce((acc, k) => acc + Math.max(0, counts[k] - 1), 0);
     const isMe = p.name === profileName;
@@ -1877,7 +1877,7 @@
     const counts = p.counts || {};
     let owned = 0;
     Object.keys(counts).forEach(k => { if (counts[k] > 0) owned++; });
-    const total = 980;
+    const total = window.STICKERS_TOTAL;
     const pct = (owned / total * 100).toFixed(0);
     const isMe = p.name === profileName;
     return `
@@ -2436,7 +2436,7 @@
       const champOwned = Object.values(champion.counts || {}).filter(v => v > 0).length;
       const podiumBanner = ranked.length >= 2 ? `
         <div class="podium-banner">
-          🏆 <strong>${champion.name}</strong> está liderando com ${champOwned}/980 figurinhas!
+          🏆 <strong>${champion.name}</strong> está liderando com ${champOwned}/${window.STICKERS_TOTAL} figurinhas!
         </div>
       ` : '';
       const podium = ranked.slice(0, 3);
