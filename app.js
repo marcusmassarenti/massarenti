@@ -3083,6 +3083,7 @@ Qualquer dúvida me chama! 👍`,
               <input type="checkbox" data-name="${p.name}" ${p.paid ? 'checked' : ''}>
               <span>R$7</span>
             </label>
+            ${!isMe ? `<button class="ap-delete-btn" data-name="${p.name}" title="Apagar usuário">🗑️</button>` : ''}
           </div>
         `;
       }).join('');
@@ -3098,6 +3099,32 @@ Qualquer dúvida me chama! 👍`,
           } catch (e) {
             showToast('Erro ao salvar: ' + e.message, 'error');
             cb.checked = !paid;
+          }
+        });
+      });
+      // Liga os botões de apagar usuário
+      $$('#allProfilesList .ap-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const name = btn.dataset.name;
+          if (!confirm(`⚠️ Apagar PERMANENTEMENTE o usuário "${name}"?\n\nIsso vai apagar:\n• O perfil dele (figurinhas, placares, PIN)\n• Os grupos onde ele tá\n• Pedidos de troca ligados a ele\n\nNão tem como desfazer!`)) return;
+          if (!confirm(`Tem CERTEZA mesmo? "${name}" vai sumir.`)) return;
+          btn.disabled = true;
+          btn.textContent = '⏳';
+          try {
+            await Promise.all([
+              supabaseClient.from('group_members').delete().eq('profile_name', name),
+              supabaseClient.from('group_requests').delete().eq('profile_name', name),
+              supabaseClient.from('trade_requests').delete().or(`from_name.eq.${name},to_name.eq.${name}`),
+              supabaseClient.from('groups').delete().eq('created_by', name)
+            ]);
+            const { error } = await supabaseClient.from('profiles').delete().eq('name', name);
+            if (error) throw error;
+            showToast(`✅ ${name} foi apagado.`, 'success', 2500);
+            openAllProfilesModal(); // reload
+          } catch (e) {
+            showToast('Erro ao apagar: ' + (e.message || e), 'error');
+            btn.disabled = false;
+            btn.textContent = '🗑️';
           }
         });
       });
