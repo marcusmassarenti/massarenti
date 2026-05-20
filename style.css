@@ -3571,6 +3571,21 @@ main { padding: 12px 12px 8px; }
   transform: scale(1.05);
 }
 .ap-delete-btn:disabled { opacity: .5; cursor: default; }
+.ap-row {
+  transition: opacity .3s, transform .3s, max-height .3s, margin .3s, padding .3s;
+  max-height: 200px;
+  overflow: hidden;
+}
+.ap-row.removing {
+  opacity: 0;
+  transform: translateX(40px);
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  border-width: 0;
+}
 
 /* === WELCOME MODAL === */
 .welcome-content { max-width: 480px; }

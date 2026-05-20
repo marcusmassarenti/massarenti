@@ -3119,8 +3119,19 @@ Qualquer dúvida me chama! 👍`,
             ]);
             const { error } = await supabaseClient.from('profiles').delete().eq('name', name);
             if (error) throw error;
+            // Remove a linha da tela com animação
+            const row = btn.closest('.ap-row');
+            if (row) {
+              row.classList.add('removing');
+              setTimeout(() => row.remove(), 300);
+            }
+            // Atualiza o contador de cadastros (decrementa)
+            const cadastrosBox = document.querySelector('#allProfilesStats .ap-stat-box:first-child .ap-stat-value');
+            if (cadastrosBox) {
+              const n = parseInt(cadastrosBox.textContent, 10);
+              if (!isNaN(n) && n > 0) cadastrosBox.textContent = String(n - 1);
+            }
             showToast(`✅ ${name} foi apagado.`, 'success', 2500);
-            openAllProfilesModal(); // reload
           } catch (e) {
             showToast('Erro ao apagar: ' + (e.message || e), 'error');
             btn.disabled = false;
