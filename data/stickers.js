@@ -25,7 +25,7 @@
       name: `FWC-${pad(i)}`,
       description: introDescriptions[i],
       type: i < 4 ? 'capa' : (i < 7 ? 'mascote' : 'estádio'),
-      shiny: i < 7
+      shiny: true
     });
   }
 
