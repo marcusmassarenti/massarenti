@@ -41,6 +41,9 @@
   function setSelectedGroup(code) {
     selectedGroupCode = code || '';
     localStorage.setItem('caua_selectedGroup', selectedGroupCode);
+    // Reativa chat realtime e contador de não-lidas pro grupo novo
+    if (typeof refreshChatUnreadCount === 'function') refreshChatUnreadCount();
+    if (typeof setupChatRealtime === 'function') setupChatRealtime();
   }
 
   // Salva local SEMPRE imediato. Sincroniza com nuvem com debounce curto.
@@ -3457,6 +3460,200 @@ Qualquer dúvida me chama! 👍`,
     if (close) close.onclick = () => { modal.hidden = true; };
   }
 
+  // ========== CHAT EM TEMPO REAL POR GRUPO ==========
+  let chatSubscription = null;
+  let chatLastSeenAt = null;
+  let chatUnreadCount = 0;
+
+  function chatLastSeenKey(groupCode) {
+    return `caua_chatLastSeen_${profileName}_${groupCode}`;
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function buildChatMessageHtml(msg) {
+    const mine = msg.from_name === profileName;
+    const time = new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const initial = (msg.from_name || '?').charAt(0).toUpperCase();
+    return `
+      <div class="chat-msg ${mine ? 'mine' : 'other'}" data-id="${msg.id}" data-from="${escapeHtml(msg.from_name)}">
+        ${!mine ? `<div class="chat-msg-avatar">${initial}</div>` : ''}
+        <div class="chat-msg-bubble">
+          ${!mine ? `<div class="chat-msg-name">${escapeHtml(msg.from_name)}</div>` : ''}
+          <div class="chat-msg-text">${escapeHtml(msg.message)}</div>
+          <div class="chat-msg-time">${time}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function loadChatMessages() {
+    if (!supabaseClient || !selectedGroupCode) return [];
+    const { data, error } = await supabaseClient
+      .from('chat_messages')
+      .select('*')
+      .eq('group_code', selectedGroupCode)
+      .order('created_at', { ascending: true })
+      .limit(200);
+    if (error) { console.warn('Erro chat:', error); return []; }
+    return data || [];
+  }
+
+  function scrollChatToBottom() {
+    const list = document.getElementById('chatMessages');
+    if (list) list.scrollTop = list.scrollHeight;
+  }
+
+  async function openChatModal() {
+    if (!selectedGroupCode) {
+      showToast('Entre em um grupo primeiro!', 'error');
+      return;
+    }
+    const modal = document.getElementById('chatModal');
+    if (!modal) return;
+    modal.hidden = false;
+    document.getElementById('chatGroupName').textContent = '';
+    // Carrega nome do grupo
+    try {
+      const { data: g } = await supabaseClient.from('groups').select('name').eq('code', selectedGroupCode).maybeSingle();
+      if (g) document.getElementById('chatGroupName').textContent = `· ${g.name}`;
+    } catch (e) { /* ignora */ }
+
+    const list = document.getElementById('chatMessages');
+    list.innerHTML = '<div class="chat-loading">Carregando mensagens...</div>';
+    const msgs = await loadChatMessages();
+    if (msgs.length === 0) {
+      list.innerHTML = '<div class="chat-empty">💬 Ninguém mandou nada ainda. Manda a primeira mensagem!</div>';
+    } else {
+      list.innerHTML = msgs.map(buildChatMessageHtml).join('');
+      setTimeout(scrollChatToBottom, 50);
+      // Marca tudo como lido
+      const latestAt = msgs[msgs.length - 1].created_at;
+      localStorage.setItem(chatLastSeenKey(selectedGroupCode), latestAt);
+    }
+    chatUnreadCount = 0;
+    updateChatBadge();
+    // Foca input
+    setTimeout(() => document.getElementById('chatInput').focus(), 100);
+  }
+
+  async function sendChatMessage(text) {
+    if (!supabaseClient || !selectedGroupCode || !text.trim()) return;
+    const trimmed = text.trim().slice(0, 500);
+    const { error } = await supabaseClient
+      .from('chat_messages')
+      .insert({
+        group_code: selectedGroupCode,
+        from_name: profileName,
+        message: trimmed
+      });
+    if (error) {
+      console.warn('Erro envio chat:', error);
+      showToast('Não consegui enviar. Tenta de novo.', 'error');
+    }
+  }
+
+  function appendChatMessageToUI(msg) {
+    const list = document.getElementById('chatMessages');
+    if (!list) return;
+    // Remove empty placeholder se houver
+    const empty = list.querySelector('.chat-empty, .chat-loading');
+    if (empty) empty.remove();
+    // Evita duplicado (se já existir pelo id)
+    if (list.querySelector(`[data-id="${msg.id}"]`)) return;
+    list.insertAdjacentHTML('beforeend', buildChatMessageHtml(msg));
+    scrollChatToBottom();
+  }
+
+  function updateChatBadge() {
+    const badge = document.getElementById('chatFabBadge');
+    if (!badge) return;
+    if (chatUnreadCount > 0) {
+      badge.textContent = chatUnreadCount > 99 ? '99+' : String(chatUnreadCount);
+      badge.hidden = false;
+    } else {
+      badge.hidden = true;
+    }
+  }
+
+  async function refreshChatUnreadCount() {
+    if (!supabaseClient || !selectedGroupCode || viewMode) {
+      chatUnreadCount = 0;
+      updateChatBadge();
+      return;
+    }
+    const lastSeen = localStorage.getItem(chatLastSeenKey(selectedGroupCode));
+    let q = supabaseClient
+      .from('chat_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('group_code', selectedGroupCode)
+      .neq('from_name', profileName);
+    if (lastSeen) q = q.gt('created_at', lastSeen);
+    const { count } = await q;
+    chatUnreadCount = count || 0;
+    updateChatBadge();
+  }
+
+  function setupChatRealtime() {
+    if (!supabaseClient || !selectedGroupCode || viewMode) return;
+    // Cancela subscription antiga
+    if (chatSubscription) {
+      try { supabaseClient.removeChannel(chatSubscription); } catch (e) { /* ignora */ }
+      chatSubscription = null;
+    }
+    const channel = supabaseClient
+      .channel(`chat:${selectedGroupCode}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `group_code=eq.${selectedGroupCode}`
+      }, (payload) => {
+        const msg = payload.new;
+        if (!msg) return;
+        const modal = document.getElementById('chatModal');
+        const isOpen = modal && !modal.hidden;
+        if (isOpen) {
+          appendChatMessageToUI(msg);
+          localStorage.setItem(chatLastSeenKey(selectedGroupCode), msg.created_at);
+        } else if (msg.from_name !== profileName) {
+          chatUnreadCount++;
+          updateChatBadge();
+          // Toast discreto
+          showToast(`💬 ${msg.from_name}: ${msg.message.slice(0, 40)}${msg.message.length > 40 ? '…' : ''}`, 'success', 3000);
+        }
+      })
+      .subscribe();
+    chatSubscription = channel;
+  }
+
+  function setupChatUI() {
+    if (viewMode) return;
+    const fab = document.getElementById('chatFab');
+    if (!fab) return;
+    fab.hidden = false;
+    fab.onclick = () => openChatModal();
+    document.getElementById('closeChat').onclick = () => {
+      document.getElementById('chatModal').hidden = true;
+    };
+    document.getElementById('chatForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const text = input.value;
+      if (!text.trim()) return;
+      input.value = '';
+      input.focus();
+      await sendChatMessage(text);
+    };
+    // Setup inicial: badge + realtime
+    refreshChatUnreadCount();
+    setupChatRealtime();
+  }
+
   // ---------- INIT ----------
   fillCountryFilter();
   renderDashboard();
@@ -3464,6 +3661,7 @@ Qualquer dúvida me chama! 👍`,
   showPixReminderIfNeeded();
   showChangelogIfNew();
   showTradeNotificationsIfAny();
+  setupChatUI();
 
   // Atualiza o painel a cada 60s pra contagem regressiva e jogos do dia ficarem frescos
   setInterval(() => {

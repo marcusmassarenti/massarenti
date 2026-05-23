@@ -1,7 +1,18 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 69;
+window.APP_VERSION = 70;
 window.CHANGELOG = [
+  {
+    version: 70,
+    date: '20/mai',
+    title: '💬 Chat ao vivo do grupo',
+    items: [
+      '🟢 Conversa em tempo real entre todos os membros do mesmo grupo',
+      '🔘 Botão flutuante 💬 no canto inferior direito',
+      '🔔 Aparece um contador vermelho com quantas mensagens não lidas',
+      '⚡ Mensagens novas aparecem na hora (via Supabase Realtime), sem precisar recarregar'
+    ]
+  },
   {
     version: 69,
     date: '20/mai',

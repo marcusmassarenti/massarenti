@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=Press+Start+2P&family=Fredoka:wght@400;600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=80">
+  <link rel="stylesheet" href="style.css?v=81">
 </head>
 <body class="app-body">
   <header class="app-header">
@@ -161,6 +161,30 @@
       <div class="completion-stats" id="completionStats"></div>
       <button class="btn-primary completion-share" id="shareCompletionBtn">📢 Compartilhar conquista</button>
       <button class="btn-secondary" id="completionOk" style="width:100%;margin-top:8px">🎊 Continuar comemorando</button>
+    </div>
+  </div>
+
+  <!-- Botão flutuante de chat -->
+  <button id="chatFab" class="chat-fab" hidden title="Chat do grupo">
+    <span class="chat-fab-icon">💬</span>
+    <span class="chat-fab-badge" id="chatFabBadge" hidden>0</span>
+  </button>
+
+  <!-- Modal de chat -->
+  <div id="chatModal" class="modal" hidden>
+    <div class="modal-content chat-content">
+      <button class="modal-close" id="closeChat">✕</button>
+      <div class="chat-header">
+        <h2>💬 Chat <span id="chatGroupName"></span></h2>
+        <span class="chat-online-hint">🟢 ao vivo</span>
+      </div>
+      <div id="chatMessages" class="chat-messages">
+        <div class="chat-loading">Carregando mensagens...</div>
+      </div>
+      <form id="chatForm" class="chat-form">
+        <input type="text" id="chatInput" placeholder="Digite uma mensagem..." maxlength="500" autocomplete="off">
+        <button type="submit" id="chatSendBtn">📤</button>
+      </form>
     </div>
   </div>
 
@@ -473,13 +497,13 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=80"></script>
-  <script src="data/countries.js?v=80"></script>
-  <script src="data/stickers.js?v=80"></script>
-  <script src="data/schedule.js?v=80"></script>
-  <script src="data/world-map.js?v=80"></script>
-  <script src="data/changelog.js?v=80"></script>
-  <script src="app.js?v=80"></script>
+  <script src="data/supabase-config.js?v=81"></script>
+  <script src="data/countries.js?v=81"></script>
+  <script src="data/stickers.js?v=81"></script>
+  <script src="data/schedule.js?v=81"></script>
+  <script src="data/world-map.js?v=81"></script>
+  <script src="data/changelog.js?v=81"></script>
+  <script src="app.js?v=81"></script>
   <script>
     // Service Worker - auto-atualiza quando tem versão nova
     if ('serviceWorker' in navigator) {
