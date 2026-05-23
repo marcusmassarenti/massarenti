@@ -1,7 +1,18 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 70;
+window.APP_VERSION = 71;
 window.CHANGELOG = [
+  {
+    version: 71,
+    date: '20/mai',
+    title: '@ Marcar amigo no chat',
+    items: [
+      '⌨️ Digite @ no chat e aparece a lista de membros do grupo pra escolher',
+      '✨ Mensagens com seu nome marcado ficam com moldura dourada',
+      '📣 Notificação especial quando alguém te chama com @',
+      '📱 Tela do chat usa 100% da altura (não corta com o teclado aberto)'
+    ]
+  },
   {
     version: 70,
     date: '20/mai',

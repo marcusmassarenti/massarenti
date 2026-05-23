@@ -3421,12 +3421,26 @@ main { padding: 12px 12px 8px; }
 #chatModal { z-index: 295; }
 .chat-content {
   max-width: 520px;
-  height: 80vh;
-  max-height: 700px;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   padding: 14px;
   gap: 0;
+  border-radius: 0;
+  margin: 0;
+}
+@supports not (height: 100dvh) {
+  .chat-content { height: 100vh; max-height: 100vh; }
+}
+@media (min-width: 600px) {
+  .chat-content {
+    height: 80vh;
+    max-height: 700px;
+    border-radius: 14px;
+    margin: auto;
+  }
 }
 .chat-header {
   display: flex;
@@ -3535,17 +3549,95 @@ main { padding: 12px 12px 8px; }
   gap: 6px;
   margin-top: 8px;
   flex-shrink: 0;
+  position: relative;
+}
+.chat-input-wrap {
+  flex: 1;
+  position: relative;
 }
 .chat-form input {
-  flex: 1;
+  width: 100%;
   padding: 10px 12px;
   font-size: 14px;
   border: 1.5px solid var(--c-border);
   border-radius: 22px;
   outline: none;
   font-family: inherit;
+  box-sizing: border-box;
 }
 .chat-form input:focus { border-color: var(--c-gold); }
+
+/* Autocomplete de @menção */
+.chat-mention-list {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1.5px solid var(--c-gold);
+  border-radius: 10px;
+  box-shadow: 0 -4px 14px rgba(0,0,0,.15);
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+}
+.chat-mention-list[hidden] { display: none !important; }
+.chat-mention-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: #fff;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-ink);
+  text-align: left;
+  transition: background .1s;
+}
+.chat-mention-item:hover { background: var(--c-bg-soft); }
+.chat-mention-item + .chat-mention-item { border-top: 1px solid var(--c-border); }
+.chat-mention-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--c-ink);
+  color: var(--c-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+/* Chip de @menção no texto */
+.chat-mention {
+  background: rgba(74,142,198,.18);
+  color: #2b5d8a;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-weight: 800;
+  font-size: 12px;
+}
+.chat-mention.me {
+  background: var(--c-gold);
+  color: var(--c-ink);
+  box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
+.chat-msg.mine .chat-mention {
+  background: rgba(0,0,0,.18);
+  color: var(--c-ink);
+}
+
+/* Mensagem que te mencionou tem destaque na lista */
+.chat-msg.mentions-me .chat-msg-bubble {
+  border: 2px solid var(--c-gold) !important;
+  box-shadow: 0 0 0 3px rgba(227,178,60,.2);
+}
 .chat-form button {
   width: 44px;
   height: 44px;

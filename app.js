@@ -3464,6 +3464,8 @@ Qualquer dúvida me chama! 👍`,
   let chatSubscription = null;
   let chatLastSeenAt = null;
   let chatUnreadCount = 0;
+  let chatGroupMembers = []; // membros do grupo atual (pra autocomplete de @)
+  let chatMentionState = { active: false, query: '', startPos: 0 };
 
   function chatLastSeenKey(groupCode) {
     return `caua_chatLastSeen_${profileName}_${groupCode}`;
@@ -3475,16 +3477,48 @@ Qualquer dúvida me chama! 👍`,
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // Renderiza @menções como chips destacados no texto
+  function renderMentions(text) {
+    const escaped = escapeHtml(text);
+    // Pega nomes dos membros do grupo atual pra validar menções
+    const memberNames = (chatGroupMembers || []).map(m => m.name);
+    return escaped.replace(/@([\p{L}\p{N}_]+)/gu, (full, name) => {
+      const matched = memberNames.find(n =>
+        n.toLowerCase().replace(/\s+/g, '') === name.toLowerCase() ||
+        n.toLowerCase() === name.toLowerCase()
+      );
+      const isMe = matched && matched === profileName;
+      if (matched) {
+        return `<span class="chat-mention${isMe ? ' me' : ''}" data-name="${escapeHtml(matched)}">@${escapeHtml(matched)}</span>`;
+      }
+      return full; // se não bate com ninguém, deixa o texto original
+    });
+  }
+
+  function messageMentionsMe(text) {
+    if (!text) return false;
+    const me = profileName.toLowerCase();
+    const regex = /@([\p{L}\p{N}_]+)/gu;
+    let m;
+    while ((m = regex.exec(text)) !== null) {
+      const name = m[1].toLowerCase();
+      // Match exato ou com espaços removidos
+      if (name === me || name === me.replace(/\s+/g, '')) return true;
+    }
+    return false;
+  }
+
   function buildChatMessageHtml(msg) {
     const mine = msg.from_name === profileName;
+    const mentionsMe = !mine && messageMentionsMe(msg.message);
     const time = new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const initial = (msg.from_name || '?').charAt(0).toUpperCase();
     return `
-      <div class="chat-msg ${mine ? 'mine' : 'other'}" data-id="${msg.id}" data-from="${escapeHtml(msg.from_name)}">
+      <div class="chat-msg ${mine ? 'mine' : 'other'}${mentionsMe ? ' mentions-me' : ''}" data-id="${msg.id}" data-from="${escapeHtml(msg.from_name)}">
         ${!mine ? `<div class="chat-msg-avatar">${initial}</div>` : ''}
         <div class="chat-msg-bubble">
           ${!mine ? `<div class="chat-msg-name">${escapeHtml(msg.from_name)}</div>` : ''}
-          <div class="chat-msg-text">${escapeHtml(msg.message)}</div>
+          <div class="chat-msg-text">${renderMentions(msg.message)}</div>
           <div class="chat-msg-time">${time}</div>
         </div>
       </div>
@@ -3517,11 +3551,15 @@ Qualquer dúvida me chama! 👍`,
     if (!modal) return;
     modal.hidden = false;
     document.getElementById('chatGroupName').textContent = '';
-    // Carrega nome do grupo
+    // Carrega nome do grupo + membros (pra autocomplete de @)
     try {
-      const { data: g } = await supabaseClient.from('groups').select('name').eq('code', selectedGroupCode).maybeSingle();
+      const [{ data: g }, members] = await Promise.all([
+        supabaseClient.from('groups').select('name').eq('code', selectedGroupCode).maybeSingle(),
+        loadGroupMembers(selectedGroupCode)
+      ]);
       if (g) document.getElementById('chatGroupName').textContent = `· ${g.name}`;
-    } catch (e) { /* ignora */ }
+      chatGroupMembers = members || [];
+    } catch (e) { chatGroupMembers = []; }
 
     const list = document.getElementById('chatMessages');
     list.innerHTML = '<div class="chat-loading">Carregando mensagens...</div>';
@@ -3623,12 +3661,72 @@ Qualquer dúvida me chama! 👍`,
         } else if (msg.from_name !== profileName) {
           chatUnreadCount++;
           updateChatBadge();
-          // Toast discreto
-          showToast(`💬 ${msg.from_name}: ${msg.message.slice(0, 40)}${msg.message.length > 40 ? '…' : ''}`, 'success', 3000);
+          // Se TE mencionaram, toast mais forte
+          if (messageMentionsMe(msg.message)) {
+            showToast(`📣 ${msg.from_name} te chamou: ${msg.message.slice(0, 60)}${msg.message.length > 60 ? '…' : ''}`, 'success', 5000);
+          } else {
+            showToast(`💬 ${msg.from_name}: ${msg.message.slice(0, 40)}${msg.message.length > 40 ? '…' : ''}`, 'success', 3000);
+          }
         }
       })
       .subscribe();
     chatSubscription = channel;
+  }
+
+  // Detecta @ no input e mostra lista de membros pra autocompletar
+  function handleChatInputMention() {
+    const input = document.getElementById('chatInput');
+    const list = document.getElementById('chatMentionList');
+    if (!input || !list) return;
+    const pos = input.selectionStart || 0;
+    const textBefore = input.value.slice(0, pos);
+    // Encontra o último @ antes do cursor (não pode ter espaço entre @ e o cursor)
+    const match = textBefore.match(/@([\p{L}\p{N}_]*)$/u);
+    if (!match) {
+      list.hidden = true;
+      chatMentionState.active = false;
+      return;
+    }
+    const query = match[1].toLowerCase();
+    const startPos = pos - match[0].length;
+    chatMentionState = { active: true, query, startPos };
+    // Filtra membros (exclui o próprio usuário)
+    const candidates = (chatGroupMembers || [])
+      .filter(m => m.name !== profileName)
+      .filter(m => {
+        const n = m.name.toLowerCase();
+        return n.startsWith(query) || n.replace(/\s+/g, '').startsWith(query);
+      })
+      .slice(0, 6);
+    if (candidates.length === 0) {
+      list.hidden = true;
+      return;
+    }
+    list.innerHTML = candidates.map(m => `
+      <button type="button" class="chat-mention-item" data-name="${escapeHtml(m.name)}">
+        <span class="chat-mention-avatar">${m.name.charAt(0).toUpperCase()}</span>
+        <span class="chat-mention-name">${escapeHtml(m.name)}</span>
+      </button>
+    `).join('');
+    list.hidden = false;
+    list.querySelectorAll('.chat-mention-item').forEach(btn => {
+      btn.onclick = () => insertMention(btn.dataset.name);
+    });
+  }
+
+  function insertMention(name) {
+    const input = document.getElementById('chatInput');
+    const list = document.getElementById('chatMentionList');
+    if (!input) return;
+    const before = input.value.slice(0, chatMentionState.startPos);
+    const after = input.value.slice(input.selectionStart || 0);
+    const mentionText = `@${name.replace(/\s+/g, '')} `;
+    input.value = before + mentionText + after;
+    const newPos = before.length + mentionText.length;
+    input.setSelectionRange(newPos, newPos);
+    input.focus();
+    if (list) list.hidden = true;
+    chatMentionState.active = false;
   }
 
   function setupChatUI() {
@@ -3639,6 +3737,8 @@ Qualquer dúvida me chama! 👍`,
     fab.onclick = () => openChatModal();
     document.getElementById('closeChat').onclick = () => {
       document.getElementById('chatModal').hidden = true;
+      const list = document.getElementById('chatMentionList');
+      if (list) list.hidden = true;
     };
     document.getElementById('chatForm').onsubmit = async (e) => {
       e.preventDefault();
@@ -3646,9 +3746,28 @@ Qualquer dúvida me chama! 👍`,
       const text = input.value;
       if (!text.trim()) return;
       input.value = '';
+      const list = document.getElementById('chatMentionList');
+      if (list) list.hidden = true;
       input.focus();
       await sendChatMessage(text);
     };
+    // Autocomplete de @menção
+    const input = document.getElementById('chatInput');
+    if (input) {
+      input.addEventListener('input', handleChatInputMention);
+      input.addEventListener('keyup', handleChatInputMention);
+      input.addEventListener('blur', () => {
+        // Pequeno delay pra permitir clique no item antes de esconder
+        setTimeout(() => {
+          const list = document.getElementById('chatMentionList');
+          if (list) list.hidden = true;
+        }, 200);
+      });
+      // Mantém scroll na última mensagem quando o teclado abre
+      input.addEventListener('focus', () => {
+        setTimeout(scrollChatToBottom, 300);
+      });
+    }
     // Setup inicial: badge + realtime
     refreshChatUnreadCount();
     setupChatRealtime();
