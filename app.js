@@ -3757,18 +3757,31 @@ Qualquer dúvida me chama! 👍`,
       input.addEventListener('input', handleChatInputMention);
       input.addEventListener('keyup', handleChatInputMention);
       input.addEventListener('blur', () => {
-        // Pequeno delay pra permitir clique no item antes de esconder
         setTimeout(() => {
           const list = document.getElementById('chatMentionList');
           if (list) list.hidden = true;
         }, 200);
       });
-      // Mantém scroll na última mensagem quando o teclado abre
       input.addEventListener('focus', () => {
         setTimeout(scrollChatToBottom, 300);
       });
     }
-    // Setup inicial: badge + realtime
+    // Ajuste do tamanho do chat conforme o teclado abre/fecha (Visual Viewport API)
+    if (window.visualViewport) {
+      const adjust = () => {
+        const modal = document.getElementById('chatModal');
+        const content = modal && modal.querySelector('.chat-content');
+        if (!content || modal.hidden) return;
+        const vv = window.visualViewport;
+        // Limita o chat à altura visível real (menos um respiro de 20px no topo)
+        const maxH = Math.max(280, vv.height - 20);
+        content.style.height = Math.min(520, maxH) + 'px';
+        content.style.maxHeight = maxH + 'px';
+        scrollChatToBottom();
+      };
+      window.visualViewport.addEventListener('resize', adjust);
+      window.visualViewport.addEventListener('scroll', adjust);
+    }
     refreshChatUnreadCount();
     setupChatRealtime();
   }

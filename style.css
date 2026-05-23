@@ -3422,21 +3422,21 @@ main { padding: 12px 12px 8px; }
 .chat-content {
   max-width: 460px;
   width: 100%;
-  height: 70dvh;
-  max-height: 560px;
+  height: 55dvh;
+  max-height: 520px;
   display: flex;
   flex-direction: column;
   padding: 12px;
   gap: 0;
   border-radius: 14px 14px 0 0;
 }
-@supports not (height: 70dvh) {
-  .chat-content { height: 70vh; max-height: 560px; }
+@supports not (height: 55dvh) {
+  .chat-content { height: 55vh; max-height: 520px; }
 }
 @media (min-width: 600px) {
   .chat-content {
-    height: 65vh;
-    max-height: 560px;
+    height: 60vh;
+    max-height: 520px;
     border-radius: 14px;
     margin: auto;
   }
