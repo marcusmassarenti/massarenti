@@ -3097,8 +3097,15 @@ Qualquer dúvida me chama! 👍`,
           const name = cb.dataset.name;
           const paid = cb.checked;
           try {
-            await supabaseClient.from('profiles').update({ paid }).eq('name', name);
-            showToast(paid ? `✓ ${name} marcado como PAGOU` : `${name} marcado como NÃO pagou`, 'success', 2000);
+            const update = paid
+              ? { paid: true, paid_thanks_seen: false }
+              : { paid: false };
+            await supabaseClient.from('profiles').update(update).eq('name', name);
+            if (paid) {
+              showToast(`💛 ${name} marcado como pago! Mensagem de agradecimento será mostrada na próxima entrada dele(a).`, 'success', 3500);
+            } else {
+              showToast(`${name} marcado como NÃO pagou`, 'success', 2000);
+            }
             openAllProfilesModal(); // reload
           } catch (e) {
             showToast('Erro ao salvar: ' + e.message, 'error');
@@ -3239,6 +3246,43 @@ Qualquer dúvida me chama! 👍`,
   }
 
   // Lembrete de PIX: ao abrir o app + a cada 5min enquanto estiver aberto (exceto admin/já pagou)
+  // Mostra modal de agradecimento quando o admin marcou paid=true e usuário ainda não viu
+  async function showPaidThanksIfNeeded() {
+    if (!supabaseClient || viewMode || isAdminUser) return;
+    try {
+      const { data } = await supabaseClient
+        .from('profiles')
+        .select('paid, paid_thanks_seen')
+        .eq('name', profileName)
+        .maybeSingle();
+      if (!data || !data.paid || data.paid_thanks_seen) return;
+      // Espera um pouco pra não conflitar com outros modais
+      const tryShow = () => {
+        const blocked = ['changelogModal', 'tradeNotifModal', 'completionModal', 'welcomeModal']
+          .some(id => {
+            const el = document.getElementById(id);
+            return el && !el.hidden;
+          });
+        if (blocked) { setTimeout(tryShow, 1500); return; }
+        const modal = document.getElementById('paidThanksModal');
+        if (!modal) return;
+        modal.hidden = false;
+        const close = async () => {
+          modal.hidden = true;
+          try {
+            await supabaseClient
+              .from('profiles')
+              .update({ paid_thanks_seen: true })
+              .eq('name', profileName);
+          } catch (e) { /* ignora */ }
+        };
+        document.getElementById('closePaidThanks').onclick = close;
+        document.getElementById('paidThanksOk').onclick = close;
+      };
+      setTimeout(tryShow, 1800);
+    } catch (e) { /* ignora */ }
+  }
+
   async function showPixReminderIfNeeded(delay = 1500) {
     if (!supabaseClient || viewMode || isAdminUser) return;
     try {
@@ -3793,6 +3837,7 @@ Qualquer dúvida me chama! 👍`,
   showPixReminderIfNeeded();
   showChangelogIfNew();
   showTradeNotificationsIfAny();
+  showPaidThanksIfNeeded();
   setupChatUI();
 
   // Atualiza o painel a cada 60s pra contagem regressiva e jogos do dia ficarem frescos

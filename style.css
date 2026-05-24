@@ -3374,6 +3374,40 @@ main { padding: 12px 12px 8px; }
 /* === MODAL DE PEDIDOS DE TROCA RECEBIDOS === */
 #tradeNotifModal { z-index: 285; }
 
+/* === MODAL AGRADECIMENTO PIX === */
+#paidThanksModal { z-index: 305; }
+.paid-thanks-content {
+  max-width: 380px;
+  text-align: center;
+  background: linear-gradient(180deg, #fffceb 0%, #fff 60%);
+  padding: 24px;
+}
+.paid-thanks-content h2 {
+  background: linear-gradient(90deg, var(--c-gold), #d49a2c, var(--c-red));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 26px !important;
+  margin: 4px 0 12px;
+}
+.paid-thanks-heart {
+  font-size: 64px;
+  animation: heartBeat 1.4s ease-in-out infinite;
+  margin-top: 6px;
+}
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  20% { transform: scale(1.15); }
+  40% { transform: scale(1.05); }
+}
+.paid-thanks-msg {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--c-ink);
+  margin: 4px 0 18px;
+}
+.paid-thanks-msg strong { color: var(--c-red); }
+
 /* === CHAT EM TEMPO REAL === */
 .chat-fab {
   position: fixed;

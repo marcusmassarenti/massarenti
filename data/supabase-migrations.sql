@@ -52,3 +52,11 @@ create policy "chat_messages_delete" on chat_messages for delete using (true);
 
 -- Habilitar Realtime (publishar mudanças via websocket)
 alter publication supabase_realtime add table chat_messages;
+
+-- ============ AGRADECIMENTO PIX ============
+-- Marca se o usuário já viu a mensagem de "obrigado" depois de pagar.
+-- Default true: usuários antigos NÃO ganham o popup retroativo.
+-- Quando admin marca paid=true, o app também seta paid_thanks_seen=false
+-- pra disparar o modal pro usuário na próxima entrada.
+
+alter table profiles add column if not exists paid_thanks_seen boolean default true;
