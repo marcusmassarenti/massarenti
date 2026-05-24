@@ -3097,18 +3097,31 @@ Qualquer dúvida me chama! 👍`,
           const name = cb.dataset.name;
           const paid = cb.checked;
           try {
-            const update = paid
-              ? { paid: true, paid_thanks_seen: false }
-              : { paid: false };
-            await supabaseClient.from('profiles').update(update).eq('name', name);
+            // Atualiza paid primeiro (essa coluna sempre existe)
+            const { error } = await supabaseClient
+              .from('profiles')
+              .update({ paid })
+              .eq('name', name);
+            if (error) throw error;
+            // Tenta marcar pra exibir agradecimento (coluna pode não existir ainda)
             if (paid) {
-              showToast(`💛 ${name} marcado como pago! Mensagem de agradecimento será mostrada na próxima entrada dele(a).`, 'success', 3500);
+              try {
+                await supabaseClient
+                  .from('profiles')
+                  .update({ paid_thanks_seen: false })
+                  .eq('name', name);
+              } catch (e2) {
+                console.warn('paid_thanks_seen não existe (rode a migration):', e2);
+              }
+            }
+            if (paid) {
+              showToast(`💛 ${name} marcado como pago!`, 'success', 2500);
             } else {
               showToast(`${name} marcado como NÃO pagou`, 'success', 2000);
             }
             openAllProfilesModal(); // reload
           } catch (e) {
-            showToast('Erro ao salvar: ' + e.message, 'error');
+            showToast('Erro ao salvar: ' + (e.message || e), 'error');
             cb.checked = !paid;
           }
         });
