@@ -11,6 +11,37 @@
   const themeKey = `caua_theme_${profileName}`;
   const storedPin = localStorage.getItem('caua_currentPin') || '';
 
+  // ---------- PIN / RPC HELPERS ----------
+  // Mesmo hash usado no index.html (SHA-256 com salt 'caua-album-2026:')
+  async function hashPinValue(pin) {
+    if (!window.crypto || !crypto.subtle) return pin;
+    const enc = new TextEncoder().encode('caua-album-2026:' + pin);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  let _cachedPinHash = null;
+  async function getMyPinHash() {
+    if (_cachedPinHash) return _cachedPinHash;
+    const pin = localStorage.getItem('caua_currentPin');
+    if (!pin) return null;
+    _cachedPinHash = await hashPinValue(pin);
+    return _cachedPinHash;
+  }
+  // Wrapper que injeta automaticamente p_name + p_pin_hash do usuário logado
+  async function rpc(fn, extra = {}) {
+    if (!supabaseClient) return { data: null, error: { message: 'offline' } };
+    const pinHash = await getMyPinHash();
+    if (!pinHash) return { data: null, error: { message: 'sem pin local' } };
+    return await supabaseClient.rpc(fn, { p_name: profileName, p_pin_hash: pinHash, ...extra });
+  }
+  // RPC admin (passa p_admin_name + p_admin_pin_hash em vez de p_name)
+  async function rpcAdmin(fn, extra = {}) {
+    if (!supabaseClient) return { data: null, error: { message: 'offline' } };
+    const pinHash = await getMyPinHash();
+    if (!pinHash) return { data: null, error: { message: 'sem pin local' } };
+    return await supabaseClient.rpc(fn, { p_admin_name: profileName, p_admin_pin_hash: pinHash, ...extra });
+  }
+
   // Cliente Supabase
   let supabaseClient = null;
   try {
@@ -68,14 +99,10 @@
     if (!_hasPendingSync && !immediate) return;
     setCloudStatus('syncing', 'Salvando na nuvem...');
     try {
-      const { error } = await supabaseClient
-        .from('profiles')
-        .update({
-          counts: state.counts,
-          scores: state.scores,
-          updated_at: new Date().toISOString()
-        })
-        .eq('name', profileName);
+      const { error } = await rpc('save_progress', {
+        p_counts: state.counts,
+        p_scores: state.scores
+      });
       if (error) {
         console.warn('Sync error:', error);
         setCloudStatus('error', 'Erro ao salvar: ' + error.message);
@@ -113,7 +140,7 @@
     try {
       const { data, error } = await supabaseClient
         .from('profiles')
-        .select('*')
+        .select('name, counts, scores, updated_at, paid, paid_thanks_seen')
         .eq('name', profileName)
         .maybeSingle();
       if (error) { console.warn(error); setCloudStatus('error', 'Erro: ' + error.message); return false; }
@@ -221,44 +248,15 @@
   }
   async function requestJoinGroup(code) {
     if (!supabaseClient) return { ok: false, error: 'Sem conexão' };
-    // Entra direto no grupo (sem aprovação)
-    const { error } = await supabaseClient
-      .from('group_members')
-      .insert({ group_code: code, profile_name: profileName });
-    if (error && !String(error.message).toLowerCase().includes('duplicate')) {
-      return { ok: false, error: error.message };
-    }
+    const { error } = await rpc('join_group', { p_group_code: code });
+    if (error) return { ok: false, error: error.message };
     return { ok: true };
   }
   async function cancelJoinRequest(code) {
     // Mantido pra compatibilidade — agora apenas sai do grupo
     return leaveGroup(code);
   }
-  async function approveRequest(groupCode, name) {
-    if (!supabaseClient) return false;
-    // Adiciona como membro + remove da request
-    const { error: e1 } = await supabaseClient
-      .from('group_members')
-      .insert({ group_code: groupCode, profile_name: name });
-    if (e1 && !String(e1.message).toLowerCase().includes('duplicate')) {
-      console.warn(e1); return false;
-    }
-    await supabaseClient
-      .from('group_requests')
-      .delete()
-      .eq('group_code', groupCode)
-      .eq('profile_name', name);
-    return true;
-  }
-  async function denyRequest(groupCode, name) {
-    if (!supabaseClient) return false;
-    const { error } = await supabaseClient
-      .from('group_requests')
-      .delete()
-      .eq('group_code', groupCode)
-      .eq('profile_name', name);
-    return !error;
-  }
+  // approveRequest/denyRequest removidos — sistema de aprovação foi descontinuado
   async function loadGroupMembers(groupCode) {
     if (!supabaseClient) return [];
     try {
@@ -275,19 +273,12 @@
     if (!supabaseClient) return null;
     const trimmed = (name || '').trim();
     if (!trimmed) return null;
-    // Tenta criar com código único
-    for (let i = 0; i < 5; i++) {
-      const code = generateGroupCode();
-      const { error: groupErr } = await supabaseClient
-        .from('groups')
-        .insert({ code, name: trimmed, created_by: profileName });
-      if (!groupErr) {
-        // Adiciona o criador como membro
-        await supabaseClient.from('group_members').insert({ group_code: code, profile_name: profileName });
-        return { code, name: trimmed };
-      }
-    }
-    return null;
+    const { data, error } = await rpc('create_group', { p_group_name: trimmed });
+    if (error) { console.warn('create_group:', error); return null; }
+    // RPC retorna table — pega primeira linha
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+    return { code: row.code, name: row.name };
   }
   async function joinGroup(code) {
     if (!supabaseClient) return { ok: false, error: 'Sem conexão' };
@@ -295,21 +286,13 @@
     if (!trimmed) return { ok: false, error: 'Código vazio' };
     const { data: g } = await supabaseClient.from('groups').select('*').eq('code', trimmed).maybeSingle();
     if (!g) return { ok: false, error: 'Grupo não encontrado. Confira o código.' };
-    const { error } = await supabaseClient
-      .from('group_members')
-      .insert({ group_code: trimmed, profile_name: profileName });
-    if (error && !String(error.message).toLowerCase().includes('duplicate')) {
-      return { ok: false, error: error.message };
-    }
+    const { error } = await rpc('join_group', { p_group_code: trimmed });
+    if (error) return { ok: false, error: error.message };
     return { ok: true, group: g };
   }
   async function leaveGroup(code) {
     if (!supabaseClient) return false;
-    const { error } = await supabaseClient
-      .from('group_members')
-      .delete()
-      .eq('group_code', code)
-      .eq('profile_name', profileName);
+    const { error } = await rpc('leave_group', { p_group_code: code });
     return !error;
   }
   function loadTheme() {
@@ -3250,23 +3233,8 @@ Qualquer dúvida me chama! 👍`,
           const name = cb.dataset.name;
           const paid = cb.checked;
           try {
-            // Atualiza paid primeiro (essa coluna sempre existe)
-            const { error } = await supabaseClient
-              .from('profiles')
-              .update({ paid })
-              .eq('name', name);
+            const { error } = await rpcAdmin('admin_set_paid', { p_target: name, p_paid: paid });
             if (error) throw error;
-            // Tenta marcar pra exibir agradecimento (coluna pode não existir ainda)
-            if (paid) {
-              try {
-                await supabaseClient
-                  .from('profiles')
-                  .update({ paid_thanks_seen: false })
-                  .eq('name', name);
-              } catch (e2) {
-                console.warn('paid_thanks_seen não existe (rode a migration):', e2);
-              }
-            }
             if (paid) {
               showToast(`💛 ${name} marcado como pago!`, 'success', 2500);
             } else {
@@ -3288,13 +3256,7 @@ Qualquer dúvida me chama! 👍`,
           btn.disabled = true;
           btn.textContent = '⏳';
           try {
-            await Promise.all([
-              supabaseClient.from('group_members').delete().eq('profile_name', name),
-              supabaseClient.from('group_requests').delete().eq('profile_name', name),
-              supabaseClient.from('trade_requests').delete().or(`from_name.eq.${name},to_name.eq.${name}`),
-              supabaseClient.from('groups').delete().eq('created_by', name)
-            ]);
-            const { error } = await supabaseClient.from('profiles').delete().eq('name', name);
+            const { error } = await rpcAdmin('admin_delete_user', { p_target: name });
             if (error) throw error;
             // Remove a linha da tela com animação
             const row = btn.closest('.ap-row');
@@ -3435,12 +3397,7 @@ Qualquer dúvida me chama! 👍`,
         modal.hidden = false;
         const close = async () => {
           modal.hidden = true;
-          try {
-            await supabaseClient
-              .from('profiles')
-              .update({ paid_thanks_seen: true })
-              .eq('name', profileName);
-          } catch (e) { /* ignora */ }
+          try { await rpc('mark_paid_thanks_seen'); } catch (e) { /* ignora */ }
         };
         document.getElementById('closePaidThanks').onclick = close;
         document.getElementById('paidThanksOk').onclick = close;
@@ -3568,15 +3525,12 @@ Qualquer dúvida me chama! 👍`,
   // ---------- PEDIDOS DE TROCA (in-app) ----------
   async function sendTradeRequest(toName, type, stickerNumbers, message) {
     if (!supabaseClient) { showToast('Sem conexão.', 'error'); return false; }
-    const { error } = await supabaseClient
-      .from('trade_requests')
-      .insert({
-        from_name: profileName,
-        to_name: toName,
-        type,
-        sticker_numbers: stickerNumbers,
-        message: message || null
-      });
+    const { error } = await rpc('send_trade_request', {
+      p_to_name: toName,
+      p_type: type,
+      p_sticker_numbers: stickerNumbers,
+      p_message: message || null
+    });
     if (error) {
       console.warn('Erro trade_requests:', error);
       showToast('Não consegui enviar. Tenta de novo.', 'error');
@@ -3596,10 +3550,7 @@ Qualquer dúvida me chama! 👍`,
   }
   async function setTradeRequestStatus(id, status) {
     if (!supabaseClient) return false;
-    const { error } = await supabaseClient
-      .from('trade_requests')
-      .update({ status })
-      .eq('id', id);
+    const { error } = await rpc('update_trade_status', { p_request_id: id, p_status: status });
     return !error;
   }
   function buildTradeNotificationHtml(reqs) {
@@ -3841,13 +3792,10 @@ Qualquer dúvida me chama! 👍`,
   async function sendChatMessage(text) {
     if (!supabaseClient || !activeChatChannel || !text.trim()) return;
     const trimmed = text.trim().slice(0, 500);
-    const { error } = await supabaseClient
-      .from('chat_messages')
-      .insert({
-        group_code: activeChatChannel,
-        from_name: profileName,
-        message: trimmed
-      });
+    const { error } = await rpc('send_chat_message', {
+      p_group_code: activeChatChannel,
+      p_message: trimmed
+    });
     if (error) {
       console.warn('Erro envio chat:', error);
       showToast('Não consegui enviar. Tenta de novo.', 'error');

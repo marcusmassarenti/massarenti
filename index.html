@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/svg+xml" href="assets/icon.svg?v=91">
-  <link rel="apple-touch-icon" href="assets/icon.svg?v=91">
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg?v=92">
+  <link rel="apple-touch-icon" href="assets/icon.svg?v=92">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Álbum Cauã">
   <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=91">
+  <link rel="stylesheet" href="style.css?v=92">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -140,9 +140,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=91"></script>
-  <script src="data/countries.js?v=91"></script>
-  <script src="data/stickers.js?v=91"></script>
+  <script src="data/supabase-config.js?v=92"></script>
+  <script src="data/countries.js?v=92"></script>
+  <script src="data/stickers.js?v=92"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -419,36 +419,32 @@
 
       try {
         if (supabaseClient) {
-          // Modo nuvem (família)
+          // Modo nuvem (família) — usa RPCs (coluna pin não é mais legível pelo anon)
+          const hashedPin = await hashPin(pin);
+          // Confere se o nome já existe (só campos públicos)
           const { data: existing, error: fetchErr } = await supabaseClient
             .from('profiles')
-            .select('*')
+            .select('name')
             .eq('name', name)
             .maybeSingle();
-
           if (fetchErr) throw fetchErr;
-          const hashedPin = await hashPin(pin);
 
           if (!existing) {
-            // Novo perfil - salva PIN hasheado
-            const { error: insertErr } = await supabaseClient
-              .from('profiles')
-              .insert({ name, pin: hashedPin, counts: {}, scores: {} });
-            if (insertErr) throw insertErr;
+            // Novo perfil — chama RPC pra criar
+            const { error: regErr } = await supabaseClient
+              .rpc('register_profile', { p_name: name, p_pin_hash: hashedPin });
+            if (regErr) throw regErr;
           } else {
-            const ok = await pinMatches(existing.pin, pin);
+            // Perfil existe — valida PIN via RPC
+            const { data: ok, error: loginErr } = await supabaseClient
+              .rpc('login_check', { p_name: name, p_pin_hash: hashedPin });
+            if (loginErr) throw loginErr;
             if (!ok) {
               errorBox.textContent = 'PIN incorreto para este perfil.';
               errorBox.hidden = false;
               submitBtn.textContent = originalText;
               submitBtn.disabled = false;
               return;
-            }
-            // Migração: se PIN estiver em texto puro (4 chars), atualiza pra hash
-            if (existing.pin && existing.pin.length === 4) {
-              try {
-                await supabaseClient.from('profiles').update({ pin: hashedPin }).eq('name', name);
-              } catch (e) { /* não crítico */ }
             }
           }
           saveLocalProfile(name);

@@ -1,7 +1,17 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 73;
+window.APP_VERSION = 74;
 window.CHANGELOG = [
+  {
+    version: 74,
+    date: '25/mai',
+    title: '🔒 Segurança reforçada',
+    items: [
+      '🛡️ PIN nunca mais sai do servidor (login agora valida no Supabase)',
+      '🔐 Todas as escritas (figurinhas, grupos, trocas, chat) exigem PIN',
+      '👮 Painel admin só funciona se o PIN do Cauã bater'
+    ]
+  },
   {
     version: 73,
     date: '25/mai',
