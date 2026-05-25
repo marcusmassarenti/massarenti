@@ -1,7 +1,17 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 71;
+window.APP_VERSION = 72;
 window.CHANGELOG = [
+  {
+    version: 72,
+    date: '25/mai',
+    title: '✨ Trocas melhoradas',
+    items: [
+      '🥇 Figurinhas brilhantes (01) ficam douradas no painel de trocas',
+      '💬 Selecione as figurinhas do amigo e avise direto no chat',
+      '🔒 Seleções e cards abertos não somem mais ao atualizar'
+    ]
+  },
   {
     version: 71,
     date: '20/mai',

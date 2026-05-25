@@ -1788,7 +1788,12 @@
     }
     function renderTradeGroup(group) {
       const nums = group.items.sort((a, b) => a.local - b.local)
-        .map(it => `<span class="trade-num" data-global="${it.global}">${String(it.local).padStart(2, '0')}</span>`).join('');
+        .map(it => {
+          const s = window.STICKERS.find(x => x.number === it.global);
+          const shinyClass = s && s.shiny ? ' shiny' : '';
+          const badge = s && s.shiny ? '<span class="trade-num-shiny">✨</span>' : '';
+          return `<span class="trade-num${shinyClass}" data-global="${it.global}">${badge}${String(it.local).padStart(2, '0')}</span>`;
+        }).join('');
       return `
         <div class="trade-row">
           <span class="trade-row-flag">${group.flag}</span>
@@ -1852,6 +1857,7 @@
                 <div class="trade-hint">Toca nas figurinhas pra escolher quais pedir 👇</div>
                 <div class="trade-rows">${youGetGroups.map(renderTradeGroup).join('')}</div>
                 <button class="trade-app-btn trade-app-ask" data-action="ask" data-target="${other.name}" disabled>📨 Pedir pelo app (0)</button>
+                <button class="trade-chat-btn" data-friend="${other.name}" disabled>💬 Avisar no chat (0)</button>
                 <a class="trade-wa-btn trade-wa-ask" href="${askUrl}" target="_blank" rel="noopener">💬 Pedir no WhatsApp</a>
               </div>` : ''}
             ${iCanGive.length > 0 ? `
@@ -2458,6 +2464,25 @@
           </div>
         </details>
       ` : '';
+      // Preserva estado do painel de trocas antes de reconstruir DOM
+      const tradeState = {};
+      listEl.querySelectorAll('.trade-card').forEach(card => {
+        const toggle = card.querySelector('.trade-card-toggle');
+        const name = toggle ? toggle.querySelector('.trade-name')?.textContent?.trim() : null;
+        if (!name) return;
+        tradeState[name] = { open: card.classList.contains('open'), selections: {} };
+        card.querySelectorAll('.trade-block').forEach(block => {
+          const blockType = block.classList.contains('trade-block-get') ? 'get' : 'give';
+          const selected = Array.from(block.querySelectorAll('.trade-num.selected'))
+            .map(el => el.dataset.global);
+          tradeState[name][blockType] = selected;
+          const appBtn = block.querySelector('.trade-app-btn');
+          if (appBtn && appBtn.classList.contains('sent')) {
+            tradeState[name][blockType + '_sent'] = true;
+          }
+        });
+      });
+
       // === SEÇÃO DE TROCAS ===
       let tradesHtml = '';
       try {
@@ -2467,6 +2492,41 @@
         tradesHtml = '';
       }
       listEl.innerHTML = podiumBanner + podiumHtml + meCard + restHtml + tradesHtml;
+
+      // Restaura estado dos cards de troca
+      listEl.querySelectorAll('.trade-card').forEach(card => {
+        const toggle = card.querySelector('.trade-card-toggle');
+        const name = toggle ? toggle.querySelector('.trade-name')?.textContent?.trim() : null;
+        if (!name || !tradeState[name]) return;
+        const saved = tradeState[name];
+        if (saved.open) card.classList.add('open');
+        ['get', 'give'].forEach(blockType => {
+          if (!saved[blockType] || saved[blockType].length === 0) return;
+          const block = card.querySelector(`.trade-block-${blockType}`);
+          if (!block) return;
+          const selectedGlobals = new Set(saved[blockType]);
+          block.querySelectorAll('.trade-num').forEach(chip => {
+            if (selectedGlobals.has(chip.dataset.global)) chip.classList.add('selected');
+          });
+          const selectedCount = block.querySelectorAll('.trade-num.selected').length;
+          const appBtn = block.querySelector('.trade-app-btn');
+          if (appBtn) {
+            if (saved[blockType + '_sent']) {
+              appBtn.classList.add('sent');
+              appBtn.disabled = true;
+            } else {
+              const isAsk = appBtn.dataset.action === 'ask';
+              appBtn.textContent = `📨 ${isAsk ? 'Pedir pelo app' : 'Avisar pelo app'} (${selectedCount})`;
+              appBtn.disabled = selectedCount === 0;
+            }
+          }
+          const chatBtn = block.querySelector('.trade-chat-btn');
+          if (chatBtn) {
+            chatBtn.textContent = `💬 Avisar no chat (${selectedCount})`;
+            chatBtn.disabled = selectedCount === 0;
+          }
+        });
+      });
     } catch (e) {
       console.warn('Erro ao renderizar membros:', e);
       listEl.innerHTML = `<div style="padding:20px;text-align:center;color:var(--c-red);font-size:13px;grid-column:1/-1">⚠️ Erro ao carregar. Recarregue a página.<br><small>${(e && e.message) || e}</small></div>`;
@@ -2495,6 +2555,11 @@
           btn.textContent = `📨 ${label} (${selectedCount})`;
           btn.disabled = selectedCount === 0;
         }
+        const chatBtn = block.querySelector('.trade-chat-btn');
+        if (chatBtn) {
+          chatBtn.textContent = `💬 Avisar no chat (${selectedCount})`;
+          chatBtn.disabled = selectedCount === 0;
+        }
       });
     });
     // Liga botões "Pedir/Avisar pelo app"
@@ -2521,6 +2586,49 @@
         } else {
           btn.textContent = origText;
           btn.disabled = false;
+        }
+      });
+    });
+    // Liga botões "Avisar no chat"
+    listEl.querySelectorAll('.trade-chat-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const friendName = btn.dataset.friend;
+        const block = btn.closest('.trade-block');
+        const selectedChips = Array.from(block.querySelectorAll('.trade-num.selected'));
+        if (selectedChips.length === 0) {
+          showToast('Escolha pelo menos uma figurinha.', 'error');
+          return;
+        }
+        // Agrupa chips selecionados por seção para montar mensagem
+        const bySection = {};
+        selectedChips.forEach(chip => {
+          const globalNum = Number(chip.dataset.global);
+          const s = window.STICKERS.find(x => x.number === globalNum);
+          if (!s) return;
+          if (!bySection[s.section]) {
+            const country = countryByCode[s.section];
+            const flag = country ? country.flag : (s.section === 'cocacola' ? '🥤' : '🏆');
+            const name = country ? country.name : s.sectionName;
+            bySection[s.section] = { flag, name, nums: [] };
+          }
+          bySection[s.section].nums.push(s.localNumber);
+        });
+        const lines = Object.values(bySection).map(g =>
+          `${g.flag} ${g.name}: ${g.nums.sort((a,b)=>a-b).map(n => String(n).padStart(2,'0')).join(', ')}`
+        );
+        const msg = `@${friendName} Quero pegar essas figurinhas suas:\n${lines.join('\n')}`;
+        // Abre o chat com a mensagem pré-preenchida
+        const chatInput = document.getElementById('chatInput');
+        const chatModal = document.getElementById('chatModal');
+        if (chatInput && chatModal) {
+          chatModal.hidden = false;
+          chatInput.value = msg;
+          chatInput.focus();
+          chatInput.setSelectionRange(msg.length, msg.length);
+          showToast('💬 Mensagem pronta no chat! Edite e envie.', 'success', 2500);
+        } else {
+          showToast('Abre o chat primeiro (botão 💬).', 'error');
         }
       });
     });

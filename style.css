@@ -2575,6 +2575,42 @@ main { padding: 12px 12px 8px; }
 }
 .trade-block-get .trade-num.selected { border-color: var(--c-success); background: rgba(84,169,109,.15); }
 .trade-block-give .trade-num.selected { border-color: var(--c-red); background: rgba(212,68,74,.12); }
+.trade-num.shiny {
+  background: linear-gradient(135deg, rgba(255,215,0,.25), rgba(255,165,0,.15));
+  border-color: rgba(227,178,60,.6);
+  color: rgba(160,100,0,.7);
+  position: relative;
+}
+.trade-num.shiny.selected {
+  background: linear-gradient(135deg, rgba(255,215,0,.45), rgba(255,165,0,.3));
+  border-color: #e3b23c;
+  color: #7a5000;
+}
+.trade-num-shiny {
+  font-size: 8px;
+  line-height: 1;
+  margin-right: 1px;
+  vertical-align: middle;
+}
+.trade-chat-btn {
+  display: block;
+  width: 100%;
+  margin: 6px 0 4px;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1a7abf, #0f5fa3);
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+  box-shadow: 0 2px 6px rgba(15,95,163,.35);
+}
+.trade-chat-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(15,95,163,.5); }
+.trade-chat-btn:active:not(:disabled) { transform: translateY(0); }
+.trade-chat-btn:disabled { opacity: .55; cursor: default; }
 .trade-hint {
   font-size: 10.5px;
   color: var(--c-muted);
