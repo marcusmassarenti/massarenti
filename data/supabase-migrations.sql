@@ -249,3 +249,62 @@ begin
   values (p_group_code, p_name, p_message);
 end $$;
 grant execute on function send_chat_message to anon;
+
+-- ============ SEGURANÇA: RATE LIMIT NO LOGIN ============
+-- Sem rate limit, alguém testa 10.000 PINs em ~5min. Com isso, depois de
+-- 5 tentativas erradas o nome fica bloqueado por 5 minutos (= meses pra
+-- testar tudo). Em login OK, o contador zera.
+
+create table if not exists login_attempts (
+  name text primary key,
+  failed_count int not null default 0,
+  locked_until timestamptz,
+  last_failed_at timestamptz
+);
+
+alter table login_attempts enable row level security;
+-- Sem policies: ninguém escreve direto; só a função security definer mexe.
+-- Anon nem precisa de SELECT — quem responde "tá bloqueado?" é a RPC.
+
+-- Re-cria login_check trocando retorno boolean -> text
+-- Possíveis retornos: 'ok' | 'wrong_pin' | 'locked'
+drop function if exists login_check(text, text);
+create function login_check(p_name text, p_pin_hash text)
+returns text language plpgsql security definer set search_path = public as $$
+declare
+  v_locked_until timestamptz;
+  v_match boolean;
+begin
+  -- 1) Se nome tá bloqueado e ainda não passou o tempo, recusa
+  select locked_until into v_locked_until
+    from login_attempts where name = p_name;
+  if v_locked_until is not null and v_locked_until > now() then
+    return 'locked';
+  end if;
+
+  -- 2) Confere PIN
+  select exists(
+    select 1 from profiles where name = p_name and pin = p_pin_hash
+  ) into v_match;
+
+  if v_match then
+    -- Sucesso: zera contador (e remove bloqueio expirado, se houver)
+    delete from login_attempts where name = p_name;
+    return 'ok';
+  end if;
+
+  -- 3) Falhou: incrementa contador; se chegar a 5, bloqueia por 5min
+  insert into login_attempts (name, failed_count, last_failed_at)
+    values (p_name, 1, now())
+  on conflict (name) do update
+    set failed_count = login_attempts.failed_count + 1,
+        last_failed_at = now(),
+        locked_until = case
+          when login_attempts.failed_count + 1 >= 5
+          then now() + interval '5 minutes'
+          else login_attempts.locked_until
+        end;
+
+  return 'wrong_pin';
+end $$;
+grant execute on function login_check to anon;

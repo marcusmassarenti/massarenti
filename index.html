@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/svg+xml" href="assets/icon.svg?v=92">
-  <link rel="apple-touch-icon" href="assets/icon.svg?v=92">
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg?v=93">
+  <link rel="apple-touch-icon" href="assets/icon.svg?v=93">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Álbum Cauã">
   <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=92">
+  <link rel="stylesheet" href="style.css?v=93">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -140,9 +140,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data/supabase-config.js?v=92"></script>
-  <script src="data/countries.js?v=92"></script>
-  <script src="data/stickers.js?v=92"></script>
+  <script src="data/supabase-config.js?v=93"></script>
+  <script src="data/countries.js?v=93"></script>
+  <script src="data/stickers.js?v=93"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -435,11 +435,18 @@
               .rpc('register_profile', { p_name: name, p_pin_hash: hashedPin });
             if (regErr) throw regErr;
           } else {
-            // Perfil existe — valida PIN via RPC
-            const { data: ok, error: loginErr } = await supabaseClient
+            // Perfil existe — valida PIN via RPC (retorna 'ok' | 'wrong_pin' | 'locked')
+            const { data: result, error: loginErr } = await supabaseClient
               .rpc('login_check', { p_name: name, p_pin_hash: hashedPin });
             if (loginErr) throw loginErr;
-            if (!ok) {
+            if (result === 'locked') {
+              errorBox.textContent = '🔒 Muitas tentativas erradas. Tenta de novo em 5 minutos.';
+              errorBox.hidden = false;
+              submitBtn.textContent = originalText;
+              submitBtn.disabled = false;
+              return;
+            }
+            if (result !== 'ok') {
               errorBox.textContent = 'PIN incorreto para este perfil.';
               errorBox.hidden = false;
               submitBtn.textContent = originalText;

@@ -1,7 +1,16 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 74;
+window.APP_VERSION = 75;
 window.CHANGELOG = [
+  {
+    version: 75,
+    date: '25/mai',
+    title: '🔐 Anti força-bruta no login',
+    items: [
+      '🛡️ Depois de 5 PINs errados, o nome fica bloqueado por 5 minutos',
+      '⏱️ Robô tentando adivinhar PIN agora levaria meses (antes: 5min)'
+    ]
+  },
   {
     version: 74,
     date: '25/mai',
