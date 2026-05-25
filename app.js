@@ -38,6 +38,9 @@
   }
   // Grupo atualmente selecionado (salvo localmente)
   let selectedGroupCode = localStorage.getItem('caua_selectedGroup') || '';
+  // Estado persistente do painel de trocas (sobrevive a re-renders do dashboard)
+  // Estrutura: { [otherName]: { open: bool, get: Set<globalNum>, give: Set<globalNum>, get_sent: bool, give_sent: bool } }
+  const tradeUiState = {};
   function setSelectedGroup(code) {
     selectedGroupCode = code || '';
     localStorage.setItem('caua_selectedGroup', selectedGroupCode);
@@ -1840,7 +1843,7 @@
       const askUrl = askMsg ? `https://wa.me/?text=${encodeURIComponent(askMsg)}` : '';
       const offerUrl = offerMsg ? `https://wa.me/?text=${encodeURIComponent(offerMsg)}` : '';
       return `
-        <div class="trade-card">
+        <div class="trade-card" data-friend="${other.name}">
           <div class="trade-card-toggle">
             <div class="trade-avatar">${other.name.charAt(0).toUpperCase()}</div>
             <div class="trade-name">${other.name}</div>
@@ -1849,6 +1852,7 @@
               ${iCanGive.length > 0 ? `<span class="trade-give">✋ ${iCanGive.length}</span>` : ''}
             </div>
             <div class="trade-chevron">▾</div>
+            <button class="trade-close" title="Fechar" aria-label="Fechar">✕</button>
           </div>
           <div class="trade-details">
             ${theyCanGive.length > 0 ? `
@@ -2464,21 +2468,22 @@
           </div>
         </details>
       ` : '';
-      // Preserva estado do painel de trocas antes de reconstruir DOM
-      const tradeState = {};
+      // Sincroniza estado persistente a partir do DOM atual (se ainda existir)
+      // Isso garante que mudanças não salvas (ex: clique numa figurinha) sejam preservadas
       listEl.querySelectorAll('.trade-card').forEach(card => {
-        const toggle = card.querySelector('.trade-card-toggle');
-        const name = toggle ? toggle.querySelector('.trade-name')?.textContent?.trim() : null;
+        const name = card.dataset.friend;
         if (!name) return;
-        tradeState[name] = { open: card.classList.contains('open'), selections: {} };
-        card.querySelectorAll('.trade-block').forEach(block => {
-          const blockType = block.classList.contains('trade-block-get') ? 'get' : 'give';
-          const selected = Array.from(block.querySelectorAll('.trade-num.selected'))
-            .map(el => el.dataset.global);
-          tradeState[name][blockType] = selected;
+        if (!tradeUiState[name]) tradeUiState[name] = { open: false, get: new Set(), give: new Set() };
+        tradeUiState[name].open = card.classList.contains('open');
+        ['get', 'give'].forEach(blockType => {
+          const block = card.querySelector(`.trade-block-${blockType}`);
+          if (!block) return;
+          tradeUiState[name][blockType] = new Set(
+            Array.from(block.querySelectorAll('.trade-num.selected')).map(el => el.dataset.global)
+          );
           const appBtn = block.querySelector('.trade-app-btn');
           if (appBtn && appBtn.classList.contains('sent')) {
-            tradeState[name][blockType + '_sent'] = true;
+            tradeUiState[name][blockType + '_sent'] = true;
           }
         });
       });
@@ -2493,20 +2498,27 @@
       }
       listEl.innerHTML = podiumBanner + podiumHtml + meCard + restHtml + tradesHtml;
 
-      // Restaura estado dos cards de troca
+      // Restaura estado dos cards de troca a partir do estado persistente
       listEl.querySelectorAll('.trade-card').forEach(card => {
-        const toggle = card.querySelector('.trade-card-toggle');
-        const name = toggle ? toggle.querySelector('.trade-name')?.textContent?.trim() : null;
-        if (!name || !tradeState[name]) return;
-        const saved = tradeState[name];
+        const name = card.dataset.friend;
+        if (!name || !tradeUiState[name]) return;
+        const saved = tradeUiState[name];
         if (saved.open) card.classList.add('open');
         ['get', 'give'].forEach(blockType => {
-          if (!saved[blockType] || saved[blockType].length === 0) return;
+          const selectedSet = saved[blockType];
+          if (!selectedSet || selectedSet.size === 0) {
+            // ainda assim atualiza textos dos botões
+            const block = card.querySelector(`.trade-block-${blockType}`);
+            if (block && saved[blockType + '_sent']) {
+              const appBtn = block.querySelector('.trade-app-btn');
+              if (appBtn) { appBtn.classList.add('sent'); appBtn.disabled = true; appBtn.textContent = '✅ Enviado'; }
+            }
+            return;
+          }
           const block = card.querySelector(`.trade-block-${blockType}`);
           if (!block) return;
-          const selectedGlobals = new Set(saved[blockType]);
           block.querySelectorAll('.trade-num').forEach(chip => {
-            if (selectedGlobals.has(chip.dataset.global)) chip.classList.add('selected');
+            if (selectedSet.has(chip.dataset.global)) chip.classList.add('selected');
           });
           const selectedCount = block.querySelectorAll('.trade-num.selected').length;
           const appBtn = block.querySelector('.trade-app-btn');
@@ -2514,6 +2526,7 @@
             if (saved[blockType + '_sent']) {
               appBtn.classList.add('sent');
               appBtn.disabled = true;
+              appBtn.textContent = '✅ Enviado';
             } else {
               const isAsk = appBtn.dataset.action === 'ask';
               appBtn.textContent = `📨 ${isAsk ? 'Pedir pelo app' : 'Avisar pelo app'} (${selectedCount})`;
@@ -2533,12 +2546,31 @@
       return;
     }
 
-    // Liga os toggles de detalhes de troca
+    // Liga os toggles de detalhes de troca — clique no header SÓ abre (nunca fecha)
     listEl.querySelectorAll('.trade-card-toggle').forEach(t => {
       t.addEventListener('click', (e) => {
+        // Ignora clique no botão de fechar
+        if (e.target.closest('.trade-close')) return;
         e.stopPropagation();
         const card = t.closest('.trade-card');
-        card.classList.toggle('open');
+        const name = card.dataset.friend;
+        card.classList.add('open');
+        if (name) {
+          if (!tradeUiState[name]) tradeUiState[name] = { get: new Set(), give: new Set() };
+          tradeUiState[name].open = true;
+        }
+      });
+    });
+    // Botão X fecha o card e limpa seleções salvas
+    listEl.querySelectorAll('.trade-close').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const card = btn.closest('.trade-card');
+        const name = card.dataset.friend;
+        card.classList.remove('open');
+        if (name && tradeUiState[name]) {
+          tradeUiState[name].open = false;
+        }
       });
     });
     // Toggle de seleção de figurinhas dentro do bloco
@@ -2547,7 +2579,17 @@
         e.stopPropagation();
         chip.classList.toggle('selected');
         const block = chip.closest('.trade-block');
+        const card = chip.closest('.trade-card');
+        const name = card?.dataset.friend;
+        const blockType = block.classList.contains('trade-block-get') ? 'get' : 'give';
         const selectedCount = block.querySelectorAll('.trade-num.selected').length;
+        // Salva no estado persistente
+        if (name) {
+          if (!tradeUiState[name]) tradeUiState[name] = { open: true, get: new Set(), give: new Set() };
+          tradeUiState[name][blockType] = new Set(
+            Array.from(block.querySelectorAll('.trade-num.selected')).map(el => el.dataset.global)
+          );
+        }
         const btn = block.querySelector('.trade-app-btn');
         if (btn) {
           const isAsk = btn.dataset.action === 'ask';
@@ -2582,6 +2624,9 @@
         if (ok) {
           btn.textContent = action === 'ask' ? `✅ Pedido enviado! (${nums.length})` : `✅ Aviso enviado! (${nums.length})`;
           btn.classList.add('sent');
+          const blockType = block.classList.contains('trade-block-get') ? 'get' : 'give';
+          if (!tradeUiState[target]) tradeUiState[target] = { open: true, get: new Set(), give: new Set() };
+          tradeUiState[target][blockType + '_sent'] = true;
           showToast(action === 'ask' ? `📨 ${target} vai ver seu pedido ao abrir o app!` : `📨 ${target} vai ver seu aviso ao abrir o app!`, 'success', 2500);
         } else {
           btn.textContent = origText;
@@ -3962,9 +4007,13 @@ Qualquer dúvida me chama! 👍`,
   setupChatUI();
 
   // Atualiza o painel a cada 60s pra contagem regressiva e jogos do dia ficarem frescos
+  // MAS pula se o usuário tem algum card de troca aberto (pra não fechar a seleção dele)
   setInterval(() => {
     const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
-    if (activeTab === 'dashboard') renderDashboard();
+    if (activeTab !== 'dashboard') return;
+    const hasOpenTrade = document.querySelector('#dashboardContent .trade-card.open');
+    if (hasOpenTrade) return;
+    renderDashboard();
   }, 60000);
 
   // Carrega do Supabase na inicialização (se disponível) e re-renderiza
@@ -3987,7 +4036,10 @@ Qualquer dúvida me chama! 👍`,
           // Re-render se aba ativa
           const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
           if (activeTab === 'collection') renderCollection();
-          if (activeTab === 'dashboard') renderDashboard();
+          // Pula dashboard re-render se tem trade card aberto (não fecha a seleção do usuário)
+          if (activeTab === 'dashboard' && !document.querySelector('#dashboardContent .trade-card.open')) {
+            renderDashboard();
+          }
           if (activeTab === 'bracket') renderBracket();
           if (activeTab === 'schedule') renderSchedule();
         }
