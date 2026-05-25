@@ -3670,15 +3670,18 @@ Qualquer dúvida me chama! 👍`,
     if (close) close.onclick = () => { modal.hidden = true; };
   }
 
-  // ========== CHAT EM TEMPO REAL POR GRUPO ==========
+  // ========== CHAT EM TEMPO REAL ==========
+  // Canais: '__global__' (geral, todos veem) ou um group_code (privado do grupo)
+  const GLOBAL_CHAT_CHANNEL = '__global__';
+  let activeChatChannel = GLOBAL_CHAT_CHANNEL; // canal aberto no momento
   let chatSubscription = null;
-  let chatLastSeenAt = null;
-  let chatUnreadCount = 0;
-  let chatGroupMembers = []; // membros do grupo atual (pra autocomplete de @)
+  let chatUnreadCount = 0;            // total combinado pro badge do FAB
+  let chatUnreadByChannel = {};       // { channel: count }
+  let chatGroupMembers = [];          // pessoas pra autocomplete de @ no canal ativo
   let chatMentionState = { active: false, query: '', startPos: 0 };
 
-  function chatLastSeenKey(groupCode) {
-    return `caua_chatLastSeen_${profileName}_${groupCode}`;
+  function chatLastSeenKey(channel) {
+    return `caua_chatLastSeen_${profileName}_${channel}`;
   }
 
   function escapeHtml(str) {
@@ -3736,11 +3739,11 @@ Qualquer dúvida me chama! 👍`,
   }
 
   async function loadChatMessages() {
-    if (!supabaseClient || !selectedGroupCode) return [];
+    if (!supabaseClient || !activeChatChannel) return [];
     const { data, error } = await supabaseClient
       .from('chat_messages')
       .select('*')
-      .eq('group_code', selectedGroupCode)
+      .eq('group_code', activeChatChannel)
       .order('created_at', { ascending: true })
       .limit(200);
     if (error) { console.warn('Erro chat:', error); return []; }
@@ -3753,49 +3756,95 @@ Qualquer dúvida me chama! 👍`,
   }
 
   async function openChatModal() {
-    if (!selectedGroupCode) {
-      showToast('Entre em um grupo primeiro!', 'error');
-      return;
-    }
     const modal = document.getElementById('chatModal');
     if (!modal) return;
     modal.hidden = false;
-    document.getElementById('chatGroupName').textContent = '';
-    // Carrega nome do grupo + membros (pra autocomplete de @)
+    // Decide canal inicial: se tem grupo selecionado, abre nele; senão, abre Geral
+    if (selectedGroupCode) activeChatChannel = selectedGroupCode;
+    else activeChatChannel = GLOBAL_CHAT_CHANNEL;
+    await renderChatTabs();
+    await loadAndShowChannel(activeChatChannel);
+    setTimeout(() => document.getElementById('chatInput')?.focus(), 100);
+  }
+
+  async function renderChatTabs() {
+    const tabsEl = document.getElementById('chatTabs');
+    if (!tabsEl) return;
+    let groupName = '';
+    if (selectedGroupCode && supabaseClient) {
+      try {
+        const { data: g } = await supabaseClient.from('groups').select('name').eq('code', selectedGroupCode).maybeSingle();
+        if (g) groupName = g.name;
+      } catch (e) { /* ignora */ }
+    }
+    const tabs = [
+      { channel: GLOBAL_CHAT_CHANNEL, label: '🌍 Geral' }
+    ];
+    if (selectedGroupCode) {
+      tabs.push({ channel: selectedGroupCode, label: `👥 ${groupName || 'Meu grupo'}` });
+    }
+    tabsEl.innerHTML = tabs.map(t => {
+      const active = t.channel === activeChatChannel ? ' active' : '';
+      const unread = chatUnreadByChannel[t.channel] || 0;
+      const badge = unread > 0 ? `<span class="chat-tab-badge">${unread > 99 ? '99+' : unread}</span>` : '';
+      return `<button class="chat-tab${active}" data-channel="${t.channel}">${t.label}${badge}</button>`;
+    }).join('');
+    tabsEl.querySelectorAll('.chat-tab').forEach(b => {
+      b.onclick = async () => {
+        const ch = b.dataset.channel;
+        if (ch === activeChatChannel) return;
+        activeChatChannel = ch;
+        await renderChatTabs();
+        await loadAndShowChannel(ch);
+      };
+    });
+  }
+
+  async function loadAndShowChannel(channel) {
+    // Carrega pessoas pra autocomplete de @
     try {
-      const [{ data: g }, members] = await Promise.all([
-        supabaseClient.from('groups').select('name').eq('code', selectedGroupCode).maybeSingle(),
-        loadGroupMembers(selectedGroupCode)
-      ]);
-      if (g) document.getElementById('chatGroupName').textContent = `· ${g.name}`;
-      chatGroupMembers = members || [];
+      if (channel === GLOBAL_CHAT_CHANNEL) {
+        const { data } = await supabaseClient.from('profiles').select('name').limit(500);
+        chatGroupMembers = (data || []).map(p => ({ name: p.name }));
+      } else {
+        chatGroupMembers = (await loadGroupMembers(channel)) || [];
+      }
     } catch (e) { chatGroupMembers = []; }
 
     const list = document.getElementById('chatMessages');
     list.innerHTML = '<div class="chat-loading">Carregando mensagens...</div>';
     const msgs = await loadChatMessages();
     if (msgs.length === 0) {
-      list.innerHTML = '<div class="chat-empty">💬 Ninguém mandou nada ainda. Manda a primeira mensagem!</div>';
+      const placeholder = channel === GLOBAL_CHAT_CHANNEL
+        ? '💬 Chat geral: ninguém mandou nada ainda. Manda a primeira mensagem pra todo mundo!'
+        : '💬 Ninguém mandou nada ainda. Manda a primeira mensagem!';
+      list.innerHTML = `<div class="chat-empty">${placeholder}</div>`;
     } else {
       list.innerHTML = msgs.map(buildChatMessageHtml).join('');
       setTimeout(scrollChatToBottom, 50);
-      // Marca tudo como lido
       const latestAt = msgs[msgs.length - 1].created_at;
-      localStorage.setItem(chatLastSeenKey(selectedGroupCode), latestAt);
+      localStorage.setItem(chatLastSeenKey(channel), latestAt);
     }
-    chatUnreadCount = 0;
+    // Zera unread do canal aberto
+    chatUnreadByChannel[channel] = 0;
+    recomputeChatBadge();
+    await renderChatTabs();
+    // Garante que a subscription cobre os dois canais
+    setupChatRealtime();
+  }
+
+  function recomputeChatBadge() {
+    chatUnreadCount = Object.values(chatUnreadByChannel).reduce((a, b) => a + b, 0);
     updateChatBadge();
-    // Foca input
-    setTimeout(() => document.getElementById('chatInput').focus(), 100);
   }
 
   async function sendChatMessage(text) {
-    if (!supabaseClient || !selectedGroupCode || !text.trim()) return;
+    if (!supabaseClient || !activeChatChannel || !text.trim()) return;
     const trimmed = text.trim().slice(0, 500);
     const { error } = await supabaseClient
       .from('chat_messages')
       .insert({
-        group_code: selectedGroupCode,
+        group_code: activeChatChannel,
         from_name: profileName,
         message: trimmed
       });
@@ -3829,58 +3878,83 @@ Qualquer dúvida me chama! 👍`,
   }
 
   async function refreshChatUnreadCount() {
-    if (!supabaseClient || !selectedGroupCode || viewMode) {
+    if (!supabaseClient || viewMode) {
+      chatUnreadByChannel = {};
       chatUnreadCount = 0;
       updateChatBadge();
       return;
     }
-    const lastSeen = localStorage.getItem(chatLastSeenKey(selectedGroupCode));
-    let q = supabaseClient
-      .from('chat_messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('group_code', selectedGroupCode)
-      .neq('from_name', profileName);
-    if (lastSeen) q = q.gt('created_at', lastSeen);
-    const { count } = await q;
-    chatUnreadCount = count || 0;
-    updateChatBadge();
+    const channels = [GLOBAL_CHAT_CHANNEL];
+    if (selectedGroupCode) channels.push(selectedGroupCode);
+    const newCounts = {};
+    await Promise.all(channels.map(async (ch) => {
+      const lastSeen = localStorage.getItem(chatLastSeenKey(ch));
+      let q = supabaseClient
+        .from('chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('group_code', ch)
+        .neq('from_name', profileName);
+      if (lastSeen) q = q.gt('created_at', lastSeen);
+      const { count } = await q;
+      newCounts[ch] = count || 0;
+    }));
+    chatUnreadByChannel = newCounts;
+    recomputeChatBadge();
   }
 
   function setupChatRealtime() {
-    if (!supabaseClient || !selectedGroupCode || viewMode) return;
+    if (!supabaseClient || viewMode) return;
     // Cancela subscription antiga
     if (chatSubscription) {
-      try { supabaseClient.removeChannel(chatSubscription); } catch (e) { /* ignora */ }
+      try {
+        if (typeof chatSubscription.cleanup === 'function') chatSubscription.cleanup();
+        else supabaseClient.removeChannel(chatSubscription);
+      } catch (e) { /* ignora */ }
       chatSubscription = null;
     }
-    const channel = supabaseClient
-      .channel(`chat:${selectedGroupCode}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages',
-        filter: `group_code=eq.${selectedGroupCode}`
-      }, (payload) => {
-        const msg = payload.new;
-        if (!msg) return;
-        const modal = document.getElementById('chatModal');
-        const isOpen = modal && !modal.hidden;
-        if (isOpen) {
-          appendChatMessageToUI(msg);
-          localStorage.setItem(chatLastSeenKey(selectedGroupCode), msg.created_at);
-        } else if (msg.from_name !== profileName) {
-          chatUnreadCount++;
-          updateChatBadge();
-          // Se TE mencionaram, toast mais forte
-          if (messageMentionsMe(msg.message)) {
-            showToast(`📣 ${msg.from_name} te chamou: ${msg.message.slice(0, 60)}${msg.message.length > 60 ? '…' : ''}`, 'success', 5000);
-          } else {
-            showToast(`💬 ${msg.from_name}: ${msg.message.slice(0, 40)}${msg.message.length > 40 ? '…' : ''}`, 'success', 3000);
+    const channels = [GLOBAL_CHAT_CHANNEL];
+    if (selectedGroupCode) channels.push(selectedGroupCode);
+    // Um único channel com filtro 'in' não é suportado por postgres_changes,
+    // então criamos um channel separado por canal lógico.
+    const subs = channels.map(ch => {
+      return supabaseClient
+        .channel(`chat:${ch}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `group_code=eq.${ch}`
+        }, (payload) => {
+          const msg = payload.new;
+          if (!msg) return;
+          const modal = document.getElementById('chatModal');
+          const isOpen = modal && !modal.hidden;
+          // Se chegou no canal atualmente aberto e modal visível, mostra direto
+          if (isOpen && msg.group_code === activeChatChannel) {
+            appendChatMessageToUI(msg);
+            localStorage.setItem(chatLastSeenKey(activeChatChannel), msg.created_at);
+          } else if (msg.from_name !== profileName) {
+            chatUnreadByChannel[msg.group_code] = (chatUnreadByChannel[msg.group_code] || 0) + 1;
+            recomputeChatBadge();
+            // Atualiza badge na aba se modal aberto
+            if (isOpen) renderChatTabs();
+            const prefix = msg.group_code === GLOBAL_CHAT_CHANNEL ? '🌍 ' : '';
+            if (messageMentionsMe(msg.message)) {
+              showToast(`📣 ${prefix}${msg.from_name} te chamou: ${msg.message.slice(0, 60)}${msg.message.length > 60 ? '…' : ''}`, 'success', 5000);
+            } else {
+              showToast(`💬 ${prefix}${msg.from_name}: ${msg.message.slice(0, 40)}${msg.message.length > 40 ? '…' : ''}`, 'success', 3000);
+            }
           }
-        }
-      })
-      .subscribe();
-    chatSubscription = channel;
+        })
+        .subscribe();
+    });
+    // Guarda só o primeiro pra compatibilidade; cleanup completo:
+    chatSubscription = {
+      _channels: subs,
+      cleanup() {
+        subs.forEach(c => { try { supabaseClient.removeChannel(c); } catch (e) { /* ignora */ } });
+      }
+    };
   }
 
   // Detecta @ no input e mostra lista de membros pra autocompletar

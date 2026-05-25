@@ -3552,6 +3552,46 @@ main { padding: 12px 12px 8px; }
   padding: 3px 8px;
   border-radius: 6px;
 }
+.chat-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--c-border);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.chat-tabs:empty { display: none; }
+.chat-tab {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px 8px 0 0;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 12.5px;
+  color: var(--c-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+.chat-tab:hover { background: var(--c-bg-soft); }
+.chat-tab.active {
+  background: var(--c-accent);
+  color: var(--c-gold);
+}
+.chat-tab-badge {
+  display: inline-block;
+  background: var(--c-red);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 8px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
 .chat-messages {
   flex: 1;
   overflow-y: auto;

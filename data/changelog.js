@@ -1,7 +1,17 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 72;
+window.APP_VERSION = 73;
 window.CHANGELOG = [
+  {
+    version: 73,
+    date: '25/mai',
+    title: '🌍 Chat Geral',
+    items: [
+      '🌍 Aba "Geral" no chat: fale com QUALQUER pessoa do app, mesmo fora dos seus grupos',
+      '👥 A aba do seu grupo continua disponível pra papos privados',
+      '🔔 Contador vermelho mostra mensagens não lidas em cada aba'
+    ]
+  },
   {
     version: 72,
     date: '25/mai',
