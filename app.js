@@ -1590,22 +1590,53 @@
     return groups;
   }
 
+  // Espelha getMissingByCountry mas retorna as repetidas (extras = count - 1)
+  function getDuplicatesByCountry() {
+    const groups = [];
+    SECTION_ORDER.forEach(secKey => {
+      const sec = sectionsMap[secKey];
+      if (!sec) return;
+      const dups = sec.items
+        .map(s => ({ local: s.localNumber, extras: Math.max(0, (state.counts[s.number] || 0) - 1) }))
+        .filter(x => x.extras > 0);
+      if (dups.length === 0) return;
+      const country = countryByCode[secKey];
+      const flag = country ? country.flag : (secKey === 'cocacola' ? '🥤' : '🏆');
+      const name = country ? country.name : sec.name;
+      const code = sec.items[0].code;
+      groups.push({ flag, name, code, dups, total: sec.items.length });
+    });
+    return groups;
+  }
+
   function exportMissingWhatsApp() {
     const groups = getMissingByCountry();
+    const dupGroups = getDuplicatesByCountry();
     const owned = totalOwned();
     const total = window.STICKERS_TOTAL;
     const missing = total - owned;
+    const dupCount = dupGroups.reduce((sum, g) => sum + g.dups.reduce((s, d) => s + d.extras, 0), 0);
+
     let txt = `📋 *FIGURINHAS QUE FALTAM* (${profileName})\n`;
     txt += `Faltam *${missing}* de ${total} (${(owned/total*100).toFixed(0)}%)\n`;
     if (groups.length === 0) {
-      txt += `🎉 *ÁLBUM COMPLETO!*`;
+      txt += `🎉 *ÁLBUM COMPLETO!*\n`;
     } else {
       groups.forEach(g => {
         const nums = g.missing.map(n => String(n).padStart(2, '0')).join(',');
         txt += `${g.flag} *${g.name}*: ${nums}\n`;
       });
     }
-    txt += `💬 Tem repetida? Me chama!\n`;
+    if (dupCount > 0) {
+      txt += `\n🔁 *MINHAS REPETIDAS* (${dupCount} pra trocar)\n`;
+      dupGroups.forEach(g => {
+        const nums = g.dups.map(d =>
+          d.extras > 1 ? `${String(d.local).padStart(2,'0')}(×${d.extras})` : String(d.local).padStart(2,'0')
+        ).join(',');
+        txt += `${g.flag} *${g.name}*: ${nums}\n`;
+      });
+    }
+    txt += `💬 Bora trocar?\n`;
     txt += `🔗 https://copa.massarenti.me`;
     const url = `https://wa.me/?text=${encodeURIComponent(txt)}`;
     window.open(url, '_blank');
@@ -1619,49 +1650,43 @@
     const margin = 8;
     const colWidth = (pageW - margin * 3) / 2;
     const groups = getMissingByCountry();
+    const dupGroups = getDuplicatesByCountry();
     const owned = totalOwned();
     const total = window.STICKERS_TOTAL;
     const missing = total - owned;
+    const dupCount = dupGroups.reduce((sum, g) => sum + g.dups.reduce((s, d) => s + d.extras, 0), 0);
 
-    // Título
-    doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Álbum Copa 2026 - ${profileName}`, pageW / 2, margin + 6, { align: 'center' });
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'normal');
-    doc.text(`Faltam ${missing} de ${total} figurinhas (${(owned/total*100).toFixed(0)}% completo)`, pageW / 2, margin + 12, { align: 'center' });
-    doc.setFontSize(8);
-    doc.setTextColor(120);
-    doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} · copa.massarenti.me`, pageW / 2, margin + 17, { align: 'center' });
-    doc.setTextColor(0);
-
-    if (groups.length === 0) {
-      doc.setFontSize(22);
-      doc.text('🏆 ÁLBUM COMPLETO!', pageW / 2, pageH / 2, { align: 'center' });
-      doc.save(`figurinhas-faltam-${profileName}.pdf`);
-      return;
+    // Cabeçalho padrão (chamado em cada página)
+    function drawHeader(subtitle) {
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text(`Álbum Copa 2026 - ${profileName}`, pageW / 2, margin + 6, { align: 'center' });
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'normal');
+      doc.text(subtitle, pageW / 2, margin + 12, { align: 'center' });
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} · copa.massarenti.me`, pageW / 2, margin + 17, { align: 'center' });
+      doc.setTextColor(0);
     }
 
-    // Cada figurinha listada individualmente (sem agrupar em intervalos)
-    // Format: "BRA Brasil (15): 01, 02, 03, 04, 05, 08, 10, 12, 14, 15, 16, 17, 18, 19, 20"
-    // Tenta caber em uma página - reduz fonte se necessário
-    function tryRender(fontSize, lineH, useTwoColumns) {
+    // Renderiza uma lista de grupos (faltam OU repetidas) numa página, em 2 colunas
+    // items é uma função: g -> { titleLine, numsStr } pra cada grupo
+    function tryRenderList(list, itemsFn, fontSize, lineH) {
       doc.setFontSize(fontSize);
-      const cols = useTwoColumns ? 2 : 1;
-      const w = useTwoColumns ? colWidth : (pageW - margin * 2);
-      const colX = useTwoColumns ? [margin, margin + colWidth + margin] : [margin];
+      const w = colWidth;
+      const colX = [margin, margin + colWidth + margin];
       let x = colX[0], y = margin + 24;
       let col = 0;
       const maxY = pageH - margin - 6;
 
-      for (const g of groups) {
-        const numsStr = g.missing.map(n => String(n).padStart(2, '0')).join(', ');
-        const titleLine = `${g.code} ${g.name} (faltam ${g.missing.length}):`;
+      for (const g of list) {
+        const { titleLine, numsStr } = itemsFn(g);
         const valueLines = doc.splitTextToSize(numsStr, w);
         const blockH = (1 + valueLines.length) * lineH + 1.5;
         if (y + blockH > maxY) {
           col++;
-          if (col >= cols) return false; // não coube nessa tentativa
+          if (col >= 2) return false;
           y = margin + 24;
           x = colX[col];
         }
@@ -1675,39 +1700,63 @@
       return true;
     }
 
-    // Tenta tamanhos progressivamente menores até caber
-    const attempts = [
-      { size: 9, line: 3.6, twoCol: true },
-      { size: 8, line: 3.3, twoCol: true },
-      { size: 7, line: 2.9, twoCol: true },
-      { size: 6.5, line: 2.6, twoCol: true },
-      { size: 6, line: 2.4, twoCol: true },
-      { size: 5.5, line: 2.2, twoCol: true }
-    ];
-    let fit = false;
-    for (const a of attempts) {
-      // Limpa o conteúdo atual (recria a partir do título)
-      doc.deletePage(1);
-      doc.addPage();
-      doc.setFontSize(16);
-      doc.setFont(undefined, 'bold');
-      doc.text(`Álbum Copa 2026 - ${profileName}`, pageW / 2, margin + 6, { align: 'center' });
-      doc.setFontSize(11);
-      doc.setFont(undefined, 'normal');
-      doc.text(`Faltam ${missing} de ${total} figurinhas (${(owned/total*100).toFixed(0)}% completo)`, pageW / 2, margin + 12, { align: 'center' });
-      doc.setFontSize(8);
-      doc.setTextColor(120);
-      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} · copa.massarenti.me`, pageW / 2, margin + 17, { align: 'center' });
-      doc.setTextColor(0);
-      if (tryRender(a.size, a.line, a.twoCol)) { fit = true; break; }
+    // Renderiza UMA página inteira (header + lista) com retry de fontes menores
+    function renderPage(list, itemsFn, subtitle, footer) {
+      const attempts = [
+        { size: 9, line: 3.6 }, { size: 8, line: 3.3 }, { size: 7, line: 2.9 },
+        { size: 6.5, line: 2.6 }, { size: 6, line: 2.4 }, { size: 5.5, line: 2.2 }
+      ];
+      for (const a of attempts) {
+        // Limpa a página atual (que já existe — addPage criou OU é a inicial)
+        doc.deletePage(doc.getNumberOfPages());
+        doc.addPage();
+        drawHeader(subtitle);
+        if (tryRenderList(list, itemsFn, a.size, a.line)) {
+          doc.setFontSize(7);
+          doc.setTextColor(140);
+          doc.text(footer, pageW / 2, pageH - 4, { align: 'center' });
+          doc.setTextColor(0);
+          return;
+        }
+      }
     }
 
-    // Rodapé
-    doc.setFontSize(7);
-    doc.setTextColor(140);
-    doc.text('Quer ajudar com trocas? Compartilhe este PDF · copa.massarenti.me', pageW / 2, pageH - 4, { align: 'center' });
+    // ====== PÁGINA 1: QUE FALTAM ======
+    if (groups.length === 0) {
+      drawHeader(`Faltam ${missing} de ${total} figurinhas (${(owned/total*100).toFixed(0)}% completo)`);
+      doc.setFontSize(22);
+      doc.text('🏆 ÁLBUM COMPLETO!', pageW / 2, pageH / 2, { align: 'center' });
+    } else {
+      renderPage(
+        groups,
+        g => ({
+          titleLine: `${g.code} ${g.name} (faltam ${g.missing.length}):`,
+          numsStr: g.missing.map(n => String(n).padStart(2, '0')).join(', ')
+        }),
+        `Faltam ${missing} de ${total} figurinhas (${(owned/total*100).toFixed(0)}% completo)`,
+        'Quer ajudar com trocas? Compartilhe este PDF · copa.massarenti.me'
+      );
+    }
 
-    doc.save(`figurinhas-faltam-${profileName}.pdf`);
+    // ====== PÁGINA 2: MINHAS REPETIDAS (se houver) ======
+    if (dupCount > 0) {
+      doc.addPage();
+      renderPage(
+        dupGroups,
+        g => ({
+          titleLine: `${g.code} ${g.name} (${g.dups.reduce((s,d)=>s+d.extras,0)} pra trocar):`,
+          numsStr: g.dups.map(d =>
+            d.extras > 1
+              ? `${String(d.local).padStart(2,'0')} (×${d.extras})`
+              : String(d.local).padStart(2,'0')
+          ).join(', ')
+        }),
+        `🔁 Minhas repetidas: ${dupCount} pra trocar`,
+        'Tem alguma dessas? Bora trocar! · copa.massarenti.me'
+      );
+    }
+
+    doc.save(`figurinhas-${profileName}.pdf`);
   }
   function buildFamilyRow(p) {
     const counts = p.counts || {};
@@ -2181,7 +2230,7 @@
       ${todayHtml}
       ${brazilHtml}
       <div class="share-bar">
-        <button class="btn-secondary share-btn" id="exportPdfBtn">📄 PDF dos que faltam</button>
+        <button class="btn-secondary share-btn" id="exportPdfBtn">📄 PDF (faltam + repetidas)</button>
         <button class="btn-secondary share-btn share-wa" id="exportWaBtn">💬 Mandar no WhatsApp</button>
       </div>
       <div class="dashboard-stats">

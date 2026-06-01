@@ -1,7 +1,17 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 75;
+window.APP_VERSION = 76;
 window.CHANGELOG = [
+  {
+    version: 76,
+    date: '25/mai',
+    title: '🔁 Exportar repetidas junto',
+    items: [
+      '📄 PDF agora tem 2 páginas: que faltam + minhas repetidas pra trocar',
+      '💬 Mensagem do WhatsApp inclui a lista de repetidas no final',
+      '✖️ Repetidas em quantidade maior aparecem com (×2), (×3)…'
+    ]
+  },
   {
     version: 75,
     date: '25/mai',
