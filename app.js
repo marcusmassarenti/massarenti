@@ -1642,6 +1642,29 @@
     window.open(url, '_blank');
   }
 
+  // Renderiza um emoji de bandeira num canvas e devolve dataURL pra inserir no PDF.
+  // No iOS/Android/macOS sai a bandeira colorida; em SO sem fonte de emoji vem
+  // fallback com o código do país (ainda fica legível).
+  function flagToDataURL(emoji, fallbackCode) {
+    const canvas = document.createElement('canvas');
+    const w = 70, h = 50; // proporção ~7:5 (parecido com bandeiras reais)
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.font = '42px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji || fallbackCode || '🏳️', w / 2, h / 2);
+    return canvas.toDataURL('image/png');
+  }
+
+  function prerenderFlags(groups) {
+    const cache = {};
+    groups.forEach(g => {
+      if (!cache[g.flag]) cache[g.flag] = flagToDataURL(g.flag, g.code);
+    });
+    return cache;
+  }
+
   function exportMissingPDF() {
     const jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
     if (!jsPDFCtor) { showToast('PDF não carregou. Recarregue a página.', 'error'); return; }
@@ -1655,67 +1678,93 @@
     const total = window.STICKERS_TOTAL;
     const missing = total - owned;
     const dupCount = dupGroups.reduce((sum, g) => sum + g.dups.reduce((s, d) => s + d.extras, 0), 0);
+    const flagCache = prerenderFlags([...groups, ...dupGroups]);
 
-    // Cabeçalho padrão (chamado em cada página)
-    function drawHeader(subtitle) {
-      doc.setFontSize(16);
+    // Cores tema (RGB)
+    const COLOR_RED = [212, 68, 74];     // "faltam"
+    const COLOR_GOLD = [180, 130, 30];   // "repetidas"
+    const COLOR_INK = [40, 40, 40];
+    const COLOR_MUTED = [120, 120, 120];
+
+    // Cabeçalho com faixa colorida no tema da página
+    function drawHeader(subtitle, theme) {
+      const [r, g, b] = theme;
+      // Faixa colorida no topo
+      doc.setFillColor(r, g, b);
+      doc.rect(0, 0, pageW, 18, 'F');
+      // Título em branco sobre a faixa
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(15);
       doc.setFont(undefined, 'bold');
-      doc.text(`Álbum Copa 2026 - ${profileName}`, pageW / 2, margin + 6, { align: 'center' });
-      doc.setFontSize(11);
+      doc.text(`Álbum Copa 2026 — ${profileName}`, pageW / 2, 9, { align: 'center' });
+      doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
-      doc.text(subtitle, pageW / 2, margin + 12, { align: 'center' });
+      doc.text(subtitle, pageW / 2, 14.5, { align: 'center' });
+      // Subtítulo cinza abaixo da faixa
+      doc.setTextColor(...COLOR_MUTED);
       doc.setFontSize(8);
-      doc.setTextColor(120);
-      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} · copa.massarenti.me`, pageW / 2, margin + 17, { align: 'center' });
-      doc.setTextColor(0);
+      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} · copa.massarenti.me`, pageW / 2, 22, { align: 'center' });
+      doc.setTextColor(...COLOR_INK);
     }
 
-    // Renderiza uma lista de grupos (faltam OU repetidas) numa página, em 2 colunas
-    // items é uma função: g -> { titleLine, numsStr } pra cada grupo
-    function tryRenderList(list, itemsFn, fontSize, lineH) {
+    // Renderiza lista em 2 colunas com bandeira + título colorido
+    function tryRenderList(list, itemsFn, fontSize, lineH, theme) {
       doc.setFontSize(fontSize);
       const w = colWidth;
       const colX = [margin, margin + colWidth + margin];
-      let x = colX[0], y = margin + 24;
+      let x = colX[0], y = margin + 22;
       let col = 0;
       const maxY = pageH - margin - 6;
+      const flagW = Math.max(5, lineH * 1.8);
+      const flagH = flagW * 5 / 7;
+      const titleX = flagW + 1.6; // offset do título depois da bandeira
 
       for (const g of list) {
         const { titleLine, numsStr } = itemsFn(g);
         const valueLines = doc.splitTextToSize(numsStr, w);
-        const blockH = (1 + valueLines.length) * lineH + 1.5;
+        const blockH = Math.max(flagH, lineH) + valueLines.length * lineH + 1.5;
         if (y + blockH > maxY) {
           col++;
           if (col >= 2) return false;
-          y = margin + 24;
+          y = margin + 22;
           x = colX[col];
         }
+        // Bandeira (imagem renderizada via canvas)
+        if (flagCache[g.flag]) {
+          try {
+            doc.addImage(flagCache[g.flag], 'PNG', x, y - lineH * 0.85, flagW, flagH);
+          } catch (e) { /* ignora */ }
+        }
+        // Título do país (colorido com o tema)
         doc.setFont(undefined, 'bold');
-        doc.text(titleLine, x, y);
-        y += lineH;
+        doc.setTextColor(...theme);
+        doc.text(titleLine, x + titleX, y);
+        // Avança Y respeitando a altura da bandeira (que pode ser > lineH)
+        y += Math.max(flagH, lineH);
+        // Números em preto
         doc.setFont(undefined, 'normal');
+        doc.setTextColor(...COLOR_INK);
         valueLines.forEach(l => { doc.text(l, x, y); y += lineH; });
         y += 1.5;
       }
       return true;
     }
 
-    // Renderiza UMA página inteira (header + lista) com retry de fontes menores
-    function renderPage(list, itemsFn, subtitle, footer) {
+    // Renderiza UMA página com retry de fontes menores
+    function renderPage(list, itemsFn, subtitle, footer, theme) {
       const attempts = [
-        { size: 9, line: 3.6 }, { size: 8, line: 3.3 }, { size: 7, line: 2.9 },
-        { size: 6.5, line: 2.6 }, { size: 6, line: 2.4 }, { size: 5.5, line: 2.2 }
+        { size: 9, line: 3.8 }, { size: 8, line: 3.4 }, { size: 7, line: 3.0 },
+        { size: 6.5, line: 2.7 }, { size: 6, line: 2.5 }, { size: 5.5, line: 2.3 }
       ];
       for (const a of attempts) {
-        // Limpa a página atual (que já existe — addPage criou OU é a inicial)
         doc.deletePage(doc.getNumberOfPages());
         doc.addPage();
-        drawHeader(subtitle);
-        if (tryRenderList(list, itemsFn, a.size, a.line)) {
+        drawHeader(subtitle, theme);
+        if (tryRenderList(list, itemsFn, a.size, a.line, theme)) {
           doc.setFontSize(7);
-          doc.setTextColor(140);
+          doc.setTextColor(...COLOR_MUTED);
           doc.text(footer, pageW / 2, pageH - 4, { align: 'center' });
-          doc.setTextColor(0);
+          doc.setTextColor(...COLOR_INK);
           return;
         }
       }
@@ -1723,9 +1772,11 @@
 
     // ====== PÁGINA 1: QUE FALTAM ======
     if (groups.length === 0) {
-      drawHeader(`Faltam ${missing} de ${total} figurinhas (${(owned/total*100).toFixed(0)}% completo)`);
+      drawHeader(`Faltam 0 de ${total} figurinhas (${(owned/total*100).toFixed(0)}%)`, COLOR_RED);
       doc.setFontSize(22);
+      doc.setTextColor(...COLOR_GOLD);
       doc.text('🏆 ÁLBUM COMPLETO!', pageW / 2, pageH / 2, { align: 'center' });
+      doc.setTextColor(...COLOR_INK);
     } else {
       renderPage(
         groups,
@@ -1733,8 +1784,9 @@
           titleLine: `${g.code} ${g.name} (faltam ${g.missing.length}):`,
           numsStr: g.missing.map(n => String(n).padStart(2, '0')).join(', ')
         }),
-        `Faltam ${missing} de ${total} figurinhas (${(owned/total*100).toFixed(0)}% completo)`,
-        'Quer ajudar com trocas? Compartilhe este PDF · copa.massarenti.me'
+        `Faltam ${missing} de ${total} (${(owned/total*100).toFixed(0)}% completo)`,
+        'Quer ajudar com trocas? Compartilhe este PDF · copa.massarenti.me',
+        COLOR_RED
       );
     }
 
@@ -1752,7 +1804,8 @@
           ).join(', ')
         }),
         `🔁 Minhas repetidas: ${dupCount} pra trocar`,
-        'Tem alguma dessas? Bora trocar! · copa.massarenti.me'
+        'Tem alguma dessas? Bora trocar! · copa.massarenti.me',
+        COLOR_GOLD
       );
     }
 

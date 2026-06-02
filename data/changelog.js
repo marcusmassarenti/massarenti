@@ -1,7 +1,17 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 76;
+window.APP_VERSION = 77;
 window.CHANGELOG = [
+  {
+    version: 77,
+    date: '25/mai',
+    title: '🎨 PDF colorido com bandeiras',
+    items: [
+      '🚩 Cada país aparece com sua bandeira ao lado',
+      '🎨 Página "Que faltam" com tema vermelho; "Repetidas" com tema dourado',
+      '✨ Faixa colorida no topo de cada página'
+    ]
+  },
   {
     version: 76,
     date: '25/mai',
