@@ -1,7 +1,19 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 78;
+window.APP_VERSION = 79;
 window.CHANGELOG = [
+  {
+    version: 79,
+    date: '11/jun',
+    title: '🤖 Placares automáticos',
+    items: [
+      'Os placares finais agora caem sozinhos quando o jogo acaba',
+      'Card do Brasil mostra "🔴 BRASIL AO VIVO 2×1" enquanto o jogo rola',
+      'Jogos de hoje também mostram placar ao vivo + tempo de jogo',
+      'Atualiza a cada 45s enquanto tem jogo rolando',
+      '(Dados via ESPN — se você editar manualmente, sua versão prevalece)'
+    ]
+  },
   {
     version: 78,
     date: '11/jun',

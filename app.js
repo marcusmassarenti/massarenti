@@ -2080,6 +2080,149 @@
     el.onclick = null;
   }
 
+  // ===== AUTO-RESULTADOS via API do ESPN =====
+  const liveScores = {}; // { matchId: { home, away, statusText, isLive } }
+  let lastEspnFetch = 0;
+  let espnTimer = null;
+
+  // Mapeia nomes em inglês do ESPN pros nossos códigos FIFA
+  const ESPN_NAME_TO_CODE = {
+    'Brazil': 'BRA', 'Morocco': 'MAR', 'Scotland': 'SCO', 'Haiti': 'HAI',
+    'Mexico': 'MEX', 'South Africa': 'RSA',
+    'South Korea': 'KOR', 'Korea Republic': 'KOR',
+    'Czech Republic': 'CZE', 'Czechia': 'CZE',
+    'Canada': 'CAN', 'Switzerland': 'SUI', 'Qatar': 'QAT',
+    'Bosnia and Herzegovina': 'BIH', 'Bosnia & Herzegovina': 'BIH',
+    'United States': 'USA',
+    'Turkey': 'TUR', 'Türkiye': 'TUR', 'Turkiye': 'TUR',
+    'Australia': 'AUS', 'Paraguay': 'PAR',
+    'Germany': 'GER', 'Ecuador': 'ECU', 'France': 'FRA',
+    'Argentina': 'ARG', 'Colombia': 'COL', 'Uruguay': 'URU',
+    'Spain': 'ESP', 'Portugal': 'POR', 'Netherlands': 'NED',
+    'England': 'ENG', 'Norway': 'NOR', 'Sweden': 'SWE',
+    'Austria': 'AUT', 'Belgium': 'BEL', 'Croatia': 'CRO',
+    'New Zealand': 'NZL', 'Japan': 'JPN',
+    'Iran': 'IRN', 'IR Iran': 'IRN',
+    'Iraq': 'IRQ', 'Jordan': 'JOR', 'Uzbekistan': 'UZB',
+    'Saudi Arabia': 'KSA',
+    'Algeria': 'ALG', 'Tunisia': 'TUN', 'Egypt': 'EGY',
+    'Ghana': 'GHA', 'Senegal': 'SEN',
+    "Ivory Coast": 'CIV', "Côte d'Ivoire": 'CIV', "Cote d'Ivoire": 'CIV',
+    'Cape Verde': 'CPV',
+    'DR Congo': 'COD', 'Democratic Republic of the Congo': 'COD',
+    'Curaçao': 'CUW', 'Curacao': 'CUW',
+    'Panama': 'PAN'
+  };
+
+  function espnTeamToCode(team) {
+    if (!team) return null;
+    if (team.abbreviation && countryByCode[team.abbreviation]) return team.abbreviation;
+    const keys = [team.displayName, team.shortDisplayName, team.name, team.location];
+    for (const k of keys) {
+      if (k && ESPN_NAME_TO_CODE[k]) return ESPN_NAME_TO_CODE[k];
+    }
+    return null;
+  }
+
+  async function fetchEspnDay(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${y}${m}${d}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) { return null; }
+  }
+
+  function findMatchForEvent(ev) {
+    const datePart = (ev.date || '').slice(0, 10);
+    const comp = ev.competitions?.[0];
+    if (!comp) return null;
+    const home = comp.competitors?.find(c => c.homeAway === 'home');
+    const away = comp.competitors?.find(c => c.homeAway === 'away');
+    if (!home || !away) return null;
+    const hCode = espnTeamToCode(home.team);
+    const aCode = espnTeamToCode(away.team);
+    if (!hCode || !aCode) return null;
+    return window.SCHEDULE.find(m =>
+      m.date === datePart &&
+      ((m.homeCode === hCode && m.awayCode === aCode) ||
+       (m.homeCode === aCode && m.awayCode === hCode))
+    );
+  }
+
+  async function refreshLiveScores() {
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    let hasLive = false;
+    let anyChange = false;
+
+    for (const d of [yesterday, now, tomorrow]) {
+      const data = await fetchEspnDay(d);
+      if (!data?.events) continue;
+      for (const ev of data.events) {
+        const match = findMatchForEvent(ev);
+        if (!match) continue;
+        const comp = ev.competitions[0];
+        const home = comp.competitors.find(c => c.homeAway === 'home');
+        const away = comp.competitors.find(c => c.homeAway === 'away');
+        const status = ev.status?.type;
+        const phase = status?.state; // 'pre' | 'in' | 'post'
+        const completed = !!status?.completed;
+        const espnHomeCode = espnTeamToCode(home.team);
+        const flip = match.homeCode !== espnHomeCode; // sentido invertido?
+        const homeScore = parseInt((flip ? away.score : home.score), 10) || 0;
+        const awayScore = parseInt((flip ? home.score : away.score), 10) || 0;
+
+        if (phase === 'in') {
+          hasLive = true;
+          const prev = liveScores[match.id];
+          const next = {
+            home: homeScore,
+            away: awayScore,
+            statusText: status.shortDetail || status.detail || 'AO VIVO',
+            isLive: true
+          };
+          if (!prev || prev.home !== next.home || prev.away !== next.away || prev.statusText !== next.statusText) {
+            anyChange = true;
+          }
+          liveScores[match.id] = next;
+        } else if (phase === 'post' && completed) {
+          if (liveScores[match.id]) { delete liveScores[match.id]; anyChange = true; }
+          if (!state.scores[match.id]) {
+            state.scores[match.id] = { home: homeScore, away: awayScore, auto: true };
+            anyChange = true;
+          }
+        } else if (phase === 'pre') {
+          if (liveScores[match.id]) { delete liveScores[match.id]; anyChange = true; }
+        }
+      }
+    }
+
+    if (anyChange) {
+      saveData();
+      const pane = document.querySelector('.tab-pane[data-pane="dashboard"]');
+      if (pane && !pane.hidden) renderDashboard();
+    }
+
+    if (espnTimer) { clearTimeout(espnTimer); espnTimer = null; }
+    if (hasLive) espnTimer = setTimeout(refreshLiveScores, 45_000);
+  }
+
+  function maybeStartAutoRefresh() {
+    const now = new Date();
+    const cupStart = new Date('2026-06-11T00:00:00-03:00');
+    const cupEnd = new Date('2026-07-20T00:00:00-03:00');
+    if (now < cupStart || now > cupEnd) return;
+    const since = Date.now() - lastEspnFetch;
+    if (since < 20_000) return;
+    lastEspnFetch = Date.now();
+    refreshLiveScores();
+  }
+
   function buildCountdownHtml() {
     const cupStart = new Date('2026-06-11T00:00:00-03:00');
     const cupEnd = new Date('2026-07-19T18:00:00-03:00');
@@ -2136,21 +2279,56 @@
   // Substitui a contagem regressiva enquanto a Copa rola:
   // se Brasil tem jogo futuro → mostra esse. Senão → próximo jogo qualquer.
   function buildLiveCupHtml(now) {
+    maybeStartAutoRefresh();
     const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-    const futureMatches = window.SCHEDULE
-      .map(m => ({ m, d: new Date(`${m.date}T${m.time}:00-03:00`) }))
-      .filter(x => x.d > now)
-      .sort((a, b) => a.d - b.d);
 
-    const braNext = futureMatches.find(x => x.m.homeCode === 'BRA' || x.m.awayCode === 'BRA');
-    if (braNext) {
-      const opp = resolveOpponent(braNext.m, 'BRA');
-      const rel = relativeDayText(braNext.d, now);
-      const dateStr = `${braNext.d.getDate()}/${months[braNext.d.getMonth()]}`;
+    // 1) Brasil AO VIVO?
+    let braItem = null;
+    for (const m of window.SCHEDULE) {
+      if (m.homeCode !== 'BRA' && m.awayCode !== 'BRA') continue;
+      if (liveScores[m.id]?.isLive) {
+        braItem = { m, d: new Date(`${m.date}T${m.time}:00-03:00`), live: liveScores[m.id] };
+        break;
+      }
+    }
+    // 2) Próximo Brasil sem placar
+    if (!braItem) {
+      const futures = window.SCHEDULE
+        .filter(m => (m.homeCode === 'BRA' || m.awayCode === 'BRA') && !state.scores[m.id])
+        .map(m => ({ m, d: new Date(`${m.date}T${m.time}:00-03:00`) }))
+        .filter(x => x.d > now)
+        .sort((a, b) => a.d - b.d);
+      if (futures[0]) braItem = futures[0];
+    }
+
+    if (braItem) {
+      const { m, d, live } = braItem;
+      const opp = resolveOpponent(m, 'BRA');
       const oppFlag = opp ? opp.flag : '🏳️';
       const oppName = opp ? opp.name : 'a definir';
+      const isHome = m.homeCode === 'BRA';
+      const dateStr = `${d.getDate()}/${months[d.getMonth()]}`;
+
+      if (live) {
+        const braScore = isHome ? live.home : live.away;
+        const oppScore = isHome ? live.away : live.home;
+        return `
+          <div class="countdown-card live brazil-next live-now" data-match-id="${m.id}">
+            <div class="countdown-label">🔴 BRASIL AO VIVO</div>
+            <div class="brazil-next-row">
+              <span class="brazil-next-flag">🇧🇷</span>
+              <span class="brazil-next-score">${braScore} × ${oppScore}</span>
+              <span class="brazil-next-flag">${oppFlag}</span>
+            </div>
+            <div class="countdown-sub">Brasil × ${oppName}</div>
+            <div class="countdown-date">${live.statusText} · ${m.phase}</div>
+          </div>
+        `;
+      }
+
+      const rel = relativeDayText(d, now);
       return `
-        <div class="countdown-card live brazil-next" data-match-id="${braNext.m.id}">
+        <div class="countdown-card live brazil-next" data-match-id="${m.id}">
           <div class="countdown-label">🇧🇷 BRASIL JOGA ${rel}</div>
           <div class="brazil-next-row">
             <span class="brazil-next-flag">🇧🇷</span>
@@ -2158,30 +2336,47 @@
             <span class="brazil-next-flag">${oppFlag}</span>
           </div>
           <div class="countdown-sub">Brasil × ${oppName}</div>
-          <div class="countdown-date">${dateStr} · ${braNext.m.time}h Brasília · ${braNext.m.phase}</div>
+          <div class="countdown-date">${dateStr} · ${m.time}h Brasília · ${m.phase}</div>
         </div>
       `;
     }
 
-    // Brasil já eliminado (ou sem jogos): mostra próximo jogo qualquer
-    const anyNext = futureMatches[0];
+    // Brasil já eliminado: pega próximo jogo qualquer (live primeiro)
+    let anyLive = null;
+    for (const m of window.SCHEDULE) {
+      if (liveScores[m.id]?.isLive) { anyLive = { m, d: new Date(`${m.date}T${m.time}:00-03:00`), live: liveScores[m.id] }; break; }
+    }
+    const futureMatches = window.SCHEDULE
+      .map(m => ({ m, d: new Date(`${m.date}T${m.time}:00-03:00`) }))
+      .filter(x => x.d > now && !state.scores[x.m.id])
+      .sort((a, b) => a.d - b.d);
+    const anyNext = anyLive || futureMatches[0];
     if (anyNext) {
       const homeFlag = countryByCode[anyNext.m.homeCode]?.flag || '🏳️';
       const awayFlag = countryByCode[anyNext.m.awayCode]?.flag || '🏳️';
       const homeName = countryByCode[anyNext.m.homeCode]?.name || anyNext.m.homeLabel || '?';
       const awayName = countryByCode[anyNext.m.awayCode]?.name || anyNext.m.awayLabel || '?';
-      const rel = relativeDayText(anyNext.d, now);
       const dateStr = `${anyNext.d.getDate()}/${months[anyNext.d.getMonth()]}`;
+      const live = anyNext.live;
+      const middle = live
+        ? `<span class="brazil-next-score">${live.home} × ${live.away}</span>`
+        : `<span class="brazil-next-vs">×</span>`;
+      const label = live
+        ? `🔴 AO VIVO · ${live.statusText}`
+        : `⚽ PRÓXIMO JOGO · ${relativeDayText(anyNext.d, now)}`;
+      const footer = live
+        ? `${homeName} × ${awayName} · ${anyNext.m.phase}`
+        : `${dateStr} · ${anyNext.m.time}h Brasília · ${anyNext.m.phase}`;
       return `
-        <div class="countdown-card live" data-match-id="${anyNext.m.id}">
-          <div class="countdown-label">⚽ PRÓXIMO JOGO · ${rel}</div>
+        <div class="countdown-card live${live ? ' live-now' : ''}" data-match-id="${anyNext.m.id}">
+          <div class="countdown-label">${label}</div>
           <div class="brazil-next-row">
             <span class="brazil-next-flag">${homeFlag}</span>
-            <span class="brazil-next-vs">×</span>
+            ${middle}
             <span class="brazil-next-flag">${awayFlag}</span>
           </div>
           <div class="countdown-sub">${homeName} × ${awayName}</div>
-          <div class="countdown-date">${dateStr} · ${anyNext.m.time}h Brasília · ${anyNext.m.phase}</div>
+          <div class="countdown-date">${footer}</div>
         </div>
       `;
     }
@@ -2235,17 +2430,21 @@
       const awayName = away ? `${away.flag} ${away.name}` : '❓ ' + (m.awayLabel || '?');
       const matchDate = new Date(`${m.date}T${m.time}:00-03:00`);
       const isPast = matchDate < now;
-      const isLive = !isPast && (matchDate - now) < 2 * 60 * 60 * 1000; // dentro de 2h
+      const live = liveScores[m.id];
+      const isLive = !!live?.isLive;
       let scoreText = '<span style="color:var(--c-muted)">×</span>';
-      if (score) {
-        const hWon = score.home > score.away || score.penaltyWinner === 'home';
-        const aWon = score.away > score.home || score.penaltyWinner === 'away';
+      if (isLive) {
+        scoreText = `<span class="today-score today-score-live">${live.home} × ${live.away}</span>`;
+      } else if (score) {
         scoreText = `<span class="today-score">${score.home} × ${score.away}</span>`;
       }
       const hasBrazil = m.homeCode === 'BRA' || m.awayCode === 'BRA';
+      const timeCell = isLive
+        ? `<span class="today-live-tag">🔴 ${live.statusText}</span>`
+        : `${m.time}`;
       return `
         <div class="today-row ${isPast ? 'past' : ''} ${isLive ? 'live' : ''} ${hasBrazil ? 'brazil' : ''}" data-match-id="${m.id}">
-          <div class="today-time">${m.time}${isLive ? ' 🔴' : ''}</div>
+          <div class="today-time">${timeCell}</div>
           <div class="today-match">
             <div class="today-teams">${homeName} ${scoreText} ${awayName}</div>
             <div class="today-meta">${m.round || m.phase}${m.group ? ' · Grupo '+m.group : ''}${hasBrazil ? ' · 🇧🇷' : ''}</div>
