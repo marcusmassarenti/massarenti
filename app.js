@@ -2081,7 +2081,7 @@
   }
 
   function buildCountdownHtml() {
-    const cupStart = new Date('2026-06-11T17:00:00-03:00');
+    const cupStart = new Date('2026-06-11T00:00:00-03:00');
     const cupEnd = new Date('2026-07-19T18:00:00-03:00');
     const now = new Date();
     if (now < cupStart) {
