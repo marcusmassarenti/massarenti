@@ -1,7 +1,18 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 77;
+window.APP_VERSION = 78;
 window.CHANGELOG = [
+  {
+    version: 78,
+    date: '11/jun',
+    title: '🇧🇷 Começou a Copa!',
+    items: [
+      'No lugar da contagem regressiva, agora aparece o PRÓXIMO JOGO DO BRASIL',
+      'Bandeiras enormes do Brasil × adversário em destaque',
+      'Mostra "HOJE / AMANHÃ / EM X DIAS" + horário e fase',
+      'Toque pra registrar o placar quando o jogo acabar'
+    ]
+  },
   {
     version: 77,
     date: '25/mai',

@@ -2098,13 +2098,7 @@
         </div>
       `;
     } else if (now < cupEnd) {
-      return `
-        <div class="countdown-card live">
-          <div class="countdown-label">🔴 ACONTECENDO AGORA</div>
-          <div class="countdown-days">⚽</div>
-          <div class="countdown-sub">A Copa do Mundo 2026 está rolando!</div>
-        </div>
-      `;
+      return buildLiveCupHtml(now);
     } else {
       return `
         <div class="countdown-card ended">
@@ -2113,6 +2107,93 @@
         </div>
       `;
     }
+  }
+
+  // Retorna texto relativo do tipo "HOJE" / "AMANHÃ" / "EM 3 DIAS"
+  function relativeDayText(matchDate, now) {
+    const startDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const days = Math.round((startDay - today) / (1000 * 60 * 60 * 24));
+    if (days <= 0) return 'HOJE';
+    if (days === 1) return 'AMANHÃ';
+    return `EM ${days} DIAS`;
+  }
+
+  // Resolve o adversário do Brasil (ou de qualquer time fixo) num jogo
+  function resolveOpponent(m, myCode) {
+    const isHome = m.homeCode === myCode;
+    const otherCode = isHome ? m.awayCode : m.homeCode;
+    const otherResolved = isHome ? m.resolvedAway : m.resolvedHome;
+    const otherLabel = isHome ? m.awayLabel : m.homeLabel;
+    if (otherResolved) return otherResolved;
+    if (otherCode && countryByCode[otherCode]) {
+      return { code: otherCode, flag: countryByCode[otherCode].flag, name: countryByCode[otherCode].name };
+    }
+    if (otherLabel) return { code: '?', flag: '🏳️', name: otherLabel };
+    return null;
+  }
+
+  // Substitui a contagem regressiva enquanto a Copa rola:
+  // se Brasil tem jogo futuro → mostra esse. Senão → próximo jogo qualquer.
+  function buildLiveCupHtml(now) {
+    const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const futureMatches = window.SCHEDULE
+      .map(m => ({ m, d: new Date(`${m.date}T${m.time}:00-03:00`) }))
+      .filter(x => x.d > now)
+      .sort((a, b) => a.d - b.d);
+
+    const braNext = futureMatches.find(x => x.m.homeCode === 'BRA' || x.m.awayCode === 'BRA');
+    if (braNext) {
+      const opp = resolveOpponent(braNext.m, 'BRA');
+      const rel = relativeDayText(braNext.d, now);
+      const dateStr = `${braNext.d.getDate()}/${months[braNext.d.getMonth()]}`;
+      const oppFlag = opp ? opp.flag : '🏳️';
+      const oppName = opp ? opp.name : 'a definir';
+      return `
+        <div class="countdown-card live brazil-next" data-match-id="${braNext.m.id}">
+          <div class="countdown-label">🇧🇷 BRASIL JOGA ${rel}</div>
+          <div class="brazil-next-row">
+            <span class="brazil-next-flag">🇧🇷</span>
+            <span class="brazil-next-vs">×</span>
+            <span class="brazil-next-flag">${oppFlag}</span>
+          </div>
+          <div class="countdown-sub">Brasil × ${oppName}</div>
+          <div class="countdown-date">${dateStr} · ${braNext.m.time}h Brasília · ${braNext.m.phase}</div>
+        </div>
+      `;
+    }
+
+    // Brasil já eliminado (ou sem jogos): mostra próximo jogo qualquer
+    const anyNext = futureMatches[0];
+    if (anyNext) {
+      const homeFlag = countryByCode[anyNext.m.homeCode]?.flag || '🏳️';
+      const awayFlag = countryByCode[anyNext.m.awayCode]?.flag || '🏳️';
+      const homeName = countryByCode[anyNext.m.homeCode]?.name || anyNext.m.homeLabel || '?';
+      const awayName = countryByCode[anyNext.m.awayCode]?.name || anyNext.m.awayLabel || '?';
+      const rel = relativeDayText(anyNext.d, now);
+      const dateStr = `${anyNext.d.getDate()}/${months[anyNext.d.getMonth()]}`;
+      return `
+        <div class="countdown-card live" data-match-id="${anyNext.m.id}">
+          <div class="countdown-label">⚽ PRÓXIMO JOGO · ${rel}</div>
+          <div class="brazil-next-row">
+            <span class="brazil-next-flag">${homeFlag}</span>
+            <span class="brazil-next-vs">×</span>
+            <span class="brazil-next-flag">${awayFlag}</span>
+          </div>
+          <div class="countdown-sub">${homeName} × ${awayName}</div>
+          <div class="countdown-date">${dateStr} · ${anyNext.m.time}h Brasília · ${anyNext.m.phase}</div>
+        </div>
+      `;
+    }
+
+    // Sem futuros (improvável durante a Copa, mas fallback)
+    return `
+      <div class="countdown-card live">
+        <div class="countdown-label">🔴 COPA EM ANDAMENTO</div>
+        <div class="countdown-days">⚽</div>
+        <div class="countdown-sub">Acompanhe os jogos!</div>
+      </div>
+    `;
   }
 
   function buildTodayGamesHtml() {
@@ -2363,7 +2444,7 @@
     if ($('#exportWaBtn')) $('#exportWaBtn').addEventListener('click', exportMissingWhatsApp);
 
     // Liga cliques nos jogos do dashboard pra abrir o modal de placar rápido
-    $$('#dashboardContent .today-row, #dashboardContent .brazil-row').forEach(row => {
+    $$('#dashboardContent .today-row, #dashboardContent .brazil-row, #dashboardContent .countdown-card[data-match-id]').forEach(row => {
       row.addEventListener('click', () => {
         const id = parseInt(row.dataset.matchId, 10);
         if (id) openQuickScoreModal(id);

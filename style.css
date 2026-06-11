@@ -1853,6 +1853,29 @@ main { padding: 12px 12px 8px; }
   margin-top: 6px;
   font-weight: 700;
 }
+.brazil-next-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 8px 0 6px;
+}
+.brazil-next-flag {
+  font-size: 46px;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+.brazil-next-vs {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 24px;
+  opacity: .9;
+}
+.countdown-card.brazil-next {
+  cursor: pointer;
+  transition: transform .12s;
+}
+.countdown-card.brazil-next:active { transform: scale(.98); }
 
 /* === JOGOS DE HOJE === */
 .today-block {
