@@ -83,11 +83,16 @@
   // Salva local SEMPRE imediato. Sincroniza com nuvem com debounce curto.
   let _syncTimer = null;
   let _hasPendingSync = false;
+  let _cloudReady = false; // só permite push depois que loadFromCloud rodou (evita sobrescrever nuvem com vazio)
   function saveData() {
     localStorage.setItem(storageKey, JSON.stringify(state));
     localStorage.setItem(storageKey + '_updated', new Date().toISOString());
     if (supabaseClient && !viewMode) {
       _hasPendingSync = true;
+      if (!_cloudReady) {
+        setCloudStatus('syncing', 'Aguardando carregar da nuvem...');
+        return; // não empurra ainda
+      }
       setCloudStatus('syncing', 'Aguardando sync...');
       clearTimeout(_syncTimer);
       _syncTimer = setTimeout(syncToCloud, 300);
@@ -96,6 +101,7 @@
 
   async function syncToCloud(immediate) {
     if (!supabaseClient || viewMode) return;
+    if (!_cloudReady) return; // segurança extra
     if (!_hasPendingSync && !immediate) return;
     setCloudStatus('syncing', 'Salvando na nuvem...');
     try {
@@ -119,7 +125,7 @@
   // Força sincronizar quando o app perde foco / o usuário fecha
   function forceSyncOnExit() {
     if (_syncTimer) { clearTimeout(_syncTimer); _syncTimer = null; }
-    if (_hasPendingSync) syncToCloud(true);
+    if (_hasPendingSync && _cloudReady) syncToCloud(true);
   }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') forceSyncOnExit();
@@ -136,46 +142,60 @@
   });
 
   async function loadFromCloud() {
-    if (!supabaseClient) return false;
+    if (!supabaseClient) { _cloudReady = true; return false; }
+    let loaded = false;
     try {
       const { data, error } = await supabaseClient
         .from('profiles')
         .select('name, counts, scores, updated_at, paid, paid_thanks_seen')
         .eq('name', profileName)
         .maybeSingle();
-      if (error) { console.warn(error); setCloudStatus('error', 'Erro: ' + error.message); return false; }
-      if (data) {
-        // Verifica timestamps: usa o mais recente (local vs nuvem)
+      if (error) {
+        console.warn(error);
+        setCloudStatus('error', 'Erro: ' + error.message);
+      } else if (data) {
         const cloudTime = data.updated_at ? new Date(data.updated_at).getTime() : 0;
         const localTimeRaw = localStorage.getItem(storageKey + '_updated');
         const localTime = localTimeRaw ? new Date(localTimeRaw).getTime() : 0;
         const cloudOwned = Object.values(data.counts || {}).filter(v => v > 0).length;
         const localOwned = Object.values(state.counts || {}).filter(v => v > 0).length;
+        const isNewDevice = localTime === 0;
 
-        if (cloudTime > localTime || (cloudOwned > localOwned && localTime === 0)) {
-          // Nuvem é mais nova → usa
+        // Regras:
+        // 1. Celular novo (sem dados locais) → sempre baixa
+        // 2. Nuvem tem MAIS figurinhas que local → baixa
+        // 3. Nuvem é mais recente E pelo menos empate em figurinhas → baixa (placar mudou)
+        // 4. Local tem mais (ou nuvem foi corrompida) → preserva local, marca pra push
+        if (isNewDevice || cloudOwned > localOwned || (cloudTime > localTime && cloudOwned >= localOwned)) {
           state.counts = data.counts || {};
           state.scores = data.scores || {};
           localStorage.setItem(storageKey, JSON.stringify(state));
           localStorage.setItem(storageKey + '_updated', data.updated_at || new Date().toISOString());
           setCloudStatus('ok', 'Carregado da nuvem');
-          return true;
-        } else if (localTime > cloudTime && _hasPendingSync !== false) {
-          // Local é mais novo → empurra pra nuvem
+          loaded = true;
+        } else if (localOwned > cloudOwned) {
+          // Proteção: nuvem tem menos figurinhas, não sobrescreve local. Empurra local pra restaurar nuvem.
+          console.warn(`Nuvem tem ${cloudOwned} figurinhas, local tem ${localOwned}. Preservando local.`);
           _hasPendingSync = true;
-          syncToCloud(true);
-          setCloudStatus('syncing', 'Enviando local pra nuvem...');
-          return false;
+          setCloudStatus('warning', `Local tem mais dados — restaurando nuvem (${localOwned} vs ${cloudOwned})`);
+        } else {
+          setCloudStatus('ok', 'Já sincronizado');
         }
-        setCloudStatus('ok', 'Já sincronizado');
-        return true;
+      } else {
+        setCloudStatus('ok', 'Conectado (sem dados ainda)');
       }
-      setCloudStatus('ok', 'Conectado (sem dados ainda)');
     } catch (e) {
       console.warn(e);
       setCloudStatus('error', 'Sem conexão: ' + (e.message || 'erro'));
+    } finally {
+      _cloudReady = true;
+      // Se algo foi salvo enquanto a nuvem carregava, empurra agora
+      if (_hasPendingSync) {
+        clearTimeout(_syncTimer);
+        _syncTimer = setTimeout(syncToCloud, 300);
+      }
     }
-    return false;
+    return loaded;
   }
 
   async function loadFamilyProfiles(names) {
@@ -399,6 +419,7 @@
     else if (status === 'syncing') ind.textContent = '⏳';
     else if (status === 'offline') ind.textContent = '📴';
     else if (status === 'error') ind.textContent = '⚠️';
+    else if (status === 'warning') ind.textContent = '🛡️';
   }
   if (!$('#cloudStatus')) {
     const ind = document.createElement('span');

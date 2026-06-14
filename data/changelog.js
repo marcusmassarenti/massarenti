@@ -1,7 +1,18 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 79;
+window.APP_VERSION = 80;
 window.CHANGELOG = [
+  {
+    version: 80,
+    date: '14/jun',
+    title: '🛡️ Sync protegido contra perda de dados',
+    items: [
+      'Bug: ao logar em celular novo, o ESPN podia salvar estado vazio na nuvem ANTES de baixar suas figurinhas',
+      'Agora: só empurra pra nuvem depois que terminou de baixar o estado',
+      'Se a nuvem tiver menos figurinhas que o celular, restaura a nuvem com os dados locais',
+      'Indicador 🛡️ aparece quando o app está protegendo seus dados'
+    ]
+  },
   {
     version: 79,
     date: '11/jun',
