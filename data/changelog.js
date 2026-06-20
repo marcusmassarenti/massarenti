@@ -1,7 +1,17 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 80;
+window.APP_VERSION = 81;
 window.CHANGELOG = [
+  {
+    version: 81,
+    date: '14/jun',
+    title: '🥤 Coca-Cola aparece no álbum dos outros',
+    items: [
+      'Bug: ao ver o álbum de outro usuário, a seção Coca-Cola sempre aparecia "ainda não começou"',
+      'O codificador só ia até a figurinha 980 e ignorava as 14 da Coca (981-994)',
+      'Agora compartilhamento e visualização incluem a Coca-Cola corretamente'
+    ]
+  },
   {
     version: 80,
     date: '14/jun',

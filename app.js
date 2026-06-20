@@ -333,7 +333,7 @@
 
   function encodeAlbumState() {
     const counts = [];
-    for (let i = 1; i <= 980; i++) {
+    for (let i = 1; i <= 994; i++) {
       counts.push(Math.min(9, state.counts[i] || 0).toString(16));
     }
     const scoresArr = [];
@@ -3164,7 +3164,7 @@
       .maybeSingle();
     if (error || !data) return null;
     const counts = [];
-    for (let i = 1; i <= 980; i++) {
+    for (let i = 1; i <= 994; i++) {
       counts.push(Math.min(9, (data.counts || {})[i] || 0).toString(16));
     }
     const scoresArr = [];
