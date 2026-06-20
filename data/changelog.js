@@ -1,7 +1,17 @@
 // Changelog - mostra na tela inicial quando usuário entrar e ver atualizações novas
 // Ordem: mais nova primeiro. version cresce a cada release.
-window.APP_VERSION = 81;
+window.APP_VERSION = 82;
 window.CHANGELOG = [
+  {
+    version: 82,
+    date: '14/jun',
+    title: '🔄 Ver familiar busca dados frescos',
+    items: [
+      'Antes: ver o álbum de outro tinha o estado codificado na URL — ficava desatualizado',
+      'Agora: clicou no familiar, busca direto do Supabase (sempre atualizado, inclui Coca)',
+      'URLs antigas continuam funcionando (mas re-clica no familiar pra ver os dados certos)'
+    ]
+  },
   {
     version: 81,
     date: '14/jun',

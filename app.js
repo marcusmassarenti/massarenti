@@ -330,6 +330,7 @@
   let viewedName = profileName;
   const urlParams = new URLSearchParams(window.location.search);
   const viewCode = urlParams.get('view');
+  const viewByName = urlParams.get('viewName');
 
   function encodeAlbumState() {
     const counts = [];
@@ -375,6 +376,14 @@
       viewMode = true;
       document.body.classList.add('view-mode');
     } catch (e) { console.error('Código inválido', e); }
+  } else if (viewByName) {
+    // View por nome: busca dados frescos do Supabase
+    viewedName = viewByName;
+    viewMode = true;
+    document.body.classList.add('view-mode');
+    // Zera estado pra não vazar dados do usuário logado antes do fetch chegar
+    state.counts = {};
+    state.scores = {};
   }
 
   // saveData fica no-op quando em view mode
@@ -3066,11 +3075,11 @@
 
     listEl.querySelectorAll('.family-card, .family-compact-row, .my-pos-card').forEach(r => {
       if (r.classList.contains('me')) return;
-      r.addEventListener('click', async () => {
+      r.addEventListener('click', () => {
         const familyName = r.dataset.name;
         if (!familyName) return;
-        const code = await generateFamilyViewCode(familyName);
-        if (code) window.location.href = `app.html?view=${code}`;
+        // Usa viewName em vez de code embedded — sempre busca dados frescos da nuvem
+        window.location.href = `app.html?viewName=${encodeURIComponent(familyName)}`;
       });
     });
   }
@@ -4440,6 +4449,24 @@ Qualquer dúvida me chama! 👍`,
     if (hasOpenTrade) return;
     renderDashboard();
   }, 60000);
+
+  // View mode "viewName": busca fresco do Supabase a cada visita
+  if (viewMode && viewByName && supabaseClient) {
+    (async () => {
+      const { data } = await supabaseClient
+        .from('profiles')
+        .select('name, counts, scores')
+        .eq('name', viewByName)
+        .maybeSingle();
+      if (data) {
+        state.counts = data.counts || {};
+        state.scores = data.scores || {};
+        renderDashboard();
+        renderCollection();
+        updateGlobalProgress();
+      }
+    })();
+  }
 
   // Carrega do Supabase na inicialização (se disponível) e re-renderiza
   if (supabaseClient && !viewMode) {
